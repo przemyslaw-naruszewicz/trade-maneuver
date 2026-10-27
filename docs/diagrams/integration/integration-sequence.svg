@@ -1,0 +1,180 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1810" viewBox="0 0 1440 1810" role="img" aria-labelledby="title description">
+<title id="title">Signal processing through RabbitMQ</title>
+<desc id="description">Outbox publication, publisher confirmation, Trade Maneuver intake, decline or broker execution, and result delivery. Manual mode requires human approval.</desc>
+<defs>
+<marker id="arrow-ink" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="userSpaceOnUse"><path d="M1 1 L8 4.5 L1 8" fill="none" stroke="#181818" stroke-width="1.5"/></marker>
+<marker id="arrow-muted" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="userSpaceOnUse"><path d="M1 1 L8 4.5 L1 8" fill="none" stroke="#626262" stroke-width="1.5"/></marker>
+<marker id="arrow-accent" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="userSpaceOnUse"><path d="M1 1 L8 4.5 L1 8" fill="none" stroke="#b83c25" stroke-width="1.5"/></marker>
+</defs>
+<g font-family="Arial, Helvetica, Liberation Sans, sans-serif">
+<rect width="1440" height="1810" fill="#ffffff"/>
+<rect x="40" y="30" width="8" height="8" fill="#b83c25" stroke="none" stroke-width="1.2"/>
+<text x="60" y="39" fill="#626262" font-size="12" font-weight="400" text-anchor="start" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="60" dy="0">TRADE MANEUVER / MESSAGE FLOW</tspan>
+</text>
+<text x="40" y="94" fill="#181818" font-size="44" font-weight="600" text-anchor="start">
+<tspan x="40" dy="0">Signal delivery and execution</tspan>
+</text>
+<text x="40" y="128" fill="#626262" font-size="16" font-weight="400" text-anchor="start">
+<tspan x="40" dy="0">RabbitMQ transport. At-least-once delivery. Deduplication by id.</tspan>
+</text>
+<path d="M40 154 H510" fill="none" stroke="#181818" stroke-width="2" stroke-linejoin="miter"/>
+<text x="40" y="178" fill="#626262" font-size="12" font-weight="400" text-anchor="start" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="40" dy="0">01 / PROXIMTYPE</tspan>
+</text>
+<path d="M530 154 H1220" fill="none" stroke="#181818" stroke-width="2" stroke-linejoin="miter"/>
+<text x="530" y="178" fill="#626262" font-size="12" font-weight="400" text-anchor="start" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="530" dy="0">02 / TRADE MANEUVER</tspan>
+</text>
+<path d="M1240 154 H1400" fill="none" stroke="#181818" stroke-width="2" stroke-linejoin="miter"/>
+<text x="1240" y="178" fill="#626262" font-size="12" font-weight="400" text-anchor="start" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="1240" dy="0">03 / EXTERNAL</tspan>
+</text>
+<text x="150" y="216" fill="#181818" font-size="18" font-weight="600" text-anchor="middle">
+<tspan x="150" dy="0">Application</tspan>
+</text>
+<path d="M150 240 V1744" fill="none" stroke="#c9c9c5" stroke-width="1" stroke-linejoin="miter" stroke-dasharray="6 5"/>
+<text x="390" y="216" fill="#181818" font-size="18" font-weight="600" text-anchor="middle">
+<tspan x="390" dy="0">PostgreSQL</tspan>
+</text>
+<path d="M390 240 V1744" fill="none" stroke="#c9c9c5" stroke-width="1" stroke-linejoin="miter" stroke-dasharray="6 5"/>
+<text x="640" y="216" fill="#181818" font-size="18" font-weight="600" text-anchor="middle">
+<tspan x="640" dy="0">RabbitMQ</tspan>
+</text>
+<path d="M640 240 V1744" fill="none" stroke="#c9c9c5" stroke-width="1" stroke-linejoin="miter" stroke-dasharray="6 5"/>
+<text x="870" y="216" fill="#181818" font-size="18" font-weight="600" text-anchor="middle">
+<tspan x="870" dy="0">TM application</tspan>
+</text>
+<path d="M870 240 V1744" fill="none" stroke="#c9c9c5" stroke-width="1" stroke-linejoin="miter" stroke-dasharray="6 5"/>
+<text x="1110" y="216" fill="#181818" font-size="18" font-weight="600" text-anchor="middle">
+<tspan x="1110" dy="0">TM PostgreSQL</tspan>
+</text>
+<path d="M1110 240 V1744" fill="none" stroke="#c9c9c5" stroke-width="1" stroke-linejoin="miter" stroke-dasharray="6 5"/>
+<text x="1320" y="216" fill="#181818" font-size="18" font-weight="600" text-anchor="middle">
+<tspan x="1320" dy="0">Broker</tspan>
+</text>
+<path d="M1320 240 V1744" fill="none" stroke="#c9c9c5" stroke-width="1" stroke-linejoin="miter" stroke-dasharray="6 5"/>
+<rect x="56" y="936" width="1328" height="114" fill="none" stroke="#c9c9c5" stroke-width="1.2"/>
+<rect x="56" y="1068" width="1328" height="482" fill="none" stroke="#181818" stroke-width="1.2"/>
+<path d="M40 270 H1400" fill="none" stroke="#c9c9c5" stroke-width="1" stroke-linejoin="miter"/>
+<rect x="40" y="286" width="680" height="26" fill="#ffffff" stroke="none" stroke-width="1.2"/>
+<text x="40" y="304" fill="#b83c25" font-size="25" font-weight="400" text-anchor="start" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="40" dy="0">01</tspan>
+</text>
+<text x="100" y="301" fill="#181818" font-size="19" font-weight="600" text-anchor="start">
+<tspan x="100" dy="0">Producer publication</tspan>
+</text>
+<text x="270.0" y="342" fill="#181818" font-size="15" font-weight="400" text-anchor="middle">
+<tspan x="270.0" dy="0">Data + outbox (atomic)</tspan>
+</text>
+<path d="M150 354 H390" fill="none" stroke="#181818" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-ink)"/>
+<text x="164" y="398" fill="#626262" font-size="15" font-weight="400" text-anchor="start">
+<tspan x="164" dy="0">Translate to the v1 contract</tspan>
+</text>
+<path d="M150 410 H202 V434 H150" fill="none" stroke="#626262" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-muted)"/>
+<text x="395.0" y="466" fill="#b83c25" font-size="15" font-weight="400" text-anchor="middle">
+<tspan x="395.0" dy="0">publish tm.trade-signal.v1</tspan>
+</text>
+<path d="M150 478 H640" fill="none" stroke="#b83c25" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-accent)"/>
+<text x="395.0" y="522" fill="#626262" font-size="15" font-weight="400" text-anchor="middle">
+<tspan x="395.0" dy="0">publisher confirm → outbox: sent</tspan>
+</text>
+<path d="M640 534 H150" fill="none" stroke="#626262" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-muted)" stroke-dasharray="6 5"/>
+<path d="M40 582 H1400" fill="none" stroke="#c9c9c5" stroke-width="1" stroke-linejoin="miter"/>
+<rect x="40" y="598" width="680" height="26" fill="#ffffff" stroke="none" stroke-width="1.2"/>
+<text x="40" y="616" fill="#b83c25" font-size="25" font-weight="400" text-anchor="start" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="40" dy="0">02</tspan>
+</text>
+<text x="100" y="613" fill="#181818" font-size="19" font-weight="600" text-anchor="start">
+<tspan x="100" dy="0">Signal intake and validation</tspan>
+</text>
+<text x="755.0" y="654" fill="#181818" font-size="15" font-weight="400" text-anchor="middle">
+<tspan x="755.0" dy="0">Deliver signal</tspan>
+</text>
+<path d="M640 666 H870" fill="none" stroke="#181818" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-ink)"/>
+<text x="990.0" y="712" fill="#181818" font-size="15" font-weight="400" text-anchor="middle">
+<tspan x="990.0" dy="0">Check id in inbox</tspan>
+</text>
+<path d="M870 724 H1110" fill="none" stroke="#181818" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-ink)"/>
+<rect x="766" y="742" width="434" height="34" fill="#f5f5f2" stroke="none" stroke-width="1.2"/>
+<text x="983" y="764" fill="#626262" font-size="13" font-weight="400" text-anchor="middle" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="983" dy="0">Duplicate: ack and stop processing</tspan>
+</text>
+<text x="884" y="802" fill="#626262" font-size="15" font-weight="400" text-anchor="start">
+<tspan x="884" dy="0">Freshness, limits, session, kill switch</tspan>
+</text>
+<path d="M870 814 H922 V838 H870" fill="none" stroke="#626262" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-muted)"/>
+<path d="M40 888 H1400" fill="none" stroke="#c9c9c5" stroke-width="1" stroke-linejoin="miter"/>
+<rect x="40" y="904" width="680" height="26" fill="#ffffff" stroke="none" stroke-width="1.2"/>
+<text x="40" y="922" fill="#b83c25" font-size="25" font-weight="400" text-anchor="start" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="40" dy="0">03</tspan>
+</text>
+<text x="100" y="919" fill="#181818" font-size="19" font-weight="600" text-anchor="start">
+<tspan x="100" dy="0">Alternative paths: decline or approve</tspan>
+</text>
+<text x="76" y="963" fill="#626262" font-size="12" font-weight="400" text-anchor="start" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="76" dy="0">DECLINE</tspan>
+</text>
+<text x="990.0" y="974" fill="#181818" font-size="15" font-weight="400" text-anchor="middle">
+<tspan x="990.0" dy="0">inbox + SignalDeclined</tspan>
+</text>
+<path d="M870 986 H1110" fill="none" stroke="#181818" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-ink)"/>
+<text x="755.0" y="1020" fill="#181818" font-size="15" font-weight="400" text-anchor="middle">
+<tspan x="755.0" dy="0">SignalDeclined</tspan>
+</text>
+<path d="M870 1032 H640" fill="none" stroke="#181818" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-ink)"/>
+<text x="76" y="1095" fill="#181818" font-size="12" font-weight="400" text-anchor="start" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="76" dy="0">APPROVE</tspan>
+</text>
+<rect x="716" y="1110" width="652" height="40" fill="#181818" stroke="none" stroke-width="1.2"/>
+<text x="1042" y="1135" fill="#ffffff" font-size="14" font-weight="400" text-anchor="middle" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="1042" dy="0">Manual mode / human approval required</tspan>
+</text>
+<text x="990.0" y="1190" fill="#181818" font-size="15" font-weight="400" text-anchor="middle">
+<tspan x="990.0" dy="0">inbox + Order (Approved)</tspan>
+</text>
+<path d="M870 1202 H1110" fill="none" stroke="#181818" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-ink)"/>
+<text x="1095.0" y="1250" fill="#181818" font-size="15" font-weight="400" text-anchor="middle">
+<tspan x="1095.0" dy="0">Submit order with clientOrderId</tspan>
+</text>
+<path d="M870 1262 H1320" fill="none" stroke="#181818" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-ink)"/>
+<rect x="716" y="1284" width="652" height="64" fill="#ffffff" stroke="none" stroke-width="1.2"/>
+<path d="M716 1284 V1348" fill="none" stroke="#b83c25" stroke-width="2" stroke-linejoin="miter"/>
+<text x="738" y="1308" fill="#626262" font-size="15" font-weight="400" text-anchor="start">
+<tspan x="738" dy="0">On timeout: query order status with the broker.</tspan>
+<tspan x="738" dy="22">Do not submit the order again.</tspan>
+</text>
+<text x="1095.0" y="1388" fill="#626262" font-size="15" font-weight="400" text-anchor="middle">
+<tspan x="1095.0" dy="0">Confirmation / execution</tspan>
+</text>
+<path d="M1320 1400 H870" fill="none" stroke="#626262" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-muted)" stroke-dasharray="6 5"/>
+<text x="990.0" y="1448" fill="#181818" font-size="15" font-weight="400" text-anchor="middle">
+<tspan x="990.0" dy="0">Persist Order state</tspan>
+</text>
+<path d="M870 1460 H1110" fill="none" stroke="#181818" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-ink)"/>
+<text x="755.0" y="1508" fill="#181818" font-size="15" font-weight="400" text-anchor="middle">
+<tspan x="755.0" dy="0">OrderFilled</tspan>
+</text>
+<path d="M870 1520 H640" fill="none" stroke="#181818" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-ink)"/>
+<path d="M40 1588 H1400" fill="none" stroke="#c9c9c5" stroke-width="1" stroke-linejoin="miter"/>
+<rect x="40" y="1604" width="680" height="26" fill="#ffffff" stroke="none" stroke-width="1.2"/>
+<text x="40" y="1622" fill="#b83c25" font-size="25" font-weight="400" text-anchor="start" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="40" dy="0">04</tspan>
+</text>
+<text x="100" y="1619" fill="#181818" font-size="19" font-weight="600" text-anchor="start">
+<tspan x="100" dy="0">Acknowledgement and result delivery</tspan>
+</text>
+<text x="755.0" y="1660" fill="#626262" font-size="15" font-weight="400" text-anchor="middle">
+<tspan x="755.0" dy="0">ack after commit</tspan>
+</text>
+<path d="M870 1672 H640" fill="none" stroke="#626262" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-muted)" stroke-dasharray="6 5"/>
+<text x="395.0" y="1716" fill="#181818" font-size="15" font-weight="400" text-anchor="middle">
+<tspan x="395.0" dy="0">tm.trade-results → producer queue</tspan>
+</text>
+<path d="M640 1728 H150" fill="none" stroke="#181818" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-ink)" stroke-dasharray="6 5"/>
+<path d="M40 1758 H1400" fill="none" stroke="#c9c9c5" stroke-width="1" stroke-linejoin="miter"/>
+<text x="40" y="1784" fill="#626262" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="40" dy="0">Decline and approval are alternative paths. Results retain the signal identifier.</tspan>
+</text>
+</g>
+</svg>

@@ -1,6 +1,6 @@
 # Testing strategy
 
-Test observable business behavior against the modeling rules in [ddd.md](ddd.md) and the guarantees in [architecture.md](architecture.md), including retries, concurrency, and partial failure. This is the target strategy; the skeleton currently has PHPUnit tests for basic application and PostgreSQL integration only.
+Test observable business behavior against the modeling rules in [ddd.md](ddd.md) and the guarantees in [architecture.md](architecture.md), including retries, concurrency, and partial failure. This is the target strategy; the skeleton currently has PHPUnit coverage for application availability, user serialization and casts, and PostgreSQL integration, plus a Behat health-check scenario. Business-flow coverage still needs implementation.
 
 ## Test pyramid
 
@@ -14,7 +14,7 @@ Build a test pyramid with a broad base of fast PHPUnit unit tests, focused integ
 | Contract tests at integration boundaries | Tool to be selected | Compatibility between this service, the analytics application, and other providers or consumers | Planned |
 | Small E2E suite: pyramid top | Tool to be selected | Critical journeys through a deployed system, including browser interaction where applicable | Planned |
 
-PHPUnit is installed; Behat and the planned contract/E2E tools are not. Contract tests check compatibility at system boundaries. Infection evaluates whether tests detect changes in behavior through mutation testing at the covered levels of the pyramid.
+PHPUnit, Behat, and Infection are installed and included in CI. The planned contract/E2E tools are not installed. Contract tests check compatibility at system boundaries. Infection evaluates whether tests detect changes in behavior through mutation testing at the covered levels of the pyramid.
 
 ## PHPUnit
 
@@ -79,6 +79,6 @@ Feature: Idempotent execution instructions
 
 - A change must include tests at the level that proves its behavior. Run the narrowest relevant tests during development and the applicable automated suites in CI.
 - Treat PHPUnit, Behat integration scenarios, Infection, and architecture checks as required parts of the target strategy. Contract and automated E2E suites are planned additions.
-- Behat, Infection, and Deptrac still require dependency installation and runner/CI configuration. These checks do not run in the current skeleton.
-- When introducing the target source layout, extend PHPUnit's source coverage configuration beyond `app/` to include `src/`. Configure Infection to mutate the intended domain and application code as well; a passing run that omits it provides no evidence about it.
+- Run the shared local and GitHub Actions pipeline with `make ci`; see [README](../README.md#quality-checks) for its checks, mutation thresholds, and reports. PHPStan with Larastan and PHP CS Fixer are also configured. Deptrac is installed and runs in CI with one placeholder layer and an empty ruleset; boundary enforcement remains pending.
+- When introducing the target source layout, extend PHPUnit's source coverage configuration and Infection's source directories beyond `app/` to include `src/`, and add `src/` to PHPStan's paths. A passing run that omits the intended domain and application code provides no evidence about it.
 - Existing skeleton tests cover only basic integration. Add Behat scenarios as business flows are implemented and keep PHPUnit adapter tests focused on technical behavior.
