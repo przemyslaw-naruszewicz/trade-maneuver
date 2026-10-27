@@ -1,0 +1,13 @@
+#!/bin/sh
+set -eu
+
+cd "$(dirname "$0")/.."
+
+docker run --rm --network none --user 0:0 \
+    --volume "$PWD:/repo:ro" --workdir /repo \
+    --entrypoint sh rhysd/actionlint:1.7.12 -ec '
+        find .github/workflows -type f \( -name "*.yml" -o -name "*.yaml" \) -exec actionlint {} +
+        shellcheck bin/* docker/postgres/init/*.sh
+    '
+
+docker compose --env-file .env.example config --quiet

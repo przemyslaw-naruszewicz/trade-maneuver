@@ -1,4 +1,4 @@
-.PHONY: setup up down logs shell migrate test build format
+.PHONY: setup up down logs shell migrate test build format ci ci-lint diagrams
 
 setup:
 	./bin/setup
@@ -27,3 +27,12 @@ build:
 
 format:
 	docker compose exec app vendor/bin/pint
+
+ci:
+	sh bin/ci
+
+ci-lint:
+	sh bin/lint-ci
+
+diagrams:
+	python3 docs/diagrams/integration/render-integration.py

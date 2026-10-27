@@ -10,13 +10,20 @@
         "laravel/tinker": "^3.0"
     },
     "require-dev": {
+        "behat/behat": "^4.0",
+        "deptrac/deptrac": "^4.7",
         "fakerphp/faker": "^1.23",
+        "friendsofphp/php-cs-fixer": "^3.95",
+        "infection/infection": "^0.35.8",
+        "larastan/larastan": "^3.13",
         "laravel/boost": "^2.10",
         "laravel/pail": "^1.2.5",
         "laravel/pao": "^1.0.6",
         "laravel/pint": "^1.27",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.6",
+        "phpstan/phpstan": "^2.3",
+        "phpstan/phpstan-phpunit": "^2.1",
         "phpunit/phpunit": "^12.5.12"
     },
     "autoload": {
@@ -48,6 +55,27 @@
             "@php artisan config:clear --ansi @no_additional_args",
             "@php artisan test"
         ],
+        "cs:check": "@php vendor/bin/php-cs-fixer fix --dry-run --diff --using-cache=no",
+        "cs:fix": "@php vendor/bin/php-cs-fixer fix",
+        "analyse": "@php vendor/bin/phpstan analyse --no-progress --memory-limit=1G",
+        "analyse:architecture": "@php vendor/bin/deptrac analyse --config-file=deptrac.yaml --no-progress --no-cache",
+        "test:phpunit": "@php vendor/bin/phpunit --log-junit storage/quality/phpunit.xml",
+        "test:behat": "@php vendor/bin/behat --strict --no-interaction --format=progress",
+        "test:mutation": "@php -d pcov.enabled=1 vendor/bin/infection --with-uncovered --no-progress --no-interaction",
+        "ci": [
+            "@ci:checks",
+            "@test:mutation"
+        ],
+        "ci:checks": [
+            "Composer\\Config::disableProcessTimeout",
+            "@composer validate",
+            "@composer audit --locked --no-interaction",
+            "@cs:check",
+            "@analyse",
+            "@analyse:architecture",
+            "@test:phpunit",
+            "@test:behat"
+        ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"
@@ -78,7 +106,8 @@
         "sort-packages": true,
         "allow-plugins": {
             "pestphp/pest-plugin": true,
-            "php-http/discovery": true
+            "php-http/discovery": true,
+            "infection/extension-installer": true
         }
     },
     "minimum-stability": "stable",

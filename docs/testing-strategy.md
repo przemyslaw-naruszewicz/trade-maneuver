@@ -77,8 +77,9 @@ Feature: Idempotent execution instructions
 
 ## Delivery and adoption
 
+- For CI and environment configuration changes, follow the [CI change verification process](../SDLC.md#changes-to-ci-configuration). Run `make ci-lint` locally; GitHub Actions also runs it before the application pipeline.
 - A change must include tests at the level that proves its behavior. Run the narrowest relevant tests during development and the applicable automated suites in CI.
 - Treat PHPUnit, Behat integration scenarios, Infection, and architecture checks as required parts of the target strategy. Contract and automated E2E suites are planned additions.
-- Run the shared local and GitHub Actions pipeline with `make ci`; see [README](../README.md#quality-checks) for its checks, mutation thresholds, and reports. PHPStan with Larastan and PHP CS Fixer are also configured. Deptrac is installed and runs in CI with one placeholder layer and an empty ruleset; boundary enforcement remains pending.
+- Run the shared local and GitHub Actions pipeline with `make ci`; see [README](../README.md#quality-checks) for its checks, mutation thresholds, and reports. GitHub Actions checks pull requests without Infection and includes mutation testing on pushes to `main` and manual dispatch. Local `make ci` includes Infection by default; `CI_WITH_MUTATION=0 make ci` runs the pull-request checks. PHPStan with Larastan and PHP CS Fixer are also configured. Deptrac is installed and runs in CI with one placeholder layer and an empty ruleset; boundary enforcement remains pending.
 - When introducing the target source layout, extend PHPUnit's source coverage configuration and Infection's source directories beyond `app/` to include `src/`, and add `src/` to PHPStan's paths. A passing run that omits the intended domain and application code provides no evidence about it.
 - Existing skeleton tests cover only basic integration. Add Behat scenarios as business flows are implemented and keep PHPUnit adapter tests focused on technical behavior.
