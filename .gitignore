@@ -5,6 +5,7 @@
 !.env.example
 .phpactor.json
 .phpunit.result.cache
+/.deptrac.cache
 /.codex
 /.cursor/
 /.idea
@@ -38,3 +39,6 @@ AGENTS.local.md
 core
 core.*
 /docs_internal
+/skills-lock.json
+/storage/quality/
+/storage/framework/testing/infection/

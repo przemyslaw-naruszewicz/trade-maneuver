@@ -1,5 +1,7 @@
 # trade-maneuver
 
+Trade Maneuver will be an execution microservice that receives instructions from an analytics application, validates them against domain rules, executes them, and exposes their status and outcomes. For now, see [the integration overview](docs/integration.md) for an outline of the planned solution.
+
 Laravel 13, PHP 8.5 and PostgreSQL 18 with Eloquent. The local environment runs in Docker Compose; the host only needs Docker with Compose v2+ and a `sh` shell. Make is optional.
 
 Laravel 13 is the current stable line, with security support until March 17, 2028: [support policy](https://laravel.com/docs/13.x/releases). Exact application dependency versions are recorded in `composer.lock` and `package-lock.json`. Images are pinned to PHP, PostgreSQL and Node.js release lines, and Nginx follows the `stable-alpine` channel.
@@ -43,6 +45,8 @@ make migrate                  # run new migrations
 make test                     # tests on a separate PostgreSQL database
 make build                    # build frontend assets
 make format                   # Laravel Pint
+make ci                       # complete local CI pipeline in Docker
+make ci-lint                  # validate workflows, shell scripts and Compose
 ```
 
 Without Make:
@@ -59,6 +63,18 @@ docker compose logs -f
 ```
 
 `make down` also removes the `public/hot` marker, so after Vite is stopped Laravel can use previously built assets. When running `docker compose down` manually and working without Vite, remove that marker yourself. The standard `composer run dev` and `composer run setup` scripts come from the Laravel skeleton; in this environment use `make up` and `make setup`, which manage the separate containers.
+
+## Quality checks
+
+For CI configuration changes, follow the [three-step verification process](SDLC.md#changes-to-ci-configuration). `make ci-lint` checks workflows, shell scripts, and Compose; GitHub Actions runs it before building the PHP image.
+
+Run `make ci` (or `sh bin/ci`) from the host. It builds the PHP image with PCOV, installs locked Composer dependencies, starts PostgreSQL, ensures the separate test database exists, and runs `composer ci` in a disposable PHP container with test configuration. It keeps the existing application key and database data. PCOV is disabled during normal development and enabled for mutation coverage.
+
+The pipeline runs Composer validation and `composer audit --locked`, PHP CS Fixer in check mode, PHPStan with Larastan at level 8, Deptrac, PHPUnit, Behat, and Infection. PHP CS Fixer follows PSR-12 with explicit adjustments matching the existing Pint style. Infection checks all configured application sources, including uncovered code, with minimum MSI 80% and covered MSI 100%; it fails when no mutations are generated. These initial thresholds apply to the small skeleton and should be reviewed as business code is introduced.
+
+GitHub Actions runs `make ci` for pull requests, pushes to `main`, and manual dispatch. Pull requests run all checks except Infection; pushes to `main` and manual runs include mutation testing. Docker build layers and Composer downloads are cached between runs. Local `make ci` includes Infection by default; use `CI_WITH_MUTATION=0 make ci` for the pull-request checks. `CI_SKIP_BUILD=1` reuses an already built PHP image, as the workflow does after its cached build step. Composer downloads are kept in `storage/framework/cache/composer`.
+
+PHPUnit and Infection reports are written to `storage/quality/` and uploaded as workflow artifacts for seven days. The current Behat scenario checks service health; business scenarios still need implementation. Deptrac runs with an initial `deptrac.yaml` configuration, one placeholder layer, and an empty ruleset; it does not yet enforce architectural boundaries. Run it separately with `docker compose exec app composer analyse:architecture`.
 
 ## PostgreSQL and Eloquent
 

@@ -1,0 +1,16 @@
+deptrac:
+    paths:
+        - app
+        - bootstrap
+        - config
+        - database
+        - routes
+    exclude_files:
+        - '#/bootstrap/cache/#'
+    # Deptrac requires a layer; this placeholder imposes no architectural boundaries.
+    layers:
+        - name: Project
+          collectors:
+              - type: directory
+                value: '^%projectDirectory%/(app|bootstrap|config|database|routes)/'
+    ruleset: []
