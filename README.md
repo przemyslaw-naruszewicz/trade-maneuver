@@ -2,6 +2,8 @@
 
 Trade Maneuver will be an execution microservice that receives instructions from an analytics application, validates them against domain rules, executes them, and exposes their status and outcomes. For now, see [the integration overview](docs/integration.md) for an outline of the planned solution.
 
+Follow the [SDLC contract](SDLC.md) for task preparation, approval, GitHub Issues, review, and delivery. It distinguishes the current CI pipeline from planned automation and CD.
+
 Laravel 13, PHP 8.5 and PostgreSQL 18 with Eloquent. The local environment runs in Docker Compose; the host only needs Docker with Compose v2+ and a `sh` shell. Make is optional.
 
 Laravel 13 is the current stable line, with security support until March 17, 2028: [support policy](https://laravel.com/docs/13.x/releases). Exact application dependency versions are recorded in `composer.lock` and `package-lock.json`. Images are pinned to PHP, PostgreSQL and Node.js release lines, and Nginx follows the `stable-alpine` channel.
