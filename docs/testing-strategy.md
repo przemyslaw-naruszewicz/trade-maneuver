@@ -77,6 +77,7 @@ Feature: Idempotent execution instructions
 
 ## Delivery and adoption
 
+- Follow the [SDLC contract](../SDLC.md) for task acceptance criteria, independent AI review, merge gates, and the planned deployment requirements.
 - For CI and environment configuration changes, follow the [CI change verification process](../SDLC.md#changes-to-ci-configuration). Run `make ci-lint` locally; GitHub Actions also runs it before the application pipeline.
 - A change must include tests at the level that proves its behavior. Run the narrowest relevant tests during development and the applicable automated suites in CI.
 - Treat PHPUnit, Behat integration scenarios, Infection, and architecture checks as required parts of the target strategy. Contract and automated E2E suites are planned additions.
