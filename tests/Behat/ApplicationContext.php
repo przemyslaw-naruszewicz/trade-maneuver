@@ -33,8 +33,8 @@ final class ApplicationContext implements Context
         $this->kernel->bootstrap();
     }
 
-    #[Given('the execution service is running')]
-    public function theExecutionServiceIsRunning(): void
+    #[Given('Trade Maneuver is running')]
+    public function tradeManeuverIsRunning(): void
     {
         Assert::assertTrue($this->application->environment('testing'));
     }
