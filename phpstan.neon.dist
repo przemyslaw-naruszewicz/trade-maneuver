@@ -13,6 +13,7 @@ parameters:
         function: 9
     paths:
         - app
+        - src
         - bootstrap/app.php
         - bootstrap/providers.php
         - config
