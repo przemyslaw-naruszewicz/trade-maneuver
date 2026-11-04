@@ -3,6 +3,7 @@ includes:
     - vendor/nesbot/carbon/extension.neon
     - vendor/phpstan/phpstan-phpunit/extension.neon
     - vendor/phpstan/phpstan-phpunit/rules.neon
+    - vendor/spaze/phpstan-disallowed-calls/extension.neon
     - vendor/tomasvotruba/cognitive-complexity/config/extension.neon
 
 parameters:
@@ -25,3 +26,14 @@ parameters:
         - behat.php
         - .php-cs-fixer.dist.php
     tmpDir: storage/framework/cache/phpstan
+    filesRootDir: %rootDir%/../../..
+    # Deptrac cannot resolve an unqualified function name inside a namespace, so PHPStan keeps package functions out of the core.
+    disallowedFunctionCalls:
+        -
+            function: '*'
+            definedIn:
+                - 'vendor/*'
+            allowExceptIn:
+                - 'src/*/Domain/*'
+                - 'src/*/Application/*'
+            message: 'Domain and Application must not call a function from an installed package.'
