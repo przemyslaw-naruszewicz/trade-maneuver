@@ -6,8 +6,9 @@ cd "$(dirname "$0")/.."
 case "${CI_WITH_MUTATION:-1}" in
     0) composer_script=ci:checks ;;
     1) composer_script=ci ;;
+    diff) composer_script=ci:diff ;;
     *)
-        echo "CI_WITH_MUTATION must be 0 or 1." >&2
+        echo "CI_WITH_MUTATION must be 0, 1, or diff." >&2
         exit 1
         ;;
 esac
