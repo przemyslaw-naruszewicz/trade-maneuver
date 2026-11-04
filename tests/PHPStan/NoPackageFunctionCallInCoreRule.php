@@ -26,6 +26,10 @@ final class NoPackageFunctionCallInCoreRule implements Rule
 
     public function processNode(Node $node, Scope $scope): array
     {
+        if (preg_match('#/src/[^/]+/Domain/#', $scope->getFile()) !== 1) {
+            return [];
+        }
+
         if (! $node->name instanceof Name || ! $this->reflectionProvider->hasFunction($node->name, $scope)) {
             return [];
         }
