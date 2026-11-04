@@ -1,0 +1,20 @@
+{
+    "$schema": "vendor/infection/infection/resources/schema.json",
+    "source": {
+        "directories": ["app"]
+    },
+    "timeout": 15,
+    "threads": 1,
+    "tmpDir": "storage/framework/testing/infection",
+    "initialTestsPhpOptions": "-d pcov.enabled=1",
+    "logs": {
+        "text": "storage/quality/infection.log",
+        "summaryJson": "storage/quality/infection-summary.json"
+    },
+    "minMsi": 80,
+    "minCoveredMsi": 100,
+    "ignoreMsiWithNoMutations": false,
+    "mutators": {
+        "@default": true
+    }
+}

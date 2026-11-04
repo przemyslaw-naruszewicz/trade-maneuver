@@ -1,0 +1,307 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1620" viewBox="0 0 1440 1620" role="img" aria-labelledby="title description">
+<title id="title">Planned Trade Maneuver integration architecture, with Proximtype as the example producer</title>
+<desc id="description">Planned integration. Proximtype is an example producer and is not integrated. The local flow will use a demo analytics application. Producers publish the v1 contract through their own outboxes. Trade Maneuver records and evaluates trade signals, creates orders that await operator approval in manual execution mode, and submits approved orders to a simulated, fictional broker during trading sessions. Signal outcomes leave through its transactional outbox, and messages it cannot process go to a dead letter queue. Each service owns its database.</desc>
+<defs>
+<marker id="arrow-ink" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="userSpaceOnUse"><path d="M1 1 L8 4.5 L1 8" fill="none" stroke="#181818" stroke-width="1.5"/></marker>
+<marker id="arrow-muted" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="userSpaceOnUse"><path d="M1 1 L8 4.5 L1 8" fill="none" stroke="#626262" stroke-width="1.5"/></marker>
+<marker id="arrow-accent" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="userSpaceOnUse"><path d="M1 1 L8 4.5 L1 8" fill="none" stroke="#b83c25" stroke-width="1.5"/></marker>
+</defs>
+<g font-family="Arial, Helvetica, Liberation Sans, sans-serif">
+<rect width="1440" height="1620" fill="#ffffff"/>
+<rect x="40" y="30" width="8" height="8" fill="#b83c25" stroke="none" stroke-width="1.2"/>
+<text x="60" y="39" fill="#626262" font-size="12" font-weight="400" text-anchor="start" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="60" dy="0">TRADE MANEUVER / SYSTEM ARCHITECTURE</tspan>
+</text>
+<text x="40" y="94" fill="#181818" font-size="44" font-weight="600" text-anchor="start">
+<tspan x="40" dy="0">Signal / Decision / Execution</tspan>
+</text>
+<text x="40" y="128" fill="#626262" font-size="16" font-weight="400" text-anchor="start">
+<tspan x="40" dy="0">One contract for multiple producers. The first iteration runs in manual execution mode.</tspan>
+</text>
+<text x="40" y="154" fill="#626262" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="40" dy="0">Planned integration. Proximtype is an example producer and is not integrated. The local flow will use a demo analytics application.</tspan>
+</text>
+<text x="40" y="186" fill="#181818" font-size="12" font-weight="400" text-anchor="start" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="40" dy="0">01 / PRODUCER</tspan>
+</text>
+<path d="M40 204 H420" fill="none" stroke="#181818" stroke-width="2" stroke-linejoin="miter"/>
+<text x="460" y="186" fill="#181818" font-size="12" font-weight="400" text-anchor="start" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="460" dy="0">02 / TRADE MANEUVER</tspan>
+</text>
+<path d="M460 204 H1080" fill="none" stroke="#181818" stroke-width="2" stroke-linejoin="miter"/>
+<text x="1120" y="186" fill="#181818" font-size="12" font-weight="400" text-anchor="start" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="1120" dy="0">03 / BROKER</tspan>
+</text>
+<path d="M1120 204 H1400" fill="none" stroke="#181818" stroke-width="2" stroke-linejoin="miter"/>
+<path d="M440 214 V1430" fill="none" stroke="#c9c9c5" stroke-width="1" stroke-linejoin="miter"/>
+<path d="M1100 214 V1430" fill="none" stroke="#c9c9c5" stroke-width="1" stroke-linejoin="miter"/>
+<path d="M230 306 V346 H144 V380" fill="none" stroke="#181818" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-ink)"/>
+<path d="M230 346 H314 V380" fill="none" stroke="#181818" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-ink)"/>
+<path d="M314 454 V494 H230 V530" fill="none" stroke="#181818" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-ink)"/>
+<path d="M388 568 H432 V248 H494" fill="none" stroke="#b83c25" stroke-width="3" stroke-linejoin="miter" marker-end="url(#arrow-accent)"/>
+<path d="M388 732 H448 V278 H494" fill="none" stroke="#b83c25" stroke-width="3" stroke-linejoin="miter" marker-end="url(#arrow-accent)"/>
+<path d="M770 296 V340" fill="none" stroke="#181818" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-ink)"/>
+<path d="M614 426 V460" fill="none" stroke="#c9c9c5" stroke-width="1.6" stroke-linejoin="miter"/>
+<path d="M916 426 V462" fill="none" stroke="#181818" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-ink)"/>
+<path d="M494 400 H476 V968 H494" fill="none" stroke="#626262" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-muted)" stroke-dasharray="6 5"/>
+<path d="M734 618 H770 V498 H838" fill="none" stroke="#c9c9c5" stroke-width="1.6" stroke-linejoin="miter"/>
+<path d="M916 534 V578" fill="none" stroke="#181818" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-ink)"/>
+<path d="M880 710 V666" fill="none" stroke="#181818" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-ink)"/>
+<path d="M786 640 H752 V738 H734" fill="none" stroke="#c9c9c5" stroke-width="1.6" stroke-linejoin="miter"/>
+<path d="M955 516 H1062 V860 H1046" fill="none" stroke="#181818" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-ink)"/>
+<path d="M1016 666 V840" fill="none" stroke="#181818" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-ink)"/>
+<path d="M1032 840 V666" fill="none" stroke="#626262" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-muted)" stroke-dasharray="6 5"/>
+<path d="M1046 870 H1150" fill="none" stroke="#181818" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-ink)"/>
+<path d="M1150 892 H1046" fill="none" stroke="#626262" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-muted)" stroke-dasharray="6 5"/>
+<path d="M1046 400 H1080 V498" fill="none" stroke="#181818" stroke-width="1.6" stroke-linejoin="miter" stroke-dasharray="6 5"/>
+<path d="M994 498 H1080 V1118 H1046" fill="none" stroke="#181818" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-ink)" stroke-dasharray="6 5"/>
+<path d="M786 655 H768 V1118 H806" fill="none" stroke="#181818" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-ink)" stroke-dasharray="6 5"/>
+<path d="M806 1140 H754" fill="none" stroke="#181818" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-ink)" stroke-dasharray="6 5"/>
+<path d="M624 1156 V1200" fill="none" stroke="#181818" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-ink)" stroke-dasharray="6 5"/>
+<path d="M494 1238 H388" fill="none" stroke="#181818" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-ink)" stroke-dasharray="6 5"/>
+<path d="M505 1225 H458 V760 H388" fill="none" stroke="#181818" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#arrow-ink)" stroke-dasharray="6 5"/>
+<rect x="72" y="226" width="316" height="80" fill="#ffffff" stroke="#181818" stroke-width="1.2"/>
+<text x="88" y="258" fill="#181818" font-size="19" font-weight="600" text-anchor="start">
+<tspan x="88" dy="0">Proximtype</tspan>
+</text>
+<text x="88" y="283" fill="#626262" font-size="13" font-weight="400" text-anchor="start">
+<tspan x="88" dy="0">Signal cleared for integration</tspan>
+</text>
+<rect x="84" y="320" width="292" height="25" fill="#ffffff" stroke="none" stroke-width="1.2"/>
+<text x="230" y="337" fill="#626262" font-size="12" font-weight="400" text-anchor="middle" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="230" dy="0">Atomic producer database write</tspan>
+</text>
+<path d="M80 392 V442 A64.0 12 0 0 0 208 442 V392" fill="#f5f5f2" stroke="#626262" stroke-width="1.2"/><ellipse cx="144.0" cy="392" rx="64.0" ry="12" fill="#ffffff" stroke="#626262" stroke-width="1.2"/>
+<text x="144.0" y="420" fill="#181818" font-size="15" font-weight="600" text-anchor="middle" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="144.0" dy="0">data</tspan>
+</text>
+<text x="144.0" y="440" fill="#626262" font-size="12" font-weight="400" text-anchor="middle">
+<tspan x="144.0" dy="0">producer-owned</tspan>
+</text>
+<path d="M244 392 V442 A70.0 12 0 0 0 384 442 V392" fill="#f5f5f2" stroke="#626262" stroke-width="1.2"/><ellipse cx="314.0" cy="392" rx="70.0" ry="12" fill="#ffffff" stroke="#626262" stroke-width="1.2"/>
+<text x="314.0" y="420" fill="#181818" font-size="15" font-weight="600" text-anchor="middle" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="314.0" dy="0">outbox</tspan>
+</text>
+<text x="314.0" y="440" fill="#626262" font-size="12" font-weight="400" text-anchor="middle">
+<tspan x="314.0" dy="0">publication intent</tspan>
+</text>
+<rect x="72" y="530" width="316" height="80" fill="#ffffff" stroke="#181818" stroke-width="1.2"/>
+<text x="88" y="562" fill="#181818" font-size="19" font-weight="600" text-anchor="start">
+<tspan x="88" dy="0">Translate and publish</tspan>
+</text>
+<text x="88" y="587" fill="#626262" font-size="13" font-weight="400" text-anchor="start">
+<tspan x="88" dy="0">tm.trade-signal.v1</tspan>
+</text>
+<text x="88" y="641" fill="#626262" font-size="14" font-weight="400" text-anchor="start">
+<tspan x="88" dy="0">Own outbox and retries.</tspan>
+<tspan x="88" dy="20.3">Publish outside the DB transaction.</tspan>
+</text>
+<rect x="72" y="692" width="316" height="92" fill="#ffffff" stroke="#626262" stroke-width="1.2" stroke-dasharray="5 5"/>
+<text x="88" y="724" fill="#181818" font-size="19" font-weight="600" text-anchor="start">
+<tspan x="88" dy="0">Another producer</tspan>
+</text>
+<text x="88" y="749" fill="#626262" font-size="13" font-weight="400" text-anchor="start">
+<tspan x="88" dy="0">Example integration / own outbox</tspan>
+</text>
+<rect x="72" y="1200" width="316" height="76" fill="#ffffff" stroke="#181818" stroke-width="1.2"/>
+<text x="88" y="1232" fill="#181818" font-size="19" font-weight="600" text-anchor="start">
+<tspan x="88" dy="0">Receive signal outcome</tspan>
+</text>
+<text x="88" y="1257" fill="#626262" font-size="13" font-weight="400" text-anchor="start">
+<tspan x="88" dy="0">Correlated by the same signal id</tspan>
+</text>
+<text x="72" y="1312" fill="#626262" font-size="12" font-weight="400" text-anchor="start" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="72" dy="0">Producer database stays private</tspan>
+</text>
+<path d="M514 220 H1026 L1046 258.0 L1026 296 H514 L494 258.0 Z" fill="#181818" stroke="#181818" stroke-width="1.5"/>
+<text x="770.0" y="250" fill="#ffffff" font-size="20" font-weight="600" text-anchor="middle">
+<tspan x="770.0" dy="0">TM intake channel</tspan>
+</text>
+<text x="770.0" y="274" fill="#d4d4d0" font-size="12" font-weight="400" text-anchor="middle" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="770.0" dy="0">tm.trade-signals / RabbitMQ</tspan>
+</text>
+<rect x="494" y="340" width="552" height="86" fill="#ffffff" stroke="#181818" stroke-width="1.2"/>
+<text x="510" y="372" fill="#181818" font-size="19" font-weight="600" text-anchor="start">
+<tspan x="510" dy="0">Signal intake</tspan>
+</text>
+<text x="510" y="397" fill="#626262" font-size="13" font-weight="400" text-anchor="start">
+<tspan x="510" dy="0">Validate v1, deduplicate by id, and record the trade signal</tspan>
+</text>
+<path d="M494 472 V524 A120.0 12 0 0 0 734 524 V472" fill="#f5f5f2" stroke="#626262" stroke-width="1.2"/><ellipse cx="614.0" cy="472" rx="120.0" ry="12" fill="#ffffff" stroke="#626262" stroke-width="1.2"/>
+<text x="614.0" y="500" fill="#181818" font-size="15" font-weight="600" text-anchor="middle" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="614.0" dy="0">inbox</tspan>
+</text>
+<text x="614.0" y="520" fill="#626262" font-size="12" font-weight="400" text-anchor="middle">
+<tspan x="614.0" dy="0">messages and trade signals</tspan>
+</text>
+<path d="M916 462 L994 498 L916 534 L838 498 Z" fill="#ffffff" stroke="#181818" stroke-width="1.2"/>
+<text x="916" y="495" fill="#181818" font-size="15" font-weight="600" text-anchor="middle">
+<tspan x="916" dy="0">Signal</tspan>
+<tspan x="916" dy="18">evaluation</tspan>
+</text>
+<text x="1004" y="488" fill="#626262" font-size="12" font-weight="400" text-anchor="start" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="1004" dy="0">no order</tspan>
+</text>
+<text x="936" y="560" fill="#626262" font-size="12" font-weight="400" text-anchor="start" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="936" dy="0">awaiting approval</tspan>
+</text>
+<text x="1058" y="533" fill="#626262" font-size="12" font-weight="400" text-anchor="end" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="1058" dy="0">instrument lookup</tspan>
+</text>
+<path d="M494 592 V644 A120.0 12 0 0 0 734 644 V592" fill="#f5f5f2" stroke="#626262" stroke-width="1.2"/><ellipse cx="614.0" cy="592" rx="120.0" ry="12" fill="#ffffff" stroke="#626262" stroke-width="1.2"/>
+<text x="614.0" y="620" fill="#181818" font-size="15" font-weight="600" text-anchor="middle" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="614.0" dy="0">investment configuration</tspan>
+</text>
+<text x="614.0" y="640" fill="#626262" font-size="12" font-weight="400" text-anchor="middle">
+<tspan x="614.0" dy="0">rules, limits, authorized producers</tspan>
+</text>
+<rect x="786" y="578" width="260" height="88" fill="#ffffff" stroke="#181818" stroke-width="1.2"/>
+<text x="802" y="610" fill="#181818" font-size="19" font-weight="600" text-anchor="start">
+<tspan x="802" dy="0">Order</tspan>
+</text>
+<text x="802" y="635" fill="#626262" font-size="13" font-weight="400" text-anchor="start">
+<tspan x="802" dy="0">Lifecycle and execution progress</tspan>
+</text>
+<text x="890" y="692" fill="#626262" font-size="12" font-weight="400" text-anchor="start" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="890" dy="0">decision</tspan>
+</text>
+<path d="M494 712 V764 A120.0 12 0 0 0 734 764 V712" fill="#f5f5f2" stroke="#626262" stroke-width="1.2"/><ellipse cx="614.0" cy="712" rx="120.0" ry="12" fill="#ffffff" stroke="#626262" stroke-width="1.2"/>
+<text x="614.0" y="740" fill="#181818" font-size="15" font-weight="600" text-anchor="middle" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="614.0" dy="0">orders</tspan>
+</text>
+<text x="614.0" y="760" fill="#626262" font-size="12" font-weight="400" text-anchor="middle">
+<tspan x="614.0" dy="0">status, progress, settings snapshot</tspan>
+</text>
+<rect x="786" y="710" width="200" height="88" fill="#ffffff" stroke="#181818" stroke-width="1.2"/>
+<text x="802" y="742" fill="#181818" font-size="19" font-weight="600" text-anchor="start">
+<tspan x="802" dy="0">Operator actions</tspan>
+</text>
+<text x="802" y="767" fill="#626262" font-size="13" font-weight="400" text-anchor="start">
+<tspan x="802" dy="0">Approve, adjust limit,</tspan>
+<tspan x="802" dy="18.849999999999998">refuse, or cancel</tspan>
+</text>
+<text x="1008" y="812" fill="#626262" font-size="12" font-weight="400" text-anchor="end" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="1008" dy="0">submit approved, cancel ↓</tspan>
+</text>
+<text x="1008" y="828" fill="#626262" font-size="12" font-weight="400" text-anchor="end" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="1008" dy="0">broker events, status ↑</tspan>
+</text>
+<path d="M494 832 V884 A120.0 12 0 0 0 734 884 V832" fill="#f5f5f2" stroke="#626262" stroke-width="1.2"/><ellipse cx="614.0" cy="832" rx="120.0" ry="12" fill="#ffffff" stroke="#626262" stroke-width="1.2"/>
+<text x="614.0" y="860" fill="#181818" font-size="15" font-weight="600" text-anchor="middle" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="614.0" dy="0">audit trail</tspan>
+</text>
+<text x="614.0" y="880" fill="#626262" font-size="12" font-weight="400" text-anchor="middle">
+<tspan x="614.0" dy="0">append-only, same transaction</tspan>
+</text>
+<rect x="786" y="840" width="260" height="80" fill="#ffffff" stroke="#181818" stroke-width="1.2"/>
+<text x="802" y="872" fill="#181818" font-size="19" font-weight="600" text-anchor="start">
+<tspan x="802" dy="0">Broker gateway</tspan>
+</text>
+<text x="802" y="897" fill="#626262" font-size="13" font-weight="400" text-anchor="start">
+<tspan x="802" dy="0">Anti-corruption layer (ACL)</tspan>
+</text>
+<text x="494" y="920" fill="#626262" font-size="12" font-weight="400" text-anchor="start" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="494" dy="0">not processable</tspan>
+</text>
+<path d="M514 930 H714 L734 968.0 L714 1006 H514 L494 968.0 Z" fill="#ffffff" stroke="#181818" stroke-width="1.5"/>
+<text x="614.0" y="960" fill="#181818" font-size="20" font-weight="600" text-anchor="middle">
+<tspan x="614.0" dy="0">Dead letter queue</tspan>
+</text>
+<text x="614.0" y="984" fill="#626262" font-size="12" font-weight="400" text-anchor="middle" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="614.0" dy="0">no signal outcome</tspan>
+</text>
+<text x="786" y="944" fill="#626262" font-size="13" font-weight="400" text-anchor="start">
+<tspan x="786" dy="0">Orders are submitted only during</tspan>
+<tspan x="786" dy="18.849999999999998">a trading session.</tspan>
+</text>
+<text x="786" y="990" fill="#626262" font-size="13" font-weight="400" text-anchor="start">
+<tspan x="786" dy="0">Own PostgreSQL database.</tspan>
+<tspan x="786" dy="18.849999999999998">No access to producer databases.</tspan>
+</text>
+<text x="494" y="1028" fill="#181818" font-size="12" font-weight="400" text-anchor="start" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="494" dy="0">OrderFilled / OrderRejected /</tspan>
+<tspan x="494" dy="18">OrderExpired / OrderCancelled /</tspan>
+<tspan x="494" dy="18">SignalDeclined (refused or lapsed)</tspan>
+</text>
+<text x="1046" y="1062" fill="#181818" font-size="12" font-weight="400" text-anchor="end" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="1046" dy="0">SignalRejected / SignalDeclined</tspan>
+</text>
+<rect x="494" y="1080" width="260" height="76" fill="#ffffff" stroke="#181818" stroke-width="1.2"/>
+<text x="510" y="1112" fill="#181818" font-size="19" font-weight="600" text-anchor="start">
+<tspan x="510" dy="0">Outbox dispatcher</tspan>
+</text>
+<text x="510" y="1137" fill="#626262" font-size="13" font-weight="400" text-anchor="start">
+<tspan x="510" dy="0">Publisher confirms and retries</tspan>
+</text>
+<path d="M806 1092 V1144 A120.0 12 0 0 0 1046 1144 V1092" fill="#f5f5f2" stroke="#626262" stroke-width="1.2"/><ellipse cx="926.0" cy="1092" rx="120.0" ry="12" fill="#ffffff" stroke="#626262" stroke-width="1.2"/>
+<text x="926.0" y="1120" fill="#181818" font-size="15" font-weight="600" text-anchor="middle" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="926.0" dy="0">outbox</tspan>
+</text>
+<text x="926.0" y="1140" fill="#626262" font-size="12" font-weight="400" text-anchor="middle">
+<tspan x="926.0" dy="0">committed signal outcomes</tspan>
+</text>
+<path d="M514 1200 H1026 L1046 1238.0 L1026 1276 H514 L494 1238.0 Z" fill="#ffffff" stroke="#181818" stroke-width="1.5"/>
+<text x="770.0" y="1230" fill="#181818" font-size="20" font-weight="600" text-anchor="middle">
+<tspan x="770.0" dy="0">TM outcome channel</tspan>
+</text>
+<text x="770.0" y="1254" fill="#626262" font-size="12" font-weight="400" text-anchor="middle" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="770.0" dy="0">tm.signal-outcomes / correlation by id</tspan>
+</text>
+<rect x="494" y="1302" width="552" height="84" fill="#ffffff" stroke="#626262" stroke-width="1.2" stroke-dasharray="5 5"/>
+<text x="510" y="1330" fill="#181818" font-size="17" font-weight="600" text-anchor="start">
+<tspan x="510" dy="0">Orchestrator</tspan>
+</text>
+<text x="510" y="1352" fill="#626262" font-size="13" font-weight="400" text-anchor="start">
+<tspan x="510" dy="0">Coordinates intake, evaluation, approval, submission, expiry, and outcome.</tspan>
+<tspan x="510" dy="18">Each step commits in its own transaction.</tspan>
+</text>
+<text x="494" y="1416" fill="#626262" font-size="12" font-weight="400" text-anchor="start" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="494" dy="0">Message acceptance ≠ execution completion</tspan>
+</text>
+<text x="1150" y="270" fill="#181818" font-size="30" font-weight="600" text-anchor="start">
+<tspan x="1150" dy="0">Simulated</tspan>
+<tspan x="1150" dy="36">broker</tspan>
+</text>
+<text x="1150" y="354" fill="#626262" font-size="16" font-weight="400" text-anchor="start">
+<tspan x="1150" dy="0">Source of truth</tspan>
+<tspan x="1150" dy="23.2">for order execution.</tspan>
+</text>
+<text x="1150" y="440" fill="#626262" font-size="16" font-weight="400" text-anchor="start">
+<tspan x="1150" dy="0">Fictional broker:</tspan>
+<tspan x="1150" dy="23.2">no real orders.</tspan>
+</text>
+<text x="1150" y="784" fill="#626262" font-size="13" font-weight="400" text-anchor="start" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="1150" dy="0">Idempotency:</tspan>
+<tspan x="1150" dy="18.849999999999998">clientOrderId</tspan>
+</text>
+<rect x="1150" y="840" width="220" height="80" fill="#ffffff" stroke="#181818" stroke-width="1.2"/>
+<text x="1166" y="872" fill="#181818" font-size="19" font-weight="600" text-anchor="start">
+<tspan x="1166" dy="0">Broker API</tspan>
+</text>
+<text x="1166" y="897" fill="#626262" font-size="13" font-weight="400" text-anchor="start">
+<tspan x="1166" dy="0">Orders, status, instruments</tspan>
+</text>
+<text x="1150" y="974" fill="#626262" font-size="16" font-weight="400" text-anchor="start">
+<tspan x="1150" dy="0">On timeout:</tspan>
+<tspan x="1150" dy="23.2">query order status.</tspan>
+</text>
+<path d="M40 1450 H1400" fill="none" stroke="#181818" stroke-width="2" stroke-linejoin="miter"/>
+<path d="M712 1472 V1548" fill="none" stroke="#c9c9c5" stroke-width="1" stroke-linejoin="miter"/>
+<text x="40" y="1486" fill="#181818" font-size="12" font-weight="400" text-anchor="start" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="40" dy="0">MANUAL MODE / FIRST ITERATION</tspan>
+</text>
+<text x="40" y="1520" fill="#181818" font-size="18" font-weight="400" text-anchor="start">
+<tspan x="40" dy="0">The operator approves each order in a GUI.</tspan>
+</text>
+<text x="744" y="1486" fill="#181818" font-size="12" font-weight="400" text-anchor="start" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="744" dy="0">AUTOMATIC MODE / TARGET</tspan>
+</text>
+<text x="744" y="1520" fill="#181818" font-size="18" font-weight="400" text-anchor="start">
+<tspan x="744" dy="0">Simulated orders are submitted without operator approval.</tspan>
+</text>
+<path d="M40 1570 H1400" fill="none" stroke="#c9c9c5" stroke-width="1" stroke-linejoin="miter"/>
+<text x="40" y="1596" fill="#626262" font-size="12" font-weight="400" text-anchor="start" font-family="Consolas, Liberation Mono, DejaVu Sans Mono, monospace">
+<tspan x="40" dy="0">v1 CONTRACT / heavy line   |   SIGNAL OUTCOMES, DEAD LETTERS, BROKER RESPONSES / dashed line   |   PostgreSQL / cylinder</tspan>
+</text>
+</g>
+</svg>

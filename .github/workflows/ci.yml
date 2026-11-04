@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Validate CI configuration
+        run: make ci-lint
+
+      - name: Cache Composer downloads
+        uses: actions/cache@v5
+        with:
+          path: storage/framework/cache/composer
+          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build PHP image
+        uses: docker/build-push-action@v7
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: 'false'
+        with:
+          context: .
+          file: docker/php/Dockerfile
+          load: true
+          tags: trade-maneuver-php:dev
+          cache-from: type=gha,scope=php
+          cache-to: type=gha,scope=php,mode=max,ignore-error=true,timeout=2m
+
+      - name: Run local CI pipeline
+        env:
+          CI_SKIP_BUILD: '1'
+          CI_WITH_MUTATION: ${{ github.event_name == 'pull_request' && '0' || '1' }}
+        run: make ci
+
+      - name: Upload quality reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-reports
+          path: storage/quality/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Stop CI services
+        if: always()
+        run: docker compose down --remove-orphans

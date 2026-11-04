@@ -1,0 +1,46 @@
+#!/bin/sh
+set -eu
+
+cd "$(dirname "$0")/.."
+
+case "${CI_WITH_MUTATION:-1}" in
+    0) composer_script=ci:checks ;;
+    1) composer_script=ci ;;
+    *)
+        echo "CI_WITH_MUTATION must be 0 or 1." >&2
+        exit 1
+        ;;
+esac
+
+if [ ! -f .env ]; then
+    cp .env.example .env
+fi
+
+if [ "${CI_SKIP_BUILD:-0}" != 1 ]; then
+    docker compose build app
+fi
+mount_owner=$(docker compose run --rm -T --no-deps --user 0:0 app stat -c '%u:%g' /var/www/html)
+export LOCAL_UID="${LOCAL_UID:-${mount_owner%:*}}"
+export LOCAL_GID="${LOCAL_GID:-${mount_owner#*:}}"
+
+docker compose run --rm -T --no-deps \
+    -e COMPOSER_CACHE_DIR=/var/www/html/storage/framework/cache/composer \
+    app composer install --no-interaction --prefer-dist --no-progress
+docker compose up -d --wait postgres
+docker compose exec -T postgres sh /docker-entrypoint-initdb.d/10-create-test-database.sh
+
+printf 'Running CI checks: composer %s\n' "$composer_script"
+
+docker compose run --rm -T --no-deps \
+    -e APP_ENV=testing \
+    -e APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= \
+    -e APP_CONFIG_CACHE=/tmp/trade-maneuver-ci-config.php \
+    -e DB_CONNECTION=pgsql \
+    -e DB_HOST=postgres \
+    -e DB_PORT=5432 \
+    -e DB_DATABASE=trade_maneuver_testing \
+    -e DB_URL= \
+    -e CACHE_STORE=array \
+    -e SESSION_DRIVER=array \
+    -e QUEUE_CONNECTION=sync \
+    app composer "$composer_script"

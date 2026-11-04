@@ -1,0 +1,42 @@
+#!/bin/sh
+set -eu
+
+cd "$(dirname "$0")/.."
+
+if [ ! -f .env ]; then
+    cp .env.example .env
+fi
+
+docker compose build --pull app
+
+# Container UIDs differ between rootful and rootless Docker.
+mount_owner=$(docker compose run --rm -T --no-deps --user 0:0 app stat -c '%u:%g' /var/www/html)
+if ! grep -q '^LOCAL_UID=' .env; then
+    printf '\nLOCAL_UID=%s\n' "${LOCAL_UID:-${mount_owner%:*}}" >> .env
+fi
+if ! grep -q '^LOCAL_GID=' .env; then
+    printf 'LOCAL_GID=%s\n' "${LOCAL_GID:-${mount_owner#*:}}" >> .env
+fi
+
+docker compose stop nginx app queue scheduler node
+docker compose run --rm -T --no-deps app composer install --no-interaction --prefer-dist
+if ! grep -q '^APP_KEY=base64:' .env; then
+    docker compose run --rm -T --no-deps app php artisan key:generate --no-interaction
+fi
+
+docker compose up -d --wait postgres app
+docker compose exec -T app php artisan config:clear --no-interaction
+docker compose exec -T app php artisan migrate --no-interaction
+docker compose exec -T app sh -c '[ -L public/storage ] || php artisan storage:link --no-interaction'
+# This also creates the test database for an existing PostgreSQL volume.
+docker compose exec -T postgres sh /docker-entrypoint-initdb.d/10-create-test-database.sh
+
+if [ -f package-lock.json ]; then
+    docker compose run --rm -T --no-deps node npm ci
+else
+    docker compose run --rm -T --no-deps node npm install
+fi
+docker compose run --rm -T --no-deps node npm run build
+docker compose up -d --wait
+
+printf '\nEnvironment ready. Application URL: APP_URL in .env (default http://localhost:8080).\n'
