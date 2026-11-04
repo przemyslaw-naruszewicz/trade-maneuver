@@ -30,7 +30,10 @@ final class NoPackageFunctionCallInCoreRule implements Rule
 
     public function processNode(Node $node, Scope $scope): array
     {
-        if (preg_match('#/src/[^/]+/(Domain|Application)/#', $scope->getFile()) !== 1) {
+        // Inside a trait, Scope::getFile() returns the file of the class that uses the trait.
+        $file = $scope->getTraitReflection()?->getFileName() ?? $scope->getFile();
+
+        if (preg_match('#/src/[^/]+/(Domain|Application)/#', $file) !== 1) {
             return [];
         }
 
