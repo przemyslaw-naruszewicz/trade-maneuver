@@ -28,6 +28,14 @@ final class NoPackageFunctionCallInCoreRuleTest extends RuleTestCase
         $this->analyse([$this->fixture('Domain/AllowedFunctionCalls.php')], []);
     }
 
+    public function test_the_rule_ignores_calls_from_infrastructure_and_ui(): void
+    {
+        $this->analyse([
+            $this->fixture('Infrastructure/PackageFunctionCalls.php'),
+            $this->fixture('Ui/PackageFunctionCalls.php'),
+        ], []);
+    }
+
     protected function getRule(): Rule
     {
         return new NoPackageFunctionCallInCoreRule(self::createReflectionProvider());
