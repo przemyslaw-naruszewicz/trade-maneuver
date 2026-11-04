@@ -26,7 +26,7 @@ final class NoPackageFunctionCallInCoreRule implements Rule
 
     public function processNode(Node $node, Scope $scope): array
     {
-        if (preg_match('#/src/[^/]+/Domain/#', $scope->getFile()) !== 1) {
+        if (preg_match('#/src/[^/]+/(Domain|Application)/#', $scope->getFile()) !== 1) {
             return [];
         }
 
