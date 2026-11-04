@@ -37,6 +37,16 @@ final class NoPackageFunctionCallInCoreRuleTest extends RuleTestCase
         ]);
     }
 
+    public function test_the_rule_reports_a_domain_trait_used_outside_the_core(): void
+    {
+        $this->analyse([
+            $this->fixture('Infrastructure/ClassUsingDomainTrait.php'),
+            $this->fixture('Domain/PackageFunctionTrait.php'),
+        ], [
+            [$this->errorFor('now'), 11],
+        ]);
+    }
+
     public function test_the_rule_allows_php_and_project_functions_in_the_core(): void
     {
         $this->analyse([$this->fixture('Domain/AllowedFunctionCalls.php')], []);
