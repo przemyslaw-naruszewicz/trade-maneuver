@@ -175,9 +175,7 @@ If `main` changes before merge, including through a task change, update the task
 
 The [testing strategy](docs/testing-strategy.md) defines test scope. [README](README.md#quality-checks) describes the current checks and commands. AI review does not replace CI. Changes to CI policies require separate approval from the owner.
 
-PR CI currently skips Infection. Full CI, which runs on pushes to `main` and on manual dispatch, includes it. The local equivalents are `CI_WITH_MUTATION=0 make ci` and `make ci`.
-
-Planned: PR CI runs Infection on the lines a PR changes, with the local equivalent `CI_WITH_MUTATION=diff make ci`. The [testing strategy](docs/testing-strategy.md#mutation-testing-with-infection) describes the check.
+PR CI runs Infection on the lines a PR changes; the [testing strategy](docs/testing-strategy.md#mutation-testing-with-infection) describes the check. Full CI, which runs on pushes to `main` and on manual dispatch, runs Infection on all configured sources. The local equivalents are `CI_WITH_MUTATION=diff make ci` and `make ci`.
 
 ### Changes to CI configuration
 
