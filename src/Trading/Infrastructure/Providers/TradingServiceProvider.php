@@ -12,4 +12,9 @@ final class TradingServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(dirname(__DIR__).'/Resources/config.php', 'trading');
     }
+
+    public function boot(): void
+    {
+        $this->loadMigrationsFrom(dirname(__DIR__).'/Resources/Migrations');
+    }
 }
