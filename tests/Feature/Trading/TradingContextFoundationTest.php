@@ -31,4 +31,8 @@ final class TradingContextFoundationTest extends TestCase
 
         $this->assertStringContainsString('autoloaded', $result->output());
     }
+    public function test_the_trading_service_provider_is_registered(): void
+    {
+        $this->assertTrue($this->app->providerIsLoaded(TradingServiceProvider::class));
+    }
 }
