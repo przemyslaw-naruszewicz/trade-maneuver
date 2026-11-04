@@ -32,6 +32,10 @@ final class NoPackageFunctionCallInCoreRule implements Rule
 
         $function = $this->reflectionProvider->getFunction($node->name, $scope);
 
+        if (! str_contains($function->getFileName() ?? '', '/vendor/')) {
+            return [];
+        }
+
         return [
             RuleErrorBuilder::message(sprintf(
                 'Domain and Application must not call %s(), a function from an installed package.',
