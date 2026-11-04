@@ -21,6 +21,8 @@ jobs:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
+          # Infection on changed lines needs the merge base with origin/main.
+          fetch-depth: 0
 
       - name: Validate CI configuration
         run: make ci-lint
@@ -51,7 +53,7 @@ jobs:
       - name: Run local CI pipeline
         env:
           CI_SKIP_BUILD: '1'
-          CI_WITH_MUTATION: ${{ github.event_name == 'pull_request' && '0' || '1' }}
+          CI_WITH_MUTATION: ${{ github.event_name == 'pull_request' && 'diff' || '1' }}
         run: make ci
 
       - name: Upload quality reports

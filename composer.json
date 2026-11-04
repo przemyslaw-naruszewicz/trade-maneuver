@@ -64,9 +64,14 @@
         "test:phpunit": "@php vendor/bin/phpunit --log-junit storage/quality/phpunit.xml",
         "test:behat": "@php vendor/bin/behat --strict --no-interaction --format=progress",
         "test:mutation": "@php -d pcov.enabled=1 vendor/bin/infection --with-uncovered --no-progress --no-interaction",
+        "test:mutation:diff": "@php -d pcov.enabled=1 vendor/bin/infection --git-diff-lines --git-diff-base=origin/main --ignore-msi-with-no-mutations --no-progress --no-interaction",
         "ci": [
             "@ci:checks",
             "@test:mutation"
+        ],
+        "ci:diff": [
+            "@ci:checks",
+            "@test:mutation:diff"
         ],
         "ci:checks": [
             "Composer\\Config::disableProcessTimeout",
