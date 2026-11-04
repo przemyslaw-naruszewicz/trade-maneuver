@@ -5,7 +5,7 @@
 
 Trade Maneuver will be an execution microservice: it receives trade signals from analytics applications, evaluates them against its domain rules, places orders with a simulated, fictional broker, and reports their outcomes. Integration with a real broker is out of scope. See [the integration overview](docs/integration.md) for an outline of the planned solution.
 
-Follow the [SDLC contract](SDLC.md) for task preparation, approval, GitHub Issues, review, and delivery. It distinguishes the current CI pipeline from planned automation and CD.
+Follow the [SDLC contract](SDLC.md) for task preparation, approval, review, and delivery. It distinguishes the current CI pipeline from planned automation and CD.
 
 The stack is Laravel, PHP, and PostgreSQL. Versions are defined in `composer.json`, `compose.yaml`, and `docker/php/Dockerfile`. The local environment runs in Docker Compose; the host only needs Docker with Compose v2+ and a `sh` shell. Make is optional.
 
@@ -109,6 +109,12 @@ The application connects to host `postgres` on port `5432`. An IDE or another cl
 Tests use a separate database, `trade_maneuver_testing`, created when PostgreSQL is initialized and by `bin/setup`. `phpunit.xml` enforces its name and the `pgsql` driver. `EloquentPostgresTest` verifies that a model can be created, read, updated and deleted against a real PostgreSQL database. `RefreshDatabase` runs migrations in the test database and isolates test data with transactions.
 
 PostgreSQL data stays in the volume after `make down`. Changing the credentials in `.env` does not update the users of an existing cluster, because the PostgreSQL image only initializes an empty volume.
+
+## Backlog and contributions
+
+The task backlog is in `docs/tasks/`. A task with `status: approved` on `main` holds the requirements for its implementation, and a task with `status: done` records what was delivered.
+
+This project has no [license](#license) and accepts no contributions from anyone other than its author. It does not use GitHub Issues, and pull requests from other people will not be merged.
 
 ## License
 
