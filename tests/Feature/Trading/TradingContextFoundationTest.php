@@ -35,4 +35,8 @@ final class TradingContextFoundationTest extends TestCase
     {
         $this->assertTrue($this->app->providerIsLoaded(TradingServiceProvider::class));
     }
+    public function test_the_trading_service_provider_merges_the_context_configuration(): void
+    {
+        $this->assertTrue(config()->has('trading'));
+    }
 }
