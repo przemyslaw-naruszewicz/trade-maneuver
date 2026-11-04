@@ -24,4 +24,9 @@ parameters:
         - tests
         - behat.php
         - .php-cs-fixer.dist.php
+    excludePaths:
+        - tests/PHPStan/Fixtures
     tmpDir: storage/framework/cache/phpstan
+
+rules:
+    - Tests\PHPStan\NoPackageFunctionCallInCoreRule
