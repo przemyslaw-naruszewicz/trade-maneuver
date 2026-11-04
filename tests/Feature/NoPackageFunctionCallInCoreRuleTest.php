@@ -23,6 +23,11 @@ final class NoPackageFunctionCallInCoreRuleTest extends RuleTestCase
         ]);
     }
 
+    public function test_the_rule_allows_php_and_project_functions_in_the_core(): void
+    {
+        $this->analyse([$this->fixture('Domain/AllowedFunctionCalls.php')], []);
+    }
+
     protected function getRule(): Rule
     {
         return new NoPackageFunctionCallInCoreRule(self::createReflectionProvider());
