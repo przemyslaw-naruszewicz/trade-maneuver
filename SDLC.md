@@ -1,7 +1,8 @@
 # SDLC
 
 - Status: adopted process contract. Planned automation is identified below.
-- Model: human supervision, task preparation in Markdown, delivery through GitHub Issues.
+- Model: human supervision, a Markdown task backlog, and delivery through pull requests.
+- Contributions: only the owner works on the project, directly or through agents. The project has no license, accepts no contributions from other people, and does not use GitHub Issues.
 - Agents: Codex or Claude Code, used interchangeably.
 
 Each skill, agent, or tool is a replaceable implementation of a process stage. A replacement must preserve the inputs, output artifacts, approval rules, and quality gates required by this contract.
@@ -14,47 +15,53 @@ Agent automation, including V2 review, must use the AI provider's subscription p
 
 ## 1. Workflow
 
-`Discovery → Working spec → Markdown tasks → Approval → Issue publication → Implementation/PR → CI + AI review → Merge → Full CI → CD/VPS`
+`Discovery → Working spec → Markdown tasks → Planning PR and approval → Implementation/PR → CI + AI review → Merge → Full CI → CD/VPS`
 
 | Stage | Action or outcome |
 | --- | --- |
 | Discovery | Establish the goal, scope, constraints, and risks. |
 | Working spec | The agent prepares a temporary local specification outside the repository. |
 | Markdown tasks | The agent creates `docs/tasks/<TASK-ID>.md` with an initial status of `draft`. |
-| Approval | A human reviews tasks and manually changes selected tasks to `approved`. No planning PR is required. |
-| Publication | A human starts publication of approved tasks to GitHub Issues. |
-| Implementation | An agent implements an Issue [test-first](#test-first-implementation) on a [separate branch](#branches-and-prs) and opens a PR. |
-| Validation and review | CI and an independent reviewer assess the current change against the Issue's requirements. |
-| Merge | A human approves the merge once the gates in section 5 are met. |
+| Approval | A human reviews tasks in a [planning PR](#planning-prs), sets `approved`, and merges the PR once its gates are met. |
+| Implementation | The owner or an agent implements an approved task from `main` [test-first](#test-first-implementation) on a [separate branch](#branches-and-prs) and opens a PR that sets the task to `done`. |
+| Validation and review | CI and an independent reviewer assess the current change against the approved task. |
+| Merge | A human approves the merge once the gates in section 5 are met. Only then does `done` become the authoritative status on `main`. |
 | Deployment (planned) | GitHub Actions publishes an image to GHCR and deploys it to the VPS after full CI passes for the revision being deployed. |
 
 ## 2. Requirements and source of truth
 
-The working specification helps define tasks. It stays local and does not enter the repository. Transfer every decision needed for implementation and verification into the task before publication.
+The working specification helps define tasks. It stays local and does not enter the repository. Transfer every decision needed for implementation and verification into the task before approval.
 
-Before publication, the Markdown task is authoritative. After publication, the GitHub Issue is the complete task specification and the source of its status. Implementation, PRs, and review use the Issue and the project's governing documents. They must not require access to working files or depend on those files being present on `main`. Requirements shared by several tasks must appear in each task or in an explicitly linked parent Issue.
+An approved task on `main` is the complete task specification and the source of its status. Implementation, PRs, and review use that task and the project's governing documents. They must not require access to working files. Requirements shared by several tasks must appear in each task or in an explicitly linked repository document read at the same base revision.
 
-A retained Markdown task records its preparation. Later edits to that file do not change the Issue; there is no two-way synchronization.
+| Artifact | Role |
+| --- | --- |
+| Working specification | Local preparation |
+| Draft task | Proposed scope and acceptance criteria (AC) for the owner's review |
+| Approved task on `main` | Authoritative requirements and permission to begin implementation |
+| Implementation PR | Proposed code, test evidence, independent review, and proposed task completion |
+| Completed task on `main` | Record of the requirements delivered by that change |
 
-The project author or the designated person responsible for the task changes and approves its scope and acceptance criteria (AC). Their edits to the Issue's requirements count as approval. An agent may propose changes, but the person responsible for the task decides whether to accept them.
+The project owner changes and approves a task's scope and AC through a PR. An agent may propose changes, and the owner decides whether to accept them.
 
-A substantive change requires updating the implementation and repeating review. It invalidates an earlier `PASS`, even if the code has not changed. This also applies to changes in a parent Issue's shared requirements when they affect the task. Editorial corrections that leave the meaning unchanged do not invalidate review.
+A change to scope or AC goes through its own task-change PR, separate from the implementation, under the [planning PR](#planning-prs) rules.
 
-The person responsible records any exception that changes scope or AC in the Issue. Review then assesses the revised requirements. Approval of an exception does not replace a `PASS` result.
+A substantive change requires updating the implementation and repeating review. It invalidates an earlier `PASS`, even if the code has not changed. This also applies to changes in shared requirements when they affect the task.
 
-## 3. Task preparation, approval, and publication
+An exception that changes scope or AC follows the same path. Review then assesses the revised requirements. Approval of an exception does not replace a `PASS` result.
+
+## 3. Task preparation and approval
 
 Minimal frontmatter for `docs/tasks/AUTH-002.md`:
 
 ```yaml
 ---
 id: AUTH-002
-status: draft        # draft | approved | published
-github_issue: null
+status: draft        # draft | approved | done
 ---
 ```
 
-A task contains a stable ID, goal, scope and exclusions, requirements, constraints, significant decisions, AC, dependencies, and a verification method. The `spec` and `parent_issue` fields are optional; `parent_issue` holds the number of a parent Issue with shared requirements.
+A task contains a stable ID, goal, scope and exclusions, requirements, constraints, significant decisions, AC, dependencies, and a verification method. Dependencies refer to task IDs. The `spec` field is optional.
 
 ### Task slicing
 
@@ -71,35 +78,38 @@ Before setting `approved`:
 - [ ] The outcome, scope, and exclusions are clear.
 - [ ] AC are testable and have a defined verification method. An AC verified by an automated test names its [test level](docs/testing-strategy.md#seams) and, where the behavior calculates or maps a value, gives concrete expected values taken from the requirements.
 - [ ] Dependencies, constraints, and significant risks are documented.
-- [ ] The task includes all necessary decisions from the working specification, with a link to shared requirements in a parent Issue where applicable.
+- [ ] The task includes all necessary decisions from the working specification, with a link to shared requirements in a repository document where applicable.
 - [ ] The task follows [task slicing](#task-slicing): it belongs to a milestone that ends in a result the running application can show.
-- [ ] A human has approved the complete content intended for publication.
+- [ ] A human has approved the complete final task content.
 
-Approval must cover the final content sent to GitHub Issues, including any edits made to the Markdown before publication. The `approved` status records a human decision. Agents must not approve tasks or start publication themselves.
+Approval covers the final task content at the planning PR's head. The `approved` status records a human decision, and agents must not set it.
 
-### Publication
+### Planning PRs
 
-Command: `./scripts/publish-issues.sh [--dry-run] [TASK-ID]`. Without an argument, it publishes all approved tasks. It requires an authenticated GitHub CLI (`gh`). `--dry-run` validates approved tasks and prints the Issues it would create, without contacting GitHub or changing files. Relative links in a task become links to the files on `main`, because relative links do not resolve in an Issue.
+1. Prepare each task with `status: draft`, carrying all implementation decisions from any working specification.
+2. Open a planning PR. Related tasks may share one PR to reduce approval overhead.
+3. The owner approves the final task content and sets `status: approved`. This moves `head SHA`, so the CI and independent review that count run after it.
+4. The owner merges the PR once the section 5 gates that apply to it are met.
 
-The script must:
+A task-change PR uses the same path to edit an approved task, and merging it records the owner's approval.
 
-1. Publish only `approved` tasks and validate required fields. A human assesses the substance of the definition of ready; the script must not assign `approved`.
-2. Create an Issue with the full task content, `TASK-ID`, and a link to a parent Issue where applicable.
-3. Include `TASK-ID` in the title and check both open and closed Issues before creating a new one.
-4. On success, save `github_issue: <number>` and `status: published`. On retry, recover the existing association without creating a duplicate or overwriting the Issue with Markdown content.
-5. Report failures and never mark an unpublished task as `published`.
+Planning PRs keep the same CI and independent review gates as other PRs. Review verifies the task's definition of ready and the requested documentation change. The task's behavioral AC describe the future implementation, and the planning PR does not claim them as delivered.
 
-Publication runs must not overlap in the MVP; the script refuses to start while another run holds its lock. The `published` status records publication, not completion of implementation. GitHub Issues track subsequent progress.
+### Completed tasks
+
+A completed task stays at its stable path with `status: done` and leaves active task selection. It records what was delivered at that time and does not override later requirements or current governing documents. A later fix or extension gets a new task linked to the earlier work.
 
 ## 4. Implementation and AI review
 
-A PR includes its Issue link, a description of the changes, test results, deviations, and risks. Implementation and review must follow the [architecture](docs/architecture.md), [DDD rules](docs/ddd.md), [coding standards](docs/coding-standards.md), accepted ADRs, [domain dictionary](docs/dictionary.md), and [testing strategy](docs/testing-strategy.md).
+An implementation PR identifies its task by ID and path and includes a description of the changes, test results, deviations, and risks. Implementation and review must follow the [architecture](docs/architecture.md), [DDD rules](docs/ddd.md), [coding standards](docs/coding-standards.md), accepted ADRs, [domain dictionary](docs/dictionary.md), and [testing strategy](docs/testing-strategy.md).
 
 ### Branches and PRs
 
 Every change reaches `main` through a PR from a separate branch, never by a direct push. Create the branch from an up-to-date `main` and name it `<type>/<short-description>`: the Conventional Commits type of the change and a kebab-case description, for example `docs/update-branch-rules`.
 
-A change without an Issue happens only when the owner asks for it directly. The PR description then states the requirements in place of the Issue, and the gates in section 5 apply. With no AC, the AC and red evidence gates have nothing to check.
+An implementation PR may change one task file, and only from `approved` to `done` for the task it implements. Requirement changes go through a separate task-change PR. After it merges, update the implementation branch and repeat CI and independent review. An implementation must not weaken governing documents or shared requirements to make its own work pass.
+
+A change without a Markdown task happens only when the owner asks for it directly. The PR description then states the requirements in place of the task, and the gates in section 5 apply. With no AC, the AC and red evidence gates have nothing to check.
 
 ### Test-first implementation
 
@@ -120,14 +130,23 @@ For each AC on this path, the PR lists the test and its red commit SHA. Keep red
 
 ### Independent review
 
-The independent reviewer must not modify code. Its inputs are the current Issue, any shared requirements from a parent Issue, project documents, the diff, `base SHA`, and `head SHA`.
+The independent reviewer must not modify code. Its inputs are the approved task and linked shared requirements, project documents, the diff, `base SHA`, and `head SHA`.
+
+For an implementation PR, the reviewer:
+
+1. Confirms that the branch includes current `main`.
+2. Reads the approved task and linked shared requirements from `base SHA`, rather than the branch's proposed version.
+3. Compares task files between base and head. Only the `approved` to `done` change for the implemented task is permitted. A requirement change, a change to another task file, or a task that is not `approved` at base produces `FAIL`. A missing task also produces `FAIL`, unless the PR uses the [owner-requested path](#branches-and-prs).
+
+Nothing technically blocks task-file writes in the MVP: independent review and the owner's merge check apply this comparison. A CI check may enforce it later, subject to separate approval.
 
 The review report goes into the PR and contains:
 
-- the Issue reference and reviewed `base SHA` and `head SHA`;
+- the task ID and path, or the direct-change note for an owner-requested change, and reviewed `base SHA` and `head SHA`;
+- the result of the task-file comparison;
 - a result of `PASS` (positive) or `FAIL` (negative);
 - findings classified as `BLOCKER`, `MAJOR`, or `MINOR`, with reasons;
-- the text of each assessed AC, including applicable AC from a parent Issue, and its `PASS` or `FAIL` result, with evidence or a reason why it could not be verified;
+- the text of each assessed AC, including applicable AC from linked shared requirements, and its `PASS` or `FAIL` result, with evidence or a reason why it could not be verified;
 - for each AC on the [test-first path](#test-first-implementation), its red commit, whether the test fails on an assertion at that commit, and whether later changes to its assertions appear in the PR's deviations.
 
 `PASS` requires verification of all applicable AC and no open `BLOCKER` or `MAJOR` findings. An unmet or unverifiable AC produces `FAIL`; the explanation must distinguish a defect from missing evidence. Missing or unreproducible red evidence counts as missing evidence. There is no intermediate review result. A failed review run or missing report blocks merge.
@@ -135,21 +154,22 @@ The review report goes into the PR and contains:
 A change to `head SHA` or to the requirements under section 2 invalidates the earlier result. Updating the branch against `main` follows section 5.
 
 - MVP: a human starts review in a separate agent session and checks the report. A positive result is a mandatory manual control.
-- V2: a `pull_request` workflow starts an independent AI agent in an isolated environment to perform code review. An adapter records the agent's structured report and a required check for `head SHA`. Automation must also invalidate the assessment when applicable Issue requirements change, even without a code change. The same result and validity rules apply as in the MVP.
+- V2: a `pull_request` workflow starts an independent AI agent in an isolated environment to perform code review. An adapter records the agent's structured report and a required check for `head SHA`. Automation must also invalidate the assessment when the applicable task or shared requirements change on `main`, even without a code change on the branch. The same result and validity rules apply as in the MVP.
 
 An automatic fix loop is outside the MVP.
 
 ## 5. Definition of done and merge gates
 
-- [ ] All applicable AC are met and verified; agreed changes to scope and AC are recorded in the Issue.
+- [ ] All applicable AC are met and verified; agreed changes to scope and AC reached `main` through a task-change PR.
 - [ ] Every AC on the [test-first path](#test-first-implementation) has its red evidence in the PR.
+- [ ] An implementation PR's task-file changes are limited to the permitted `approved` to `done` change.
 - [ ] The task branch includes the current state of `main` at merge time.
 - [ ] Required PR CI passes for the current change.
 - [ ] Independent AI review has a `PASS` result for the current `head SHA` and requirements.
 - [ ] A human has approved the current PR and its documented deviations.
 - [ ] Merge takes place through a PR into protected `main`; agents must not merge or bypass protections.
 
-If `main` changes before merge, update the task branch, resolve any conflicts, and rerun CI and independent review for the new `head SHA`. This applies even when the changes appear unrelated to the task. Each further change to `main` before merge requires another update and validation.
+If `main` changes before merge, including through a task change, update the task branch, resolve any conflicts, and rerun CI and independent review for the new `head SHA`. This applies even when the changes appear unrelated to the task. Each further change to `main` before merge requires another update and validation.
 
 ## 6. CI
 

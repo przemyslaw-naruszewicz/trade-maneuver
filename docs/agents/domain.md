@@ -29,7 +29,7 @@ Read `docs/dictionary.md` and the ADRs in `docs/ADR/` that touch the area. Check
 
 ## Use the dictionary's vocabulary
 
-Use dictionary terms when naming domain concepts in task titles, Issues, test names, PR text, and refactor proposals. Don't drift to synonyms.
+Use dictionary terms when naming domain concepts in task titles, test names, PR text, and refactor proposals. Don't drift to synonyms.
 
 ## Flag ADR conflicts
 

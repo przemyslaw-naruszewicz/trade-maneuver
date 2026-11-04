@@ -1,30 +1,23 @@
-# Issue tracker: GitHub Issues with SDLC task drafts
+# Issue tracker: Markdown task backlog
 
-Published tasks are GitHub Issues in this repository. Agents prepare tasks as Markdown drafts; a human approves and publishes them. [SDLC.md](../../SDLC.md) defines the process, task content, and gates. This file maps the skills that create or publish tasks onto it; [skills.md](skills.md) covers the others.
+The authoritative task backlog is `docs/tasks/` in this repository. The project does not use GitHub Issues. Agents prepare tasks as Markdown drafts; a human approves them in a planning PR. [SDLC.md](../../SDLC.md) defines the process, task content, and gates. This file maps the skills that create tasks onto it; [skills.md](skills.md) covers the others.
 
 ## Where work lives
 
 | Stage | Location | Who changes it |
 | --- | --- | --- |
 | Working spec | `docs_internal/specs/<feature-slug>.md` (gitignored, so it stays out of the repository) | Agent drafts |
-| Task | `docs/tasks/<TASK-ID>.md` | Agent drafts with `status: draft`; only a human sets `approved` |
-| Published task | GitHub Issue | The person responsible for the task; source of requirements and status (SDLC §2) |
+| Draft task | `docs/tasks/<TASK-ID>.md` with `status: draft` | Agent drafts on a planning branch |
+| Approved task | The same file on `main` with `status: approved` | Only a human sets `approved`; later changes go through a task-change PR (SDLC §2-3) |
+| Completed task | The same file on `main` with `status: done` | The implementation PR sets `done`, which takes effect on merge (SDLC §4) |
 
-A human starts publication with `scripts/publish-issues.sh` (SDLC §3). Agents don't run it.
+## Issue tracker operations
 
-## GitHub operations
+Propose requirement changes to the user; the owner decides (SDLC §2).
 
-`gh` infers the repository from `git remote`. Agents only read:
+**When a skill says "publish to the issue tracker"**, write the local draft described for that skill below.
 
-- Read an Issue: `gh issue view <number> --json number,title,body,labels,comments,state`
-- List Issues: `gh issue list --state open --json number,title,labels`
-- When an Issue links a parent Issue, read the parent too; its shared requirements apply.
-
-Agents don't create, edit, label, or close Issues, and don't publish tasks. Propose requirement changes to the user; the person responsible decides (SDLC §2). Comment on an Issue only when the user asks.
-
-**When a skill says "publish to the issue tracker"**, write the local draft described for that skill below. Never run `gh issue create`.
-
-**When a skill says "fetch the relevant ticket"**, read the published Issue with `gh issue view`. A file in `docs/tasks/` records preparation; it is not the current task.
+**When a skill says "fetch the relevant ticket"**, run `git fetch origin` and read the approved task with `git show origin/main:docs/tasks/<TASK-ID>.md`. An independent review reads it from the base SHA instead ([skills.md](skills.md#code-review)).
 
 ## Skill adaptations
 
@@ -36,13 +29,13 @@ For step 2, start from the [seams in the testing strategy](../testing-strategy.m
 
 ### to-tickets
 
-- Write one task per file at `docs/tasks/<TASK-ID>.md` (create `docs/tasks/` if missing) with the SDLC §3 frontmatter, `status: draft` and `github_issue: null`.
+- Write one task per file at `docs/tasks/<TASK-ID>.md` (create `docs/tasks/` if missing) with the SDLC §3 frontmatter and `status: draft`.
 - Use the SDLC ID format, e.g. `AUTH-002`. If no existing task sets the prefix or next number, ask.
 - Replace the skill's issue template with the task content SDLC §3 requires. Carry over every decision needed for implementation and verification, because the working spec never enters the repository (SDLC §2).
 - Apply the SDLC §3 definition of ready to every AC, including its test level and concrete expected values.
-- Express blocking edges as dependencies on other TASK-IDs or published Issue numbers. Put shared requirements in each task or in a linked parent Issue.
+- Express blocking edges as dependencies on other TASK-IDs. Put shared requirements in each task or in a linked repository document.
 - The user approving the breakdown in step 4 is not task approval. Leave `status: draft` and apply no labels; `ready-for-agent` does not replace human approval.
-- Don't edit tasks with `status: approved` or `published`.
+- Leave tasks with `status: approved` or `done` as they are. Propose a task-change PR for an approved task; a fix or extension of a `done` task gets a new task linked to it.
 
 ### wayfinder, triage
 
