@@ -6,14 +6,8 @@ deptrac:
         - database
         - routes
         - src
-        # Analysed only so that calls to Laravel's global helpers count as dependencies.
-        - vendor/laravel/framework/src/Illuminate/Collections
-        - vendor/laravel/framework/src/Illuminate/Foundation
-        - vendor/laravel/framework/src/Illuminate/Reflection
-        - vendor/laravel/framework/src/Illuminate/Support
     exclude_files:
         - '#/bootstrap/cache/#'
-        - '#/vendor/(?!laravel/framework/src/Illuminate/\w+/helpers\.php$)#'
     analyser:
         types:
             - class
@@ -63,8 +57,6 @@ deptrac:
                       value: '^(App|Database|TradeManeuver)\\'
                     - type: php_internal
                       value: '.*'
-              - type: directory
-                value: '^%projectDirectory%/vendor/'
     ruleset:
         TradingDomain: ~
         TradingApplication:
