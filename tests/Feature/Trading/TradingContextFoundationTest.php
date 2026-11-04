@@ -39,4 +39,11 @@ final class TradingContextFoundationTest extends TestCase
     {
         $this->assertTrue(config()->has('trading'));
     }
+    public function test_the_trading_service_provider_loads_the_context_migration_directory(): void
+    {
+        $this->assertContains(
+            base_path('src/Trading/Infrastructure/Resources/Migrations'),
+            $this->app->make('migrator')->paths(),
+        );
+    }
 }
