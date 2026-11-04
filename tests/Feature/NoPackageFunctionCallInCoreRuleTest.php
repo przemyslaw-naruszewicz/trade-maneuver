@@ -60,6 +60,14 @@ final class NoPackageFunctionCallInCoreRuleTest extends RuleTestCase
         ], []);
     }
 
+    public function test_the_rule_ignores_an_infrastructure_trait_used_in_the_core(): void
+    {
+        $this->analyse([
+            $this->fixture('Domain/ClassUsingInfrastructureTrait.php'),
+            $this->fixture('Infrastructure/PackageFunctionTrait.php'),
+        ], []);
+    }
+
     protected function getRule(): Rule
     {
         return new NoPackageFunctionCallInCoreRule(self::createReflectionProvider());
