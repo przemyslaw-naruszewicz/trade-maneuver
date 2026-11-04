@@ -30,6 +30,13 @@ final class NoPackageFunctionCallInCoreRuleTest extends RuleTestCase
         ]);
     }
 
+    public function test_the_rule_reports_a_package_function_used_as_a_first_class_callable(): void
+    {
+        $this->analyse([$this->fixture('Domain/PackageFunctionCallable.php')], [
+            [$this->errorFor('config'), 11],
+        ]);
+    }
+
     public function test_the_rule_allows_php_and_project_functions_in_the_core(): void
     {
         $this->analyse([$this->fixture('Domain/AllowedFunctionCalls.php')], []);
