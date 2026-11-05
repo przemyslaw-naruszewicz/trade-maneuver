@@ -5,12 +5,76 @@ deptrac:
         - config
         - database
         - routes
+        - src
     exclude_files:
         - '#/bootstrap/cache/#'
-    # Deptrac requires a layer; this placeholder imposes no architectural boundaries.
+    analyser:
+        types:
+            - class
+            - file
+            - function
+            - function_call
     layers:
-        - name: Project
+        - name: TradingDomain
+          collectors:
+              - type: directory
+                value: '^%projectDirectory%/src/Trading/Domain/'
+        - name: TradingApplication
+          collectors:
+              - type: directory
+                value: '^%projectDirectory%/src/Trading/Application/'
+        - name: TradingInfrastructure
+          collectors:
+              - type: bool
+                must:
+                    - type: directory
+                      value: '^%projectDirectory%/src/Trading/Infrastructure/'
+                must_not:
+                    - type: layer
+                      value: TradingCompositionRoot
+        - name: TradingUi
+          collectors:
+              - type: directory
+                value: '^%projectDirectory%/src/Trading/Ui/'
+        # Composition-root registration may reference concrete adapters and Ui classes.
+        - name: TradingCompositionRoot
+          collectors:
+              - type: classLike
+                value: '^TradeManeuver\\Trading\\Infrastructure\\Providers\\TradingServiceProvider$'
+        - name: RootApplication
           collectors:
               - type: directory
                 value: '^%projectDirectory%/(app|bootstrap|config|database|routes)/'
-    ruleset: []
+        # Every class outside the project and PHP itself, so a new package stays out of the core until a task allows it.
+        - name: ThirdParty
+          collectors:
+              - type: bool
+                must:
+                    - type: classLike
+                      value: '.*'
+                must_not:
+                    - type: classLike
+                      value: '^(App|Database|TradeManeuver)\\'
+                    - type: php_internal
+                      value: '.*'
+    ruleset:
+        TradingDomain: ~
+        TradingApplication:
+            - TradingDomain
+        TradingInfrastructure:
+            - TradingApplication
+            - TradingDomain
+            - ThirdParty
+        TradingUi:
+            - TradingApplication
+            - TradingDomain
+            - ThirdParty
+        TradingCompositionRoot:
+            - TradingApplication
+            - TradingDomain
+            - TradingInfrastructure
+            - TradingUi
+            - ThirdParty
+        RootApplication:
+            - TradingCompositionRoot
+            - ThirdParty
