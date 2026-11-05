@@ -1,6 +1,6 @@
 ---
 id: SDLC-001
-status: draft
+status: approved
 ---
 
 # SDLC-001: Agent-started review and shorter feedback
