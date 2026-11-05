@@ -70,6 +70,7 @@ Slice tasks so that their delivery forms milestones and the running application 
 - A milestone is a group of tasks that ends in a result that can be shown in the running application. A result that only tests can show does not end a milestone.
 - A single task need not show a result on its own, for example when it is prefactoring, but its milestone must.
 - Milestones may stay implicit. They need no field, label, or document.
+- A task with the `SDLC-` prefix changes the development process or agent tooling. It belongs to no milestone, and the rest of the definition of ready still applies to it.
 
 ### Definition of ready
 
@@ -79,7 +80,7 @@ Before setting `approved`:
 - [ ] AC are testable and have a defined verification method. An AC verified by an automated test names its [test level](docs/testing-strategy.md#seams) and, where the behavior calculates or maps a value, gives concrete expected values taken from the requirements.
 - [ ] Dependencies, constraints, and significant risks are documented.
 - [ ] The task includes all necessary decisions from the working specification, with a link to shared requirements in a repository document where applicable.
-- [ ] The task follows [task slicing](#task-slicing): it belongs to a milestone that ends in a result the running application can show.
+- [ ] The task follows [task slicing](#task-slicing): it belongs to a milestone that ends in a result the running application can show, unless it is an `SDLC-` task.
 - [ ] A human has approved the complete final task content.
 
 Approval covers the final task content at the planning PR's head. The `approved` status records a human decision, and agents must not set it.
