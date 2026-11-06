@@ -1,0 +1,106 @@
+<?php
+
+declare(strict_types=1);
+
+namespace TradeManeuver\Trading\Domain\InvestmentConfiguration;
+
+use TradeManeuver\Trading\Domain\InvestmentConfiguration\Dto\InvestmentConfigurationStateDto;
+use TradeManeuver\Trading\Domain\InvestmentConfiguration\Event\InvestmentConfigurationCreated;
+use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\AuthorizedAnalyticsApplications;
+use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\BrokerageAccount;
+use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\InvestmentConfigurationCurrency;
+use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\InvestmentConfigurationId;
+use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\InvestmentConfigurationRef;
+use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\LimitPriceTolerance;
+use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\OrderAmount;
+
+final class InvestmentConfiguration
+{
+    /** @var list<InvestmentConfigurationCreated> */
+    private array $recordedEvents = [];
+
+    private function __construct(
+        private readonly InvestmentConfigurationId $id,
+        private readonly InvestmentConfigurationRef $reference,
+        private readonly InvestmentConfigurationCurrency $currency,
+        private readonly BrokerageAccount $brokerageAccount,
+        private OrderAmount $orderAmount,
+        private LimitPriceTolerance $limitPriceTolerance,
+        private AuthorizedAnalyticsApplications $authorizedAnalyticsApplications,
+    ) {}
+
+    public static function create(
+        InvestmentConfigurationId $id,
+        InvestmentConfigurationRef $reference,
+        InvestmentConfigurationCurrency $currency,
+        BrokerageAccount $brokerageAccount,
+        OrderAmount $orderAmount,
+        LimitPriceTolerance $limitPriceTolerance,
+        AuthorizedAnalyticsApplications $authorizedAnalyticsApplications,
+    ): self {
+        $configuration = new self(
+            $id,
+            $reference,
+            $currency,
+            $brokerageAccount,
+            $orderAmount,
+            $limitPriceTolerance,
+            $authorizedAnalyticsApplications,
+        );
+        $configuration->recordedEvents[] = new InvestmentConfigurationCreated(
+            $id,
+            $reference,
+            $currency,
+            $brokerageAccount,
+            $orderAmount,
+            $limitPriceTolerance,
+            $authorizedAnalyticsApplications,
+        );
+
+        return $configuration;
+    }
+
+    /**
+     * Rebuilds a stored investment configuration without recording domain events.
+     */
+    public static function reconstitute(InvestmentConfigurationId $id, InvestmentConfigurationStateDto $state): self
+    {
+        return new self(
+            $id,
+            $state->reference,
+            $state->currency,
+            $state->brokerageAccount,
+            $state->orderAmount,
+            $state->limitPriceTolerance,
+            $state->authorizedAnalyticsApplications,
+        );
+    }
+
+    public function id(): InvestmentConfigurationId
+    {
+        return $this->id;
+    }
+
+    public function state(): InvestmentConfigurationStateDto
+    {
+        return new InvestmentConfigurationStateDto(
+            $this->reference,
+            $this->currency,
+            $this->brokerageAccount,
+            $this->orderAmount,
+            $this->limitPriceTolerance,
+            $this->authorizedAnalyticsApplications,
+        );
+    }
+
+    /**
+     * @return list<InvestmentConfigurationCreated>
+     */
+    public function releaseEvents(): array
+    {
+        $events = $this->recordedEvents;
+        $this->recordedEvents = [];
+
+        return $events;
+    }
+}

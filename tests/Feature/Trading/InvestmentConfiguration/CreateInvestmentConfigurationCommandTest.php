@@ -7,6 +7,7 @@ namespace Tests\Feature\Trading\InvestmentConfiguration;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Testing\PendingCommand;
 use Tests\TestCase;
 
 final class CreateInvestmentConfigurationCommandTest extends TestCase
@@ -29,7 +30,7 @@ final class CreateInvestmentConfigurationCommandTest extends TestCase
     {
         $this->travelTo(CarbonImmutable::parse('2026-11-06T10:15:30.123456Z'));
 
-        $this->artisan(self::COMMAND, $this->validInput())->assertSuccessful();
+        $this->createInvestmentConfiguration($this->validInput())->assertSuccessful();
 
         $configurations = DB::table('trading_investment_configurations')->get();
         $this->assertCount(1, $configurations);
@@ -50,17 +51,30 @@ final class CreateInvestmentConfigurationCommandTest extends TestCase
         $this->assertSame('investment_configuration', $auditRecord->entity_type);
         $this->assertSame($configuration->id, $auditRecord->entity_id);
         $this->assertSame('created', $auditRecord->action);
-        $this->assertSame(
-            [
-                'reference' => 'demo-investment',
-                'currency' => 'EUR',
-                'brokerageAccount' => 'DEMO-ACCOUNT-1',
-                'orderAmount' => '200.00',
-                'limitPriceTolerance' => '1.50',
-                'authorizedAnalyticsApplications' => ['demo-analytics', 'demo-research'],
-            ],
-            json_decode($auditRecord->values, true, flags: JSON_THROW_ON_ERROR),
-        );
+        $expectedValues = [
+            'reference' => 'demo-investment',
+            'currency' => 'EUR',
+            'brokerageAccount' => 'DEMO-ACCOUNT-1',
+            'orderAmount' => '200.00',
+            'limitPriceTolerance' => '1.50',
+            'authorizedAnalyticsApplications' => ['demo-analytics', 'demo-research'],
+        ];
+        $storedValues = json_decode($auditRecord->values, true, flags: JSON_THROW_ON_ERROR);
+        // jsonb stores object keys in its own order.
+        ksort($expectedValues);
+        ksort($storedValues);
+        $this->assertSame($expectedValues, $storedValues);
+    }
+
+    /**
+     * @param  array<string, string|list<string>>  $input
+     */
+    private function createInvestmentConfiguration(array $input): PendingCommand
+    {
+        $command = $this->artisan(self::COMMAND, $input);
+        $this->assertInstanceOf(PendingCommand::class, $command);
+
+        return $command;
     }
 
     /**

@@ -45,7 +45,12 @@ deptrac:
           collectors:
               - type: directory
                 value: '^%projectDirectory%/(app|bootstrap|config|database|routes)/'
-        # Every class outside the project and PHP itself, so a new package stays out of the core until a task allows it.
+        # The Money and exact-arithmetic libraries selected in ADR-0005, allowed in the Domain.
+        - name: MoneyLibrary
+          collectors:
+              - type: classLike
+                value: '^Brick\\(Money|Math)\\'
+        # Every other class outside the project and PHP itself, so a new package stays out of the core until a task allows it.
         - name: ThirdParty
           collectors:
               - type: bool
@@ -55,26 +60,33 @@ deptrac:
                 must_not:
                     - type: classLike
                       value: '^(App|Database|TradeManeuver)\\'
+                    - type: layer
+                      value: MoneyLibrary
                     - type: php_internal
                       value: '.*'
     ruleset:
-        TradingDomain: ~
+        TradingDomain:
+            - MoneyLibrary
         TradingApplication:
             - TradingDomain
         TradingInfrastructure:
             - TradingApplication
             - TradingDomain
+            - MoneyLibrary
             - ThirdParty
         TradingUi:
             - TradingApplication
             - TradingDomain
+            - MoneyLibrary
             - ThirdParty
         TradingCompositionRoot:
             - TradingApplication
             - TradingDomain
             - TradingInfrastructure
             - TradingUi
+            - MoneyLibrary
             - ThirdParty
         RootApplication:
             - TradingCompositionRoot
+            - MoneyLibrary
             - ThirdParty
