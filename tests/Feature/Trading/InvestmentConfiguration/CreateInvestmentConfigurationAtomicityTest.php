@@ -24,7 +24,7 @@ final class CreateInvestmentConfigurationAtomicityTest extends TestCase
 
         config(['trading.analytics_applications' => [['id' => 'demo-analytics']]]);
         DB::unprepared(<<<'SQL'
-            CREATE FUNCTION trading_test_fail_audit_write() RETURNS trigger LANGUAGE plpgsql AS $$
+            CREATE OR REPLACE FUNCTION trading_test_fail_audit_write() RETURNS trigger LANGUAGE plpgsql AS $$
             BEGIN
                 RAISE EXCEPTION 'audit write failed for the test';
             END

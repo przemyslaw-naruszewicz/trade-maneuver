@@ -22,7 +22,7 @@ return new class extends Migration
         });
 
         DB::unprepared(<<<'SQL'
-            CREATE FUNCTION trading_audit_records_reject_change() RETURNS trigger LANGUAGE plpgsql AS $$
+            CREATE OR REPLACE FUNCTION trading_audit_records_reject_change() RETURNS trigger LANGUAGE plpgsql AS $$
             BEGIN
                 RAISE EXCEPTION 'The audit trail is append-only.';
             END
