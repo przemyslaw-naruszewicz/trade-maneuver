@@ -24,6 +24,6 @@ final class AuthorizedAnalyticsApplicationsTest extends TestCase
         );
 
         $this->assertSame(['demo-analytics', 'demo-research'], $authorized->identifiers());
-        $this->assertCount(2, $authorized->all());
+        $this->assertSame([0, 1], array_keys($authorized->all()));
     }
 }

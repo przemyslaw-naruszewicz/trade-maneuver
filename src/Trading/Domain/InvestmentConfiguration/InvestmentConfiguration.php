@@ -111,6 +111,10 @@ final class InvestmentConfiguration
     }
 
     /**
+     * Only creation records an event, so a mutant that keeps just the first event is equivalent.
+     *
+     * @infection-ignore-all
+     *
      * @return list<InvestmentConfigurationCreated>
      */
     public function releaseEvents(): array

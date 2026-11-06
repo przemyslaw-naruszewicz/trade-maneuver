@@ -13,7 +13,7 @@ use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\AnalyticsAp
  */
 final readonly class ConfiguredAnalyticsApplicationRegistry implements AnalyticsApplicationRegistryInterface
 {
-    /** @var array<string, true> */
+    /** @var list<string> */
     private array $knownIdentifiers;
 
     /**
@@ -23,14 +23,14 @@ final readonly class ConfiguredAnalyticsApplicationRegistry implements Analytics
     {
         $knownIdentifiers = [];
         foreach ($entries as $entry) {
-            $knownIdentifiers[self::identifierOf($entry)] = true;
+            $knownIdentifiers[] = self::identifierOf($entry);
         }
         $this->knownIdentifiers = $knownIdentifiers;
     }
 
     public function isKnown(AnalyticsApplicationId $analyticsApplication): bool
     {
-        return isset($this->knownIdentifiers[$analyticsApplication->toString()]);
+        return in_array($analyticsApplication->toString(), $this->knownIdentifiers, true);
     }
 
     private static function identifierOf(mixed $entry): string

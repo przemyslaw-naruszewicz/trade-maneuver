@@ -11,7 +11,6 @@ use TradeManeuver\Trading\Application\Port\AuditTrailInterface;
 use TradeManeuver\Trading\Application\Port\ClockInterface;
 use TradeManeuver\Trading\Application\Port\TransactionManagerInterface;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Event\InvestmentConfigurationCreated;
-use TradeManeuver\Trading\Domain\InvestmentConfiguration\Exception\InvestmentConfigurationAlreadyExistsException;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Exception\InvestmentConfigurationRefAlreadyUsedException;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\InvestmentConfiguration;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Repository\InvestmentConfigurationRepositoryInterface;
@@ -51,11 +50,6 @@ final readonly class CreateInvestmentConfigurationCommandHandler
         $this->transactionManager->transactional(function () use ($investmentConfiguration, $reference, $command): void {
             if ($this->investmentConfigurations->existsWithReference($reference)) {
                 throw InvestmentConfigurationRefAlreadyUsedException::forReference($reference);
-            }
-
-            // This iteration has exactly one investment configuration.
-            if ($this->investmentConfigurations->exists()) {
-                throw InvestmentConfigurationAlreadyExistsException::create();
             }
 
             $this->investmentConfigurations->add($investmentConfiguration);

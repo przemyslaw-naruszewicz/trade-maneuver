@@ -28,11 +28,6 @@ final class InvestmentConfigurationRepository implements InvestmentConfiguration
         return new InvestmentConfigurationId(Str::uuid7()->toString());
     }
 
-    public function exists(): bool
-    {
-        return InvestmentConfigurationModel::query()->exists();
-    }
-
     public function existsWithReference(InvestmentConfigurationRef $reference): bool
     {
         return InvestmentConfigurationModel::query()->where('reference', $reference->toString())->exists();
@@ -54,7 +49,7 @@ final class InvestmentConfigurationRepository implements InvestmentConfiguration
         try {
             $model->save();
         } catch (UniqueConstraintViolationException) {
-            // A concurrent run created the single investment configuration after the existence check.
+            // The single-row index refuses a second investment configuration, also under concurrent runs.
             throw InvestmentConfigurationAlreadyExistsException::create();
         }
     }

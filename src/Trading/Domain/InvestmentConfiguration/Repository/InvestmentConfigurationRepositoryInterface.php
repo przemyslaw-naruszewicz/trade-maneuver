@@ -14,11 +14,11 @@ interface InvestmentConfigurationRepositoryInterface
 {
     public function nextIdentity(): InvestmentConfigurationId;
 
-    public function exists(): bool;
-
     public function existsWithReference(InvestmentConfigurationRef $reference): bool;
 
     /**
+     * Refuses a second investment configuration: this iteration has exactly one.
+     *
      * @throws InvestmentConfigurationAlreadyExistsException
      */
     public function add(InvestmentConfiguration $investmentConfiguration): void;

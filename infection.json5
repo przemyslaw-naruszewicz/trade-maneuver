@@ -1,7 +1,10 @@
 {
     "$schema": "vendor/infection/infection/resources/schema.json",
     "source": {
-        "directories": ["app", "src"]
+        "directories": ["app", "src"],
+        // Infection runs only the tests that cover a mutated line. Migration lines are covered by whichever test migrates
+        // first, so their mutants say nothing about the schema; PostgreSQL integration tests check it instead.
+        "excludes": ["Trading/Infrastructure/Resources/Migrations"]
     },
     "timeout": 15,
     "threads": 1,

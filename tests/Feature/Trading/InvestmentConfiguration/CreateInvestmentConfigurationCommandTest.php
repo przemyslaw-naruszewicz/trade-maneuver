@@ -31,7 +31,9 @@ final class CreateInvestmentConfigurationCommandTest extends TestCase
     {
         $this->travelTo(CarbonImmutable::parse('2026-11-06T10:15:30.123456Z'));
 
-        $this->createInvestmentConfiguration($this->validInput())->assertSuccessful();
+        $this->createInvestmentConfiguration($this->validInput())
+            ->expectsOutputToContain('The investment configuration was created.')
+            ->assertSuccessful();
 
         $configurations = DB::table('trading_investment_configurations')->get();
         $this->assertCount(1, $configurations);
