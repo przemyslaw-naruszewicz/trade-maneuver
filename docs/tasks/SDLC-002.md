@@ -1,6 +1,6 @@
 ---
 id: SDLC-002
-status: approved
+status: done
 ---
 
 # SDLC-002: Task adaptation found in review, a named review skill, and review scope by diff
@@ -31,7 +31,7 @@ Out of scope:
 - The owner records the approval as a comment on the PR that names the proposed change. Only the owner writes approval and decline comments; agents never post them.
 - The owner may decline the adaptation instead, in a PR comment that gives the reason. The task and the code stay as they are, the PR description lists the declined finding and the reason under Deviations, and the finding counts as accepted: it no longer blocks `PASS`. A later review of the same PR does not report it again.
 - The next independent review assesses the adapted task at the head SHA. It checks that the task diff between base and head contains only the `approved` to `done` change and the approved adaptation. Any other task-file change still produces `FAIL`.
-- Besides its SDLC §4 inputs, the reviewer reads only the owner's PR comments that approve or decline an adaptation. It does not read other PR comments or the PR description. The Deviations entries are for the owner's check at merge.
+- Besides its SDLC §4 inputs, the reviewer reads only the owner's PR comments that approve or decline an adaptation. It does not read other PR comments. From the PR description it reads only the requirements of a change without a task and, in a full review, the AC/test/red-commit table and the Deviations entries on test changes. The Deviations entries on task adaptations are for the owner's check at merge.
 - A requirement change that the review did not find still goes through a separate task-change PR (SDLC §2).
 
 ### Custom tooling in review
@@ -77,7 +77,7 @@ Out of scope:
 ## Acceptance criteria
 
 - [ ] Documentation check: SDLC §2 and §4 allow the task adaptation found in review, with the owner's approval as a PR comment, its own commit, the Deviations entry, and a separate task-change PR for every other requirement change.
-- [ ] Documentation check: SDLC §4 and `docs/agents/independent-review.md` add the owner's approval and decline comments to the reviewer's inputs, exclude other PR comments and the PR description, and state that agents never post those comments.
+- [ ] Documentation check: SDLC §4 and `docs/agents/independent-review.md` add the owner's approval and decline comments to the reviewer's inputs, exclude other PR comments and every part of the PR description except the requirements of a change without a task, the AC/test/red-commit table, and the Deviations entries on test changes, and state that agents never post those comments.
 - [ ] Documentation check: SDLC §4 states that an owner's decline in a PR comment, listed under Deviations, makes the finding accepted so that it no longer blocks `PASS`.
 - [ ] Documentation check: SDLC §4 (independent review) and §5 (merge gates), including the §5 item on agreed changes to scope and AC, permit the approved adaptation and still fail any other task-file change, and SDLC §4 and `docs/agents/skills.md` make the adapted task at the head SHA the spec source of the next review.
 - [ ] Documentation check: `docs/agents/independent-review.md` and the `code-review` adaptation in `docs/agents/skills.md` require the custom-tooling check as at least `MAJOR`, including tooling the task prescribes, and the "adapt the task" recommendation.
