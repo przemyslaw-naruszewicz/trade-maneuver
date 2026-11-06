@@ -6,6 +6,7 @@ namespace TradeManeuver\Trading\Domain\InvestmentConfiguration;
 
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Dto\InvestmentConfigurationStateDto;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Event\InvestmentConfigurationCreated;
+use TradeManeuver\Trading\Domain\InvestmentConfiguration\Exception\OrderAmountCurrencyMismatchException;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\AuthorizedAnalyticsApplications;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\BrokerageAccount;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\InvestmentConfigurationCurrency;
@@ -27,7 +28,9 @@ final class InvestmentConfiguration
         private OrderAmount $orderAmount,
         private LimitPriceTolerance $limitPriceTolerance,
         private AuthorizedAnalyticsApplications $authorizedAnalyticsApplications,
-    ) {}
+    ) {
+        $this->assertOrderAmountInCurrency($orderAmount);
+    }
 
     public static function create(
         InvestmentConfigurationId $id,
@@ -91,6 +94,20 @@ final class InvestmentConfiguration
             $this->limitPriceTolerance,
             $this->authorizedAnalyticsApplications,
         );
+    }
+
+    /**
+     * @throws OrderAmountCurrencyMismatchException
+     */
+    private function assertOrderAmountInCurrency(OrderAmount $orderAmount): void
+    {
+        if (! $orderAmount->currency()->isEqualTo($this->currency->currency())) {
+            throw new OrderAmountCurrencyMismatchException(sprintf(
+                'The order amount must be in the investment configuration currency %s, not %s.',
+                $this->currency->code(),
+                $orderAmount->currency()->getCurrencyCode(),
+            ));
+        }
     }
 
     /**
