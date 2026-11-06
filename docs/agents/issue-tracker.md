@@ -8,7 +8,7 @@ The authoritative task backlog is `docs/tasks/` in this repository. The project 
 | --- | --- | --- |
 | Working spec | `docs_internal/specs/<feature-slug>.md` (gitignored, so it stays out of the repository) | Agent drafts |
 | Draft task | `docs/tasks/<TASK-ID>.md` with `status: draft` | Agent drafts on a planning branch |
-| Approved task | The same file on `main` with `status: approved` | Only a human sets `approved`; later changes go through a task-change PR (SDLC §2-3) |
+| Approved task | The same file on `main` with `status: approved` | Only a human sets `approved`; later changes go through a task-change PR (SDLC §2-3), or through an owner-approved adaptation found in review (SDLC §4) |
 | Completed task | The same file on `main` with `status: done` | The implementation PR sets `done`, which takes effect on merge (SDLC §4) |
 
 ## Issue tracker operations
@@ -17,7 +17,7 @@ Propose requirement changes to the user; the owner decides (SDLC §2).
 
 **When a skill says "publish to the issue tracker"**, write the local draft described for that skill below.
 
-**When a skill says "fetch the relevant ticket"**, run `git fetch origin` and read the approved task with `git show origin/main:docs/tasks/<TASK-ID>.md`. An independent review reads it from the base SHA instead ([skills.md](skills.md#code-review)).
+**When a skill says "fetch the relevant ticket"**, run `git fetch origin` and read the approved task with `git show origin/main:docs/tasks/<TASK-ID>.md`. An independent review reads it from the base SHA instead, or from the head SHA after an adaptation the owner approved ([skills.md](skills.md#code-review)).
 
 ## Skill adaptations
 
