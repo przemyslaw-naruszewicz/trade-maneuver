@@ -97,6 +97,14 @@ final class CreateInvestmentConfigurationCommandTest extends TestCase
         );
     }
 
+    public function test_an_order_amount_in_another_currency_is_refused_without_side_effects(): void
+    {
+        $this->assertRefusedWithoutSideEffects(
+            ['--order-amount-currency' => 'USD'],
+            'The order amount must be in the investment configuration currency EUR, not USD.',
+        );
+    }
+
     /**
      * @param  array<string, string|list<string>>  $overrides
      */
