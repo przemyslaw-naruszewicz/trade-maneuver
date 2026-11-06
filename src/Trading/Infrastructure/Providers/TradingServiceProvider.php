@@ -6,9 +6,9 @@ namespace TradeManeuver\Trading\Infrastructure\Providers;
 
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\ServiceProvider;
+use Psr\Clock\ClockInterface;
 use TradeManeuver\Trading\Application\Port\AnalyticsApplicationRegistryInterface;
 use TradeManeuver\Trading\Application\Port\AuditTrailInterface;
-use TradeManeuver\Trading\Application\Port\ClockInterface;
 use TradeManeuver\Trading\Application\Port\TransactionManagerInterface;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Repository\InvestmentConfigurationRepositoryInterface;
 use TradeManeuver\Trading\Infrastructure\AnalyticsApplication\ConfiguredAnalyticsApplicationRegistry;

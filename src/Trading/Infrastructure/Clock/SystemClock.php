@@ -6,7 +6,7 @@ namespace TradeManeuver\Trading\Infrastructure\Clock;
 
 use Carbon\CarbonImmutable;
 use DateTimeImmutable;
-use TradeManeuver\Trading\Application\Port\ClockInterface;
+use Psr\Clock\ClockInterface;
 
 final class SystemClock implements ClockInterface
 {

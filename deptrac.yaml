@@ -50,6 +50,11 @@ deptrac:
           collectors:
               - type: classLike
                 value: '^Brick\\(Money|Math)\\'
+        # PSR-20, the standard clock contract, allowed in the Application.
+        - name: PsrClock
+          collectors:
+              - type: classLike
+                value: '^Psr\\Clock\\'
         # Every other class outside the project and PHP itself, so a new package stays out of the core until a task allows it.
         - name: ThirdParty
           collectors:
@@ -62,6 +67,8 @@ deptrac:
                       value: '^(App|Database|TradeManeuver)\\'
                     - type: layer
                       value: MoneyLibrary
+                    - type: layer
+                      value: PsrClock
                     - type: php_internal
                       value: '.*'
     ruleset:
@@ -69,15 +76,18 @@ deptrac:
             - MoneyLibrary
         TradingApplication:
             - TradingDomain
+            - PsrClock
         TradingInfrastructure:
             - TradingApplication
             - TradingDomain
             - MoneyLibrary
+            - PsrClock
             - ThirdParty
         TradingUi:
             - TradingApplication
             - TradingDomain
             - MoneyLibrary
+            - PsrClock
             - ThirdParty
         TradingCompositionRoot:
             - TradingApplication
@@ -85,8 +95,10 @@ deptrac:
             - TradingInfrastructure
             - TradingUi
             - MoneyLibrary
+            - PsrClock
             - ThirdParty
         RootApplication:
             - TradingCompositionRoot
             - MoneyLibrary
+            - PsrClock
             - ThirdParty

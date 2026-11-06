@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace TradeManeuver\Trading\Application\InvestmentConfiguration\Command\CreateInvestmentConfiguration;
 
+use Psr\Clock\ClockInterface;
 use TradeManeuver\Trading\Application\Audit\AuditRecordDto;
 use TradeManeuver\Trading\Application\InvestmentConfiguration\Exception\UnknownAnalyticsApplicationException;
 use TradeManeuver\Trading\Application\Port\AnalyticsApplicationRegistryInterface;
 use TradeManeuver\Trading\Application\Port\AuditTrailInterface;
-use TradeManeuver\Trading\Application\Port\ClockInterface;
 use TradeManeuver\Trading\Application\Port\TransactionManagerInterface;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Event\InvestmentConfigurationCreated;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Exception\InvestmentConfigurationRefAlreadyUsedException;
