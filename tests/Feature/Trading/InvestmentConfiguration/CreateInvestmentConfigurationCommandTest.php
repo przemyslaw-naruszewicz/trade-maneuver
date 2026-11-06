@@ -139,6 +139,18 @@ final class CreateInvestmentConfigurationCommandTest extends TestCase
         );
     }
 
+    public function test_a_duplicate_reference_is_refused_without_side_effects(): void
+    {
+        $this->createInvestmentConfiguration($this->validInput())->assertSuccessful();
+        $before = $this->storedRecords();
+
+        $this->createInvestmentConfiguration($this->validInput(['reference' => 'demo-investment']))
+            ->expectsOutputToContain('The investment configuration reference "demo-investment" is already used.')
+            ->assertFailed();
+
+        $this->assertSame($before, $this->storedRecords());
+    }
+
     /**
      * @param  array<string, string|list<string>>  $overrides
      */
