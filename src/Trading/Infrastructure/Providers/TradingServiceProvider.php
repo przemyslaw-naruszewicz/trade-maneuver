@@ -9,11 +9,13 @@ use Illuminate\Support\ServiceProvider;
 use TradeManeuver\Trading\Application\Port\AnalyticsApplicationRegistryInterface;
 use TradeManeuver\Trading\Application\Port\AuditTrailInterface;
 use TradeManeuver\Trading\Application\Port\ClockInterface;
+use TradeManeuver\Trading\Application\Port\TransactionManagerInterface;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Repository\InvestmentConfigurationRepositoryInterface;
 use TradeManeuver\Trading\Infrastructure\AnalyticsApplication\ConfiguredAnalyticsApplicationRegistry;
 use TradeManeuver\Trading\Infrastructure\Audit\PostgresAuditTrail;
 use TradeManeuver\Trading\Infrastructure\Clock\SystemClock;
 use TradeManeuver\Trading\Infrastructure\InvestmentConfiguration\InvestmentConfigurationRepository;
+use TradeManeuver\Trading\Infrastructure\Persistence\LaravelTransactionManager;
 use TradeManeuver\Trading\Ui\ConsoleCommands\CreateInvestmentConfigurationCommand;
 
 final class TradingServiceProvider extends ServiceProvider
@@ -29,6 +31,10 @@ final class TradingServiceProvider extends ServiceProvider
             fn ($app): ConfiguredAnalyticsApplicationRegistry => new ConfiguredAnalyticsApplicationRegistry(
                 (array) $app->make('config')->get('trading.analytics_applications', []),
             ),
+        );
+        $this->app->bind(
+            TransactionManagerInterface::class,
+            fn ($app): LaravelTransactionManager => new LaravelTransactionManager($app->make(ConnectionInterface::class)),
         );
         $this->app->bind(
             AuditTrailInterface::class,

@@ -9,6 +9,7 @@ use TradeManeuver\Trading\Application\InvestmentConfiguration\Exception\UnknownA
 use TradeManeuver\Trading\Application\Port\AnalyticsApplicationRegistryInterface;
 use TradeManeuver\Trading\Application\Port\AuditTrailInterface;
 use TradeManeuver\Trading\Application\Port\ClockInterface;
+use TradeManeuver\Trading\Application\Port\TransactionManagerInterface;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Event\InvestmentConfigurationCreated;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Exception\InvestmentConfigurationAlreadyExistsException;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Exception\InvestmentConfigurationRefAlreadyUsedException;
@@ -31,6 +32,7 @@ final readonly class CreateInvestmentConfigurationCommandHandler
         private AuditTrailInterface $auditTrail,
         private ClockInterface $clock,
         private AnalyticsApplicationRegistryInterface $analyticsApplicationRegistry,
+        private TransactionManagerInterface $transactionManager,
     ) {}
 
     public function handle(CreateInvestmentConfigurationCommand $command): void
@@ -46,19 +48,21 @@ final readonly class CreateInvestmentConfigurationCommandHandler
             $this->authorizedAnalyticsApplications($command->authorizedAnalyticsApplications),
         );
 
-        if ($this->investmentConfigurations->existsWithReference($reference)) {
-            throw InvestmentConfigurationRefAlreadyUsedException::forReference($reference);
-        }
+        $this->transactionManager->transactional(function () use ($investmentConfiguration, $reference, $command): void {
+            if ($this->investmentConfigurations->existsWithReference($reference)) {
+                throw InvestmentConfigurationRefAlreadyUsedException::forReference($reference);
+            }
 
-        // This iteration has exactly one investment configuration.
-        if ($this->investmentConfigurations->exists()) {
-            throw InvestmentConfigurationAlreadyExistsException::create();
-        }
+            // This iteration has exactly one investment configuration.
+            if ($this->investmentConfigurations->exists()) {
+                throw InvestmentConfigurationAlreadyExistsException::create();
+            }
 
-        $this->investmentConfigurations->add($investmentConfiguration);
-        foreach ($investmentConfiguration->releaseEvents() as $event) {
-            $this->auditTrail->record($this->auditRecordOf($event, $command->actor));
-        }
+            $this->investmentConfigurations->add($investmentConfiguration);
+            foreach ($investmentConfiguration->releaseEvents() as $event) {
+                $this->auditTrail->record($this->auditRecordOf($event, $command->actor));
+            }
+        });
     }
 
     /**
