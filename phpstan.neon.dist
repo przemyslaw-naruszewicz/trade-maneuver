@@ -9,6 +9,10 @@ includes:
 parameters:
     level: 8
     parseModelCastsMethod: true
+    # Context configuration is merged with mergeConfigFrom(), so env() there is read when the configuration is cached.
+    configDirectories:
+        - %rootDir%/../../../config
+        - %rootDir%/../../../src/*/Infrastructure/Resources
     cognitive_complexity:
         class: 40
         function: 9
@@ -25,6 +29,10 @@ parameters:
         - tests
         - behat.php
         - .php-cs-fixer.dist.php
+    excludePaths:
+        analyse:
+            # Fixtures contain the state() calls that disallowedMethodCalls must report.
+            - tests/PHPStan/data
     tmpDir: storage/framework/cache/phpstan
     filesRootDir: %rootDir%/../../..
     # Deptrac cannot resolve an unqualified function name inside a namespace, so PHPStan keeps package functions out of the core.
@@ -37,3 +45,11 @@ parameters:
                 - 'src/*/Domain/*'
                 - 'src/*/Application/*'
             message: 'Domain and Application must not call a function from an installed package.'
+    # ADR-0002: an aggregate's state() is read only by repository implementations and tests.
+    disallowedMethodCalls:
+        -
+            method: 'TradeManeuver\*\Domain\*::state()'
+            message: 'the aggregate state is a persistence contract (ADR-0002).'
+            allowInInstanceOf:
+                - 'TradeManeuver\*\Domain\*RepositoryInterface'
+                - 'PHPUnit\Framework\TestCase'

@@ -45,7 +45,17 @@ deptrac:
           collectors:
               - type: directory
                 value: '^%projectDirectory%/(app|bootstrap|config|database|routes)/'
-        # Every class outside the project and PHP itself, so a new package stays out of the core until a task allows it.
+        # The Money and exact-arithmetic libraries selected in ADR-0005, allowed in the Domain.
+        - name: MoneyLibrary
+          collectors:
+              - type: classLike
+                value: '^Brick\\(Money|Math)\\'
+        # PSR-20, the standard clock contract, allowed in the Application.
+        - name: PsrClock
+          collectors:
+              - type: classLike
+                value: '^Psr\\Clock\\'
+        # Every other class outside the project and PHP itself, so a new package stays out of the core until a task allows it.
         - name: ThirdParty
           collectors:
               - type: bool
@@ -55,26 +65,40 @@ deptrac:
                 must_not:
                     - type: classLike
                       value: '^(App|Database|TradeManeuver)\\'
+                    - type: layer
+                      value: MoneyLibrary
+                    - type: layer
+                      value: PsrClock
                     - type: php_internal
                       value: '.*'
     ruleset:
-        TradingDomain: ~
+        TradingDomain:
+            - MoneyLibrary
         TradingApplication:
             - TradingDomain
+            - PsrClock
         TradingInfrastructure:
             - TradingApplication
             - TradingDomain
+            - MoneyLibrary
+            - PsrClock
             - ThirdParty
         TradingUi:
             - TradingApplication
             - TradingDomain
+            - MoneyLibrary
+            - PsrClock
             - ThirdParty
         TradingCompositionRoot:
             - TradingApplication
             - TradingDomain
             - TradingInfrastructure
             - TradingUi
+            - MoneyLibrary
+            - PsrClock
             - ThirdParty
         RootApplication:
             - TradingCompositionRoot
+            - MoneyLibrary
+            - PsrClock
             - ThirdParty

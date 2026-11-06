@@ -1,6 +1,6 @@
 # Testing strategy
 
-Test observable business behavior against the modeling rules in [ddd.md](ddd.md) and the guarantees in [architecture.md](architecture.md), including retries, concurrency, and partial failure. This is the target strategy; the skeleton currently has PHPUnit coverage for application availability, user serialization and casts, PostgreSQL integration, and the autoloading and registration of the Trading context, plus a Behat health-check scenario. Business flows are not covered yet.
+Test observable business behavior against the modeling rules in [ddd.md](ddd.md) and the guarantees in [architecture.md](architecture.md), including retries, concurrency, and partial failure. This is the target strategy; the skeleton currently has PHPUnit coverage for application availability, user serialization and casts, PostgreSQL integration, and the autoloading and registration of the Trading context, plus a Behat health-check scenario. The investment configuration has domain unit tests, PostgreSQL mapping and atomicity tests, and a console command feature test. Behat business flows are not covered yet.
 
 ## Test pyramid
 

@@ -90,13 +90,25 @@ docker compose logs -f
 
 `make down` also removes the `public/hot` marker, so once Vite stops, Laravel serves the previously built assets. If you run `docker compose down` directly and then work without Vite, remove the marker yourself. The standard `composer run dev` and `composer run setup` scripts come from the Laravel skeleton; in this environment use `make up` and `make setup`, which manage the separate containers.
 
+## Investment configuration
+
+Trade Maneuver has exactly one investment configuration, created once at deployment. List the analytics applications it may authorize in `TRADING_ANALYTICS_APPLICATIONS`, separated by commas, then run:
+
+```sh
+docker compose exec app php artisan trading:create-investment-configuration demo-investment \
+    --currency=EUR --brokerage-account=DEMO-ACCOUNT-1 --order-amount=200.00 \
+    --limit-price-tolerance=1.50 --authorized-analytics-application=demo-analytics
+```
+
+The reference (`demo-investment`) is what trade signals send as `investmentConfigurationRef`. The currency is EUR. The order amount is in that currency unless `--order-amount-currency` says otherwise, and the tolerance is a percentage from 0 to 5. Repeat `--authorized-analytics-application` for each application, or leave it out to reject every trade signal. The command refuses invalid input and a second investment configuration without writing anything, and records the creation in the audit trail.
+
 ## Quality checks
 
 For CI configuration changes, follow the [three-step verification process](SDLC.md#changes-to-ci-configuration). `make ci-lint` checks workflows, shell scripts, and Compose; GitHub Actions runs it before building the PHP image.
 
 Run `make ci` (or `sh bin/ci`) from the host. It builds the PHP image with PCOV, installs locked Composer dependencies, starts PostgreSQL, ensures the separate test database exists, and runs `composer ci` in a disposable PHP container with test configuration. It keeps the existing application key and database data. PCOV is disabled during normal development and enabled for mutation coverage.
 
-The pipeline runs Composer validation and `composer audit --locked`, PHP CS Fixer in check mode, PHPStan with Larastan at level 8, Deptrac, PHPUnit, Behat, and Infection. PHP CS Fixer follows PSR-12 with explicit adjustments matching the existing Pint style. PHPStan also enforces cognitive complexity limits on every path it analyses, through `tomasvotruba/cognitive-complexity`: 9 per function or method and 40 per class, set in `phpstan.neon.dist`. The `spaze/phpstan-disallowed-calls` extension rejects calls from `Domain` and `Application` to functions from installed packages, which Deptrac cannot detect. Infection uses minimum MSI 80% and covered MSI 100%. The full run checks all configured application sources (`app/` and `src/`), including uncovered code, and fails when no mutations are generated. The changed-line run checks only the lines changed since the merge base with `origin/main`. It ignores lines PHPUnit does not run and passes when the changes generate no mutations. These initial thresholds apply to the small skeleton and should be reviewed as business code is introduced.
+The pipeline runs Composer validation and `composer audit --locked`, PHP CS Fixer in check mode, PHPStan with Larastan at level 8, Deptrac, PHPUnit, Behat, and Infection. PHP CS Fixer follows PSR-12 with explicit adjustments matching the existing Pint style. PHPStan also enforces cognitive complexity limits on every path it analyses, through `tomasvotruba/cognitive-complexity`: 9 per function or method and 40 per class, set in `phpstan.neon.dist`. The `spaze/phpstan-disallowed-calls` extension rejects calls from `Domain` and `Application` to functions from installed packages, which Deptrac cannot detect. Its `disallowedMethodCalls` entry reports a call to an aggregate's `state()` outside repository implementations and tests ([ADR-0002](docs/ADR/adr-0002-aggregate-state-for-eloquent-persistence.md)). Infection uses minimum MSI 80% and covered MSI 100%. The full run checks all configured application sources (`app/` and `src/`), including uncovered code, and fails when no mutations are generated. The changed-line run checks only the lines changed since the merge base with `origin/main`. It ignores lines PHPUnit does not run and passes when the changes generate no mutations. These initial thresholds apply to the small skeleton and should be reviewed as business code is introduced.
 
 GitHub Actions runs `make ci` for pull requests, pushes to `main`, and manual dispatch. Pull requests run all checks with Infection on changed lines; pushes to `main` and manual runs include the full Infection run. Docker build layers and Composer downloads are cached between runs. Local `make ci` includes the full Infection run by default. Use `CI_WITH_MUTATION=diff make ci` for the pull-request checks, after `git fetch` so that `origin/main` is current, and `CI_WITH_MUTATION=0 make ci` to skip Infection. `CI_SKIP_BUILD=1` reuses an already built PHP image, as the workflow does after its cached build step. Composer downloads are kept in `storage/framework/cache/composer`.
 
