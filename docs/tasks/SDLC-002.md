@@ -1,6 +1,6 @@
 ---
 id: SDLC-002
-status: draft
+status: approved
 ---
 
 # SDLC-002: Task adaptation found in review, a named review skill, and review scope by diff
