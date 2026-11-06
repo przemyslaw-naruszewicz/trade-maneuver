@@ -6,6 +6,8 @@
     "keywords": ["laravel", "framework"],
     "require": {
         "php": "^8.3",
+        "brick/math": "^0.20",
+        "brick/money": "^0.15.2",
         "laravel/framework": "^13.17",
         "laravel/tinker": "^3.0"
     },
