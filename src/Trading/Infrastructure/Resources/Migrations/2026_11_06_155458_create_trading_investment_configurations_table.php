@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('trading_investment_configurations', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->text('reference');
+            $table->text('reference')->unique();
             $table->char('currency', 3);
             $table->text('brokerage_account');
             $table->decimal('order_amount', 19, 2);

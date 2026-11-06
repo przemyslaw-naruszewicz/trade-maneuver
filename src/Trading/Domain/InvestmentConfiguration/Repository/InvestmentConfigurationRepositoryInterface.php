@@ -8,12 +8,15 @@ use TradeManeuver\Trading\Domain\InvestmentConfiguration\Exception\InvestmentCon
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\InvestmentConfiguration;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Repository\Exception\InvestmentConfigurationDoesNotExistException;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\InvestmentConfigurationId;
+use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\InvestmentConfigurationRef;
 
 interface InvestmentConfigurationRepositoryInterface
 {
     public function nextIdentity(): InvestmentConfigurationId;
 
     public function exists(): bool;
+
+    public function existsWithReference(InvestmentConfigurationRef $reference): bool;
 
     /**
      * @throws InvestmentConfigurationAlreadyExistsException

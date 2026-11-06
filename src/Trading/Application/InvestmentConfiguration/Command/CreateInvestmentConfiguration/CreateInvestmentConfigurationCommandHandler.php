@@ -9,6 +9,7 @@ use TradeManeuver\Trading\Application\Port\AuditTrailInterface;
 use TradeManeuver\Trading\Application\Port\ClockInterface;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Event\InvestmentConfigurationCreated;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Exception\InvestmentConfigurationAlreadyExistsException;
+use TradeManeuver\Trading\Domain\InvestmentConfiguration\Exception\InvestmentConfigurationRefAlreadyUsedException;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\InvestmentConfiguration;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Repository\InvestmentConfigurationRepositoryInterface;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\AnalyticsApplicationId;
@@ -31,15 +32,20 @@ final readonly class CreateInvestmentConfigurationCommandHandler
 
     public function handle(CreateInvestmentConfigurationCommand $command): void
     {
+        $reference = new InvestmentConfigurationRef($command->reference);
         $investmentConfiguration = InvestmentConfiguration::create(
             $this->investmentConfigurations->nextIdentity(),
-            new InvestmentConfigurationRef($command->reference),
+            $reference,
             InvestmentConfigurationCurrency::fromCode($command->currency),
             new BrokerageAccount($command->brokerageAccount),
             OrderAmount::of($command->orderAmount, $command->orderAmountCurrency),
             LimitPriceTolerance::fromPercentage($command->limitPriceTolerance),
             $this->authorizedAnalyticsApplications($command->authorizedAnalyticsApplications),
         );
+
+        if ($this->investmentConfigurations->existsWithReference($reference)) {
+            throw InvestmentConfigurationRefAlreadyUsedException::forReference($reference);
+        }
 
         // This iteration has exactly one investment configuration.
         if ($this->investmentConfigurations->exists()) {

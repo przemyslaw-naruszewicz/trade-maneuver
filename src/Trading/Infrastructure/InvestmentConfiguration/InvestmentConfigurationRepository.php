@@ -33,6 +33,11 @@ final class InvestmentConfigurationRepository implements InvestmentConfiguration
         return InvestmentConfigurationModel::query()->exists();
     }
 
+    public function existsWithReference(InvestmentConfigurationRef $reference): bool
+    {
+        return InvestmentConfigurationModel::query()->where('reference', $reference->toString())->exists();
+    }
+
     public function add(InvestmentConfiguration $investmentConfiguration): void
     {
         $state = $investmentConfiguration->state();
