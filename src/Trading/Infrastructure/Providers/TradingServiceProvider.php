@@ -6,9 +6,11 @@ namespace TradeManeuver\Trading\Infrastructure\Providers;
 
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\ServiceProvider;
+use TradeManeuver\Trading\Application\Port\AnalyticsApplicationRegistryInterface;
 use TradeManeuver\Trading\Application\Port\AuditTrailInterface;
 use TradeManeuver\Trading\Application\Port\ClockInterface;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Repository\InvestmentConfigurationRepositoryInterface;
+use TradeManeuver\Trading\Infrastructure\AnalyticsApplication\ConfiguredAnalyticsApplicationRegistry;
 use TradeManeuver\Trading\Infrastructure\Audit\PostgresAuditTrail;
 use TradeManeuver\Trading\Infrastructure\Clock\SystemClock;
 use TradeManeuver\Trading\Infrastructure\InvestmentConfiguration\InvestmentConfigurationRepository;
@@ -22,6 +24,12 @@ final class TradingServiceProvider extends ServiceProvider
 
         $this->app->bind(InvestmentConfigurationRepositoryInterface::class, InvestmentConfigurationRepository::class);
         $this->app->bind(ClockInterface::class, SystemClock::class);
+        $this->app->bind(
+            AnalyticsApplicationRegistryInterface::class,
+            fn ($app): ConfiguredAnalyticsApplicationRegistry => new ConfiguredAnalyticsApplicationRegistry(
+                (array) $app->make('config')->get('trading.analytics_applications', []),
+            ),
+        );
         $this->app->bind(
             AuditTrailInterface::class,
             fn ($app): PostgresAuditTrail => new PostgresAuditTrail($app->make(ConnectionInterface::class)),

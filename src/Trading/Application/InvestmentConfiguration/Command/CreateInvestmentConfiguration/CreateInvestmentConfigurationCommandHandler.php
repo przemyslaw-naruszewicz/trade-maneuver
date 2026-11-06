@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace TradeManeuver\Trading\Application\InvestmentConfiguration\Command\CreateInvestmentConfiguration;
 
 use TradeManeuver\Trading\Application\Audit\AuditRecordDto;
+use TradeManeuver\Trading\Application\InvestmentConfiguration\Exception\UnknownAnalyticsApplicationException;
+use TradeManeuver\Trading\Application\Port\AnalyticsApplicationRegistryInterface;
 use TradeManeuver\Trading\Application\Port\AuditTrailInterface;
 use TradeManeuver\Trading\Application\Port\ClockInterface;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Event\InvestmentConfigurationCreated;
@@ -28,6 +30,7 @@ final readonly class CreateInvestmentConfigurationCommandHandler
         private InvestmentConfigurationRepositoryInterface $investmentConfigurations,
         private AuditTrailInterface $auditTrail,
         private ClockInterface $clock,
+        private AnalyticsApplicationRegistryInterface $analyticsApplicationRegistry,
     ) {}
 
     public function handle(CreateInvestmentConfigurationCommand $command): void
@@ -65,7 +68,11 @@ final readonly class CreateInvestmentConfigurationCommandHandler
     {
         $analyticsApplications = [];
         foreach ($identifiers as $identifier) {
-            $analyticsApplications[] = new AnalyticsApplicationId($identifier);
+            $analyticsApplication = new AnalyticsApplicationId($identifier);
+            if (! $this->analyticsApplicationRegistry->isKnown($analyticsApplication)) {
+                throw UnknownAnalyticsApplicationException::forAnalyticsApplication($analyticsApplication);
+            }
+            $analyticsApplications[] = $analyticsApplication;
         }
 
         return AuthorizedAnalyticsApplications::of(...$analyticsApplications);

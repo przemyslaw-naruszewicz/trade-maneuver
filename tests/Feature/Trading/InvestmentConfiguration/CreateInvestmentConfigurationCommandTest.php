@@ -67,6 +67,15 @@ final class CreateInvestmentConfigurationCommandTest extends TestCase
         $this->assertSame($expectedValues, $storedValues);
     }
 
+    public function test_an_empty_set_of_authorized_analytics_applications_is_accepted(): void
+    {
+        $this->createInvestmentConfiguration($this->validInput(['--authorized-analytics-application' => []]))
+            ->assertSuccessful();
+
+        $configuration = DB::table('trading_investment_configurations')->sole();
+        $this->assertSame([], json_decode($configuration->authorized_analytics_applications, true, flags: JSON_THROW_ON_ERROR));
+    }
+
     public function test_a_second_run_is_refused_and_changes_nothing(): void
     {
         $this->createInvestmentConfiguration($this->validInput())->assertSuccessful();
