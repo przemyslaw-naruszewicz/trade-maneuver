@@ -8,6 +8,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\PendingCommand;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 final class CreateInvestmentConfigurationCommandTest extends TestCase
@@ -76,6 +77,37 @@ final class CreateInvestmentConfigurationCommandTest extends TestCase
             ->assertFailed();
 
         $this->assertSame($before, $this->storedRecords());
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function orderAmountsNotGreaterThanZero(): iterable
+    {
+        yield 'zero' => ['0.00'];
+        yield 'negative' => ['-200.00'];
+    }
+
+    #[DataProvider('orderAmountsNotGreaterThanZero')]
+    public function test_an_order_amount_not_greater_than_zero_is_refused_without_side_effects(string $orderAmount): void
+    {
+        $this->assertRefusedWithoutSideEffects(
+            ['--order-amount' => $orderAmount],
+            'The order amount must be greater than zero.',
+        );
+    }
+
+    /**
+     * @param  array<string, string|list<string>>  $overrides
+     */
+    private function assertRefusedWithoutSideEffects(array $overrides, string $message): void
+    {
+        $this->createInvestmentConfiguration($this->validInput($overrides))
+            ->expectsOutputToContain($message)
+            ->assertFailed();
+
+        $this->assertDatabaseEmpty('trading_investment_configurations');
+        $this->assertDatabaseEmpty('trading_audit_records');
     }
 
     /**
