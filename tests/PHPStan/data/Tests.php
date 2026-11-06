@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Fixture\Widget;
 
+use PHPUnit\Framework\TestCase;
 use TradeManeuver\Fixture\Domain\Widget\Widget;
 
-final class WidgetTest
+final class WidgetTest extends TestCase
 {
     public function test_state(Widget $widget): void
     {
