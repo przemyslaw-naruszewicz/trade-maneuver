@@ -33,7 +33,10 @@ Thumbs.db
 CLAUDE.local.md
 AGENTS.local.md
 /boost.json
-/.claude/
+/.claude/*
+!/.claude/agents/
+/.claude/agents/*
+!/.claude/agents/independent-reviewer.md
 core
 core.*
 /docs_internal

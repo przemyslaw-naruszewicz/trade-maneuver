@@ -89,7 +89,7 @@ Approval covers the final task content at the planning PR's head. The `approved`
 
 1. Prepare each task with `status: draft`, carrying all implementation decisions from any working specification.
 2. Open a planning PR. Related tasks may share one PR to reduce approval overhead.
-3. The owner approves the final task content and sets `status: approved`. This moves `head SHA`, so the CI and independent review that count run after it.
+3. The owner approves the final task content and sets `status: approved`. This moves `head SHA`, so the CI that counts runs after it. A `PASS` for the earlier head stays valid under the [status-only exception](#status-only-change-after-review); any other change requires a new review.
 4. The owner merges the PR once the section 5 gates that apply to it are met.
 
 A task-change PR uses the same path to edit an approved task, and merging it records the owner's approval.
@@ -102,22 +102,36 @@ A completed task stays at its stable path with `status: done` and leaves active 
 
 ## 4. Implementation and AI review
 
-An implementation PR identifies its task by ID and path and includes a description of the changes, test results, deviations, and risks. Implementation and review must follow the [architecture](docs/architecture.md), [DDD rules](docs/ddd.md), [coding standards](docs/coding-standards.md), accepted ADRs, [domain dictionary](docs/dictionary.md), and [testing strategy](docs/testing-strategy.md).
+An implementation PR identifies its task and describes the change, its test evidence, deviations, and risks as in [Pull request description](#pull-request-description). Implementation and review must follow the [architecture](docs/architecture.md), [DDD rules](docs/ddd.md), [coding standards](docs/coding-standards.md), accepted ADRs, [domain dictionary](docs/dictionary.md), and [testing strategy](docs/testing-strategy.md).
 
 ### Branches and PRs
 
-Every change reaches `main` through a PR from a separate branch, never by a direct push. Create the branch from an up-to-date `main` and name it `<type>/<short-description>`: the Conventional Commits type of the change and a kebab-case description, for example `docs/update-branch-rules`.
+Every change reaches `main` through a PR from a separate branch, never by a direct push. Create the branch from an up-to-date `main`. Name a task branch `<type>/<task-id>-<short-description>` in lowercase, for example `feat/tm-003-signal-intake`, and any other branch `<type>/<short-description>`, for example `docs/update-branch-rules`. The type is the Conventional Commits type of the change, and the description is in kebab case.
+
+Commits on a task branch and the PR title use `<type>: <TASK-ID> <description>`, for example `test: TM-003 reject a trade signal without an instrument`. Automatic merge commits are exempt. A planning PR and its commits name every task they add, as a range for consecutive IDs (`TM-007..TM-010`) or a list. A task-change PR names the changed task. A change without a task carries no ID.
 
 An implementation PR may change one task file, and only from `approved` to `done` for the task it implements. Requirement changes go through a separate task-change PR. After it merges, update the implementation branch and repeat CI and independent review. An implementation must not weaken governing documents or shared requirements to make its own work pass.
 
 A change without a Markdown task happens only when the owner asks for it directly. The PR description then states the requirements in place of the task, and the gates in section 5 apply. With no AC, the AC and red evidence gates have nothing to check.
+
+### Pull request description
+
+An implementation PR description contains, in this order:
+
+1. the task ID with a link to the task file;
+2. a Summary of at most five bullets;
+3. a table of AC, test, and red commit SHA;
+4. Deviations;
+5. Risks.
+
+Command output appears only where an AC requires the PR to show it, inside `<details>`.
 
 ### Test-first implementation
 
 Every AC verified by an automated test follows one path, in every task:
 
 1. Write the test and a minimal stub, then run the test. It must fail on an assertion about the required behavior. A failure from a missing class, an undefined step, a syntax error, or test setup is not yet red.
-2. Commit the red test on the task branch as `test: <description>`. This is the red commit.
+2. Commit the red test on the task branch as `test: <TASK-ID> <description>`. This is the red commit.
 3. Write the production code until the test passes, and commit it.
 4. Record any later change to that test's assertions in the PR's deviations, with the reason.
 
@@ -141,23 +155,53 @@ For an implementation PR, the reviewer:
 
 Nothing technically blocks task-file writes in the MVP: independent review and the owner's merge check apply this comparison. A CI check may enforce it later, subject to separate approval.
 
-The review report goes into the PR and contains:
-
-- the task ID and path, or the direct-change note for an owner-requested change, and reviewed `base SHA` and `head SHA`;
-- the result of the task-file comparison;
-- a result of `PASS` (positive) or `FAIL` (negative);
-- findings classified as `BLOCKER`, `MAJOR`, or `MINOR`, with reasons;
-- the text of each assessed AC, including applicable AC from linked shared requirements, and its `PASS` or `FAIL` result, with evidence or a reason why it could not be verified;
-- for each AC on the [test-first path](#test-first-implementation), its red commit, whether the test fails on an assertion at that commit, and whether later changes to its assertions appear in the PR's deviations.
-
 `PASS` requires verification of all applicable AC and no open `BLOCKER` or `MAJOR` findings. An unmet or unverifiable AC produces `FAIL`; the explanation must distinguish a defect from missing evidence. Missing or unreproducible red evidence counts as missing evidence. There is no intermediate review result. A failed review run or missing report blocks merge.
 
-A change to `head SHA` or to the requirements under section 2 invalidates the earlier result. Updating the branch against `main` follows section 5.
+A change to `head SHA` or to the requirements under section 2 invalidates the earlier result, except for the [status-only change](#status-only-change-after-review). Updating the branch against `main` follows section 5.
 
-- MVP: a human starts review in a separate agent session and checks the report. A positive result is a mandatory manual control.
+#### Review report
+
+The reviewer posts the report as one PR comment. Its visible part has at most 10 lines:
+
+```
+## Independent review: PASS|FAIL
+<TASK-ID> · base <short-sha> · head <short-sha> · task files <OK|issue> · reviewer: <tool> <model>
+AC <passed>/<assessed> PASS · red evidence <ok>/<checked> OK
+- <BLOCKER|MAJOR> <file:line>: <one-line reason>
+- AC <n> FAIL (<defect|missing evidence>): <one-line reason>
+Recommendation: <one action>
+```
+
+A collapsed `<details>` section holds everything else this section requires:
+
+- the AC table with the text, `PASS` or `FAIL` result, and evidence for each assessed AC, including applicable AC from linked shared requirements, or the reason why an AC could not be verified;
+- the red-evidence results: for each AC on the [test-first path](#test-first-implementation), its red commit, whether the test fails on an assertion at that commit, and whether later changes to its assertions appear in the PR's deviations;
+- `MINOR` findings, with reasons;
+- the task-file comparison.
+
+A change without a task shows the direct-change note in place of the task ID.
+
+#### Review flow
+
+- MVP: the implementing agent starts the review, and the owner checks the report. A positive result is a mandatory manual control.
 - V2: a `pull_request` workflow starts an independent AI agent in an isolated environment to perform code review. An adapter records the agent's structured report and a required check for `head SHA`. Automation must also invalidate the assessment when the applicable task or shared requirements change on `main`, even without a code change on the branch. The same result and validity rules apply as in the MVP.
 
+In the MVP:
+
+- Invoking `implement` on an approved task, or `to-tickets`, authorizes the agent to push the branch, open the PR, and start the independent review. Agents still never merge.
+- `implement` runs the pull-request checks from [README](README.md#quality-checks) before pushing. It does not end with a self-review.
+- The implementing agent starts exactly one reviewer subagent of its own tool, with a fresh context. Its prompt contains only the PR number, the task ID or the direct-change note, `base SHA`, and `head SHA`.
+- The reviewer follows [the reviewer instruction](docs/agents/independent-review.md), posts its report with `gh pr comment`, and returns the result and recommendation. The implementing agent relays them without editing.
+- After the reviewer returns, the implementing agent checks that the checked-out ref is unchanged and `git status --short` is empty. A difference makes the report invalid, and the agent tells the owner.
+- After `FAIL`, the agent changes nothing until the owner asks. After every change to `head SHA` that the owner asks for, including an update from `main`, the agent starts a new review without asking again.
+- When the reviewer cannot run or does not return a report, for example because of an exhausted quota or a tool error, the agent stops and tells the owner in one line. It does not switch to another reviewer. A missing report still blocks merge.
+- An independent review that the owner starts in a separate session remains valid.
+
 An automatic fix loop is outside the MVP.
+
+#### Status-only change after review
+
+A `PASS` stays valid when the only changes after the reviewed `head SHA` set `status: draft` to `approved` in tasks that review assessed. The agent checks this with `git diff <reviewed-sha> HEAD` and adds one line to the PR: "Since `<sha>` only task status changed; PASS holds." Any other change invalidates the result.
 
 ## 5. Definition of done and merge gates
 
@@ -166,7 +210,7 @@ An automatic fix loop is outside the MVP.
 - [ ] An implementation PR's task-file changes are limited to the permitted `approved` to `done` change.
 - [ ] The task branch includes the current state of `main` at merge time.
 - [ ] Required PR CI passes for the current change.
-- [ ] Independent AI review has a `PASS` result for the current `head SHA` and requirements.
+- [ ] Independent AI review has a `PASS` result for the current `head SHA` and requirements, or one that holds under the [status-only exception](#status-only-change-after-review).
 - [ ] A human has approved the current PR and its documented deviations.
 - [ ] Merge takes place through a PR into protected `main`; agents must not merge or bypass protections.
 

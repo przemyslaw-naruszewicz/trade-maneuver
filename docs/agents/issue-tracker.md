@@ -35,6 +35,9 @@ For step 2, start from the [seams in the testing strategy](../testing-strategy.m
 - Apply the SDLC §3 definition of ready to every AC, including its test level and concrete expected values.
 - Express blocking edges as dependencies on other TASK-IDs. Put shared requirements in each task or in a linked repository document.
 - The user approving the breakdown in step 4 is not task approval. Leave `status: draft` and apply no labels; `ready-for-agent` does not replace human approval.
+- A task that prescribes custom tooling, scripts, infrastructure code, or generic helpers states why no existing tool fits (AGENTS.md).
+- The planning PR title and its commits name every task they add, as a range for consecutive IDs (`TM-007..TM-010`) or a list (SDLC §4).
+- Invoking `to-tickets` authorizes pushing the planning branch, opening the planning PR, and starting the independent review under the [SDLC §4 review flow](../../SDLC.md#review-flow). Never merge.
 - Leave tasks with `status: approved` or `done` as they are. Propose a task-change PR for an approved task; a fix or extension of a `done` task gets a new task linked to it.
 
 ### wayfinder, triage
