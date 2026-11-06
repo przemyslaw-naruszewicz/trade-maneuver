@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace TradeManeuver\Trading\Infrastructure\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use TradeManeuver\Trading\Ui\ConsoleCommands\CreateInvestmentConfigurationCommand;
 
 final class TradingServiceProvider extends ServiceProvider
 {
@@ -16,5 +17,9 @@ final class TradingServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->loadMigrationsFrom(dirname(__DIR__).'/Resources/Migrations');
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([CreateInvestmentConfigurationCommand::class]);
+        }
     }
 }
