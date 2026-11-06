@@ -145,7 +145,7 @@ For each AC on this path, the PR lists the test and its red commit SHA. Keep red
 
 ### Independent review
 
-The independent reviewer must not modify code. Its inputs are the approved task and linked shared requirements, project documents, the diff, `base SHA`, `head SHA`, and the owner's PR comments that approve or decline a [task adaptation](#task-adaptation-found-in-review). It does not read other PR comments or the PR description.
+The independent reviewer must not modify code. Its inputs are the approved task and linked shared requirements, project documents, the diff, `base SHA`, `head SHA`, and the owner's PR comments that approve or decline a [task adaptation](#task-adaptation-found-in-review). It does not read other PR comments. From the PR description it reads only the requirements of a change without a task and, in a full review, the AC/test/red-commit table and the Deviations entries on test changes.
 
 The independent review uses the `code-review` skill from Matt Pocock's [mattpocock/skills](https://github.com/mattpocock/skills), `mattpocock-skills:code-review` in Claude Code, with its Standards and Spec axes run one after the other. Claude Code's built-in `code-review` skill, including `/code-review ultra`, is not used for it. [docs/agents/skills.md](docs/agents/skills.md#code-review) gives the version and the steps for a tool that lacks the skill.
 
@@ -184,7 +184,7 @@ A review finding may show that the approved task itself causes the problem, for 
 - The next independent review assesses the adapted task at `head SHA`. It checks that the task diff between base and head contains only the `approved` to `done` change and the approved adaptation.
 - A requirement change that the review did not find still goes through a separate task-change PR (section 2).
 
-The Deviations entries are for the owner's check at merge; the reviewer does not read them.
+The Deviations entries on task adaptations are for the owner's check at merge; the reviewer does not read them.
 
 #### Review report
 

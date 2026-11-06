@@ -8,7 +8,7 @@ This instruction applies to any agent tool that performs the [independent review
 - Start no agents. Where a skill runs parallel agents, such as the two axes of Matt Pocock's `code-review`, run them one after the other.
 - Use Matt Pocock's `code-review` skill, `mattpocock-skills:code-review` in Claude Code, at the version that [skills.md](skills.md#code-review) names. Never use Claude Code's built-in `code-review` skill or `/code-review ultra`.
 - Read AGENTS.md and the documents it makes mandatory, then the approved task from the base SHA, as the [code-review adaptation](skills.md#code-review) describes. After an adaptation the owner approved, read the adapted task from the head SHA.
-- Besides the inputs in SDLC §4, read only the owner's PR comments that approve or decline a [task adaptation](../../SDLC.md#task-adaptation-found-in-review). Do not read other PR comments or the PR description.
+- Besides the inputs in SDLC §4, read only the owner's PR comments that approve or decline a [task adaptation](../../SDLC.md#task-adaptation-found-in-review). Do not read other PR comments. From the PR description, read only the requirements of a change without a task and, in a full review, the AC/test/red-commit table and the Deviations entries on test changes.
 - Memory notes of any agent tool are neither requirements nor evidence. Use only the task, repository documents, the owner's adaptation comments, and what you verify.
 - Set the [review scope](../../SDLC.md#review-scope) from the diff alone, never from the task prefix or PR type.
 - Check red evidence on the main working tree, because the Docker Compose container mounts it. Return to the starting ref with an empty `git status --short`.
