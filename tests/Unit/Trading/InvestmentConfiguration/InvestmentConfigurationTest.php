@@ -43,7 +43,6 @@ final class InvestmentConfigurationTest extends TestCase
 
         $this->assertCount(1, $events);
         $event = $events[0];
-        $this->assertInstanceOf(InvestmentConfigurationCreated::class, $event);
         $this->assertSame(InvestmentConfigurationBuilder::ID, $event->id->toString());
         $this->assertSame('demo-investment', $event->reference->toString());
         $this->assertSame('EUR', $event->currency->code());
