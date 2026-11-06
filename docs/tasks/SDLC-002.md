@@ -18,7 +18,7 @@ In scope:
 Out of scope:
 
 - V2 review in GitHub Actions and an automatic fix loop.
-- Changes to the review report format, the PR description, or the subagent limit from SDLC-001.
+- Changes to the review report layout, the PR description, or the subagent limit from SDLC-001. The report only gains the skill name in its existing `reviewer:` field and the review scope in its result line.
 - Changes to CI, GitHub protections, or dependencies.
 
 ## Requirements
@@ -26,9 +26,10 @@ Out of scope:
 ### Task adaptation found in review
 
 - A review finding may show that the approved task itself causes the problem, for example a task that prescribes custom tooling an installed tool could replace. The reviewer then reports the finding with the recommendation "adapt the task" and the proposed change to the task's requirements or AC.
-- The owner decides. Without the owner's explicit approval, the agent changes nothing, as after any `FAIL`.
+- The owner decides. Without the owner's decision, the agent changes nothing, as after any `FAIL`.
 - After approval, the implementing agent changes the task file in the same implementation PR, in its own commit `docs: <TASK-ID> adapt the task after review`, and then changes the code. The PR description lists the task change under Deviations, with a link to the owner's approval.
 - The owner records the approval as a comment on the PR that names the proposed change.
+- The owner may decline the adaptation instead, in a PR comment that gives the reason. The task and the code stay as they are, the PR description lists the declined finding and the reason under Deviations, and the finding counts as accepted: it no longer blocks `PASS`. A later review of the same PR does not report it again.
 - The next independent review assesses the adapted task at the head SHA. It checks that the task diff between base and head contains only the `approved` to `done` change and the approved adaptation. Any other task-file change still produces `FAIL`.
 - A requirement change that the review did not find still goes through a separate task-change PR (SDLC §2).
 
@@ -41,15 +42,18 @@ Out of scope:
 
 - The independent review uses the `code-review` skill from Matt Pocock's [mattpocock/skills](https://github.com/mattpocock/skills), with its Standards and Spec axes run one after the other. In Claude Code it is `mattpocock-skills:code-review`.
 - Claude Code's built-in `code-review` skill, including `/code-review ultra`, is not used for the independent review.
-- An agent tool that does not have the named skill follows the same steps from the skill's adaptation in `docs/agents/skills.md`, and the report names the tool and the skill used.
+- An agent tool that does not have the named skill follows the upstream skill's steps at the version the project uses, plugin `mattpocock-skills` 1.3.1, with the adaptations in `docs/agents/skills.md`. `docs/agents/skills.md` links that upstream skill at that version.
+- The report names the tool and the skill used in its `reviewer:` field.
 - Every mention of `code-review` in AGENTS.md, SDLC.md and `docs/agents/` refers to the named skill unambiguously.
+- The reviewer always posts its report as a PR comment, whether the implementing agent or the owner started it. `docs/agents/skills.md` and `docs/agents/independent-review.md` state the same rule.
 
 ### Review scope follows the diff
 
 - One rule applies to every PR, whatever its task: the content of the diff between base and head sets the review scope.
-- A PR whose diff changes only Markdown documentation, with no code, tests, configuration, dependencies, or CI files, gets a documentation review. The reviewer checks the AC of an implementation PR or the definition of ready of a planning PR, compares the task files, and checks consistency with AGENTS.md and the documents it makes mandatory. It skips the Standards axis for code, the red-evidence check, and test runs. The report keeps the SDLC §4 format and states that it is a documentation review.
+- A PR whose diff changes only Markdown documentation, with no code, tests, configuration, dependencies, or CI files, gets a documentation review. Markdown files that configure agent tools, such as `.claude/agents/*.md` and skill files, count as configuration. The reviewer checks the AC of an implementation PR or the definition of ready of a planning PR, compares the task files, and checks consistency with AGENTS.md and the documents it makes mandatory. It skips the Standards axis for code, the red-evidence check, and test runs. The report keeps the SDLC §4 format and states the scope in its result line.
 - Every other PR gets the full independent review.
 - CI and the `PASS` merge gate apply to both scopes.
+- The rules take effect when this task's implementation PR merges. The review of that PR, like the review of this planning PR, runs as a documentation review by the owner's explicit exception.
 
 ## Decisions
 
@@ -64,14 +68,20 @@ Out of scope:
 - The scope rule depends only on the diff, never on the task prefix or PR type.
 - Follow the AGENTS.md rules on documents: update process documents in place and add no change log.
 
+## Risks
+
+- A PR misclassified as documentation-only would skip the checks for code. The reviewer classifies the PR from the diff, and the owner sees the scope in the report.
+- An owner's decline accepts a worse solution in the PR. The Deviations entry keeps that decision visible at merge.
+
 ## Acceptance criteria
 
 - [ ] Documentation check: SDLC §2 and §4 allow the task adaptation found in review, with the owner's approval as a PR comment, its own commit, the Deviations entry, and a separate task-change PR for every other requirement change.
-- [ ] Documentation check: SDLC §4 (independent review) and §5 (merge gates) permit the approved adaptation in the task-file comparison and still fail any other task-file change.
+- [ ] Documentation check: SDLC §4 states that an owner's decline in a PR comment, listed under Deviations, makes the finding accepted so that it no longer blocks `PASS`.
+- [ ] Documentation check: SDLC §4 (independent review) and §5 (merge gates) permit the approved adaptation in the task-file comparison and still fail any other task-file change, and SDLC §4 and `docs/agents/skills.md` make the adapted task at the head SHA the spec source of the next review.
 - [ ] Documentation check: `docs/agents/independent-review.md` and the `code-review` adaptation in `docs/agents/skills.md` require the custom-tooling check as at least `MAJOR`, including tooling the task prescribes, and the "adapt the task" recommendation.
-- [ ] Documentation check: `docs/agents/independent-review.md`, `docs/agents/skills.md`, AGENTS.md and SDLC.md name Matt Pocock's `code-review` skill (`mattpocock-skills:code-review` in Claude Code) for the independent review and exclude the built-in Claude Code `code-review`.
-- [ ] Documentation check: SDLC §4 and `docs/agents/independent-review.md` define the review scope by diff: a documentation review for a diff that changes only Markdown documentation, the full review otherwise, with CI and the `PASS` gate for both.
-- [ ] Manual check: the independent review of this task's implementation PR reports which skill it used and that it ran as a documentation review.
+- [ ] Documentation check: `docs/agents/independent-review.md`, `docs/agents/skills.md`, AGENTS.md and SDLC.md name Matt Pocock's `code-review` skill (`mattpocock-skills:code-review` in Claude Code) for the independent review and exclude the built-in Claude Code `code-review`; `docs/agents/skills.md` links the upstream skill at version 1.3.1, and both reviewer documents require posting the report as a PR comment.
+- [ ] Documentation check: SDLC §4 and `docs/agents/independent-review.md` define the review scope by diff: a documentation review for a diff that changes only Markdown documentation, with agent and skill configuration files counted as configuration, the full review otherwise, with CI and the `PASS` gate for both.
+- [ ] Manual check: the independent review of this task's implementation PR, run as a documentation review by owner exception, names the skill in its `reviewer:` field and the scope in its result line.
 
 ## Dependencies
 
