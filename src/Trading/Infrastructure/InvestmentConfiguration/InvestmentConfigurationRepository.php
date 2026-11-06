@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace TradeManeuver\Trading\Infrastructure\InvestmentConfiguration;
 
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Str;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Dto\InvestmentConfigurationStateDto;
+use TradeManeuver\Trading\Domain\InvestmentConfiguration\Exception\InvestmentConfigurationAlreadyExistsException;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\InvestmentConfiguration;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Repository\Exception\InvestmentConfigurationDoesNotExistException;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Repository\InvestmentConfigurationRepositoryInterface;
@@ -26,6 +28,11 @@ final class InvestmentConfigurationRepository implements InvestmentConfiguration
         return new InvestmentConfigurationId(Str::uuid7()->toString());
     }
 
+    public function exists(): bool
+    {
+        return InvestmentConfigurationModel::query()->exists();
+    }
+
     public function add(InvestmentConfiguration $investmentConfiguration): void
     {
         $state = $investmentConfiguration->state();
@@ -38,7 +45,13 @@ final class InvestmentConfigurationRepository implements InvestmentConfiguration
         $model->order_amount = $state->orderAmount->amount();
         $model->limit_price_tolerance = $state->limitPriceTolerance->toString();
         $model->authorized_analytics_applications = $state->authorizedAnalyticsApplications->identifiers();
-        $model->save();
+
+        try {
+            $model->save();
+        } catch (UniqueConstraintViolationException) {
+            // A concurrent run created the single investment configuration after the existence check.
+            throw InvestmentConfigurationAlreadyExistsException::create();
+        }
     }
 
     public function get(InvestmentConfigurationId $id): InvestmentConfiguration

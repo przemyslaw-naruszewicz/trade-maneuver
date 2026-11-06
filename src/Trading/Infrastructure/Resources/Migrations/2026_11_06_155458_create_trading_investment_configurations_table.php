@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -19,6 +20,9 @@ return new class extends Migration
             $table->decimal('limit_price_tolerance', 5, 2);
             $table->jsonb('authorized_analytics_applications');
         });
+
+        // This iteration has exactly one investment configuration: every row shares the indexed value.
+        DB::statement('CREATE UNIQUE INDEX trading_investment_configurations_single_row ON trading_investment_configurations ((true))');
     }
 
     public function down(): void

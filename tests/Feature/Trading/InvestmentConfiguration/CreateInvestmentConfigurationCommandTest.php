@@ -79,7 +79,7 @@ final class CreateInvestmentConfigurationCommandTest extends TestCase
     }
 
     /**
-     * @return array{investment_configurations: list<array<string, mixed>>, audit_records: list<array<string, mixed>>}
+     * @return array<string, array<mixed>>
      */
     private function storedRecords(): array
     {

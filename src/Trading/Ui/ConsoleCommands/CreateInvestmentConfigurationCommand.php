@@ -9,6 +9,7 @@ use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use TradeManeuver\Trading\Application\InvestmentConfiguration\Command\CreateInvestmentConfiguration\CreateInvestmentConfigurationCommand as CreateInvestmentConfiguration;
 use TradeManeuver\Trading\Application\InvestmentConfiguration\Command\CreateInvestmentConfiguration\CreateInvestmentConfigurationCommandHandler;
+use TradeManeuver\Trading\Domain\InvestmentConfiguration\Exception\InvestmentConfigurationException;
 
 #[Signature('trading:create-investment-configuration
     {reference : The reference that trade signals use as investmentConfigurationRef}
@@ -25,16 +26,22 @@ final class CreateInvestmentConfigurationCommand extends Command
     {
         $currency = $this->stringOption('currency');
 
-        $handler->handle(new CreateInvestmentConfiguration(
-            'console:'.$this->getName(),
-            $this->stringArgument('reference'),
-            $currency,
-            $this->stringOption('brokerage-account'),
-            $this->stringOption('order-amount'),
-            $this->stringOption('order-amount-currency', $currency),
-            $this->stringOption('limit-price-tolerance'),
-            $this->listOption('authorized-analytics-application'),
-        ));
+        try {
+            $handler->handle(new CreateInvestmentConfiguration(
+                'console:'.$this->getName(),
+                $this->stringArgument('reference'),
+                $currency,
+                $this->stringOption('brokerage-account'),
+                $this->stringOption('order-amount'),
+                $this->stringOption('order-amount-currency', $currency),
+                $this->stringOption('limit-price-tolerance'),
+                $this->listOption('authorized-analytics-application'),
+            ));
+        } catch (InvestmentConfigurationException $exception) {
+            $this->error($exception->getMessage());
+
+            return self::FAILURE;
+        }
 
         $this->info('The investment configuration was created.');
 
