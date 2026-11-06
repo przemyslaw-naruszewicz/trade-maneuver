@@ -90,7 +90,7 @@ When using the Aggregate Design Canvas, adapt size estimates to our state-based 
 Protect both valid mutation and the model's public interface. The project accepts a specific read contract for persistence under ADR-0002: `id()` plus `state(): {Aggregate}StateDto`.
 
 - Return a detached, deeply immutable representation expressed in domain types. Never expose live mutable children or collections.
-- Use the state contract only for repository translation and in tests. Its visibility is public, so a PHPStan rule reports any other call; [architecture.md](architecture.md#persistence-and-eloquent) describes what it allows.
+- Use the state contract only for repository translation and in tests. Its visibility is public, so a PHPStan configuration entry reports any other call; [architecture.md](architecture.md#persistence-and-eloquent) describes what it allows.
 - Keep all business transitions behind domain behavior. Do not reconstruct decisions in application code from the state DTO, introduce public setters, or use reconstitution to overwrite a live aggregate arbitrarily.
 - Keep query DTOs and integration contracts separate from persisted domain state. A persistence DTO must not become the default response model for GUI or APIs.
 

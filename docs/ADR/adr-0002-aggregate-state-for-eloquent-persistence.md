@@ -42,4 +42,4 @@ Verify that returned state cannot mutate the aggregate, remains unchanged after 
 
 [ADR-0004](adr-0004-livewire-eloquent-read-models.md) changes one statement in this record: Livewire reads use read-only Eloquent read models instead of query DTOs. Other GUI and API reads still use query DTOs.
 
-The PHPStan rule described in [architecture.md](../architecture.md#persistence-and-eloquent) now enforces the persistence-only use of `state()`.
+The PHPStan configuration described in [architecture.md](../architecture.md#persistence-and-eloquent) now enforces the persistence-only use of `state()`.

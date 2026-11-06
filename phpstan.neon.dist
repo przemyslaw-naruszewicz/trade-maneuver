@@ -6,11 +6,6 @@ includes:
     - vendor/spaze/phpstan-disallowed-calls/extension.neon
     - vendor/tomasvotruba/cognitive-complexity/config/extension.neon
 
-rules:
-    # ADR-0002: an aggregate's state() is read only by repository implementations and tests.
-    - Tests\PHPStan\Rules\AggregateStateCallRule
-    - Tests\PHPStan\Rules\AggregateStateCallableRule
-
 parameters:
     level: 8
     parseModelCastsMethod: true
@@ -36,7 +31,7 @@ parameters:
         - .php-cs-fixer.dist.php
     excludePaths:
         analyse:
-            # Rule test fixtures contain the violations the rule must report.
+            # Fixtures contain the state() calls that disallowedMethodCalls must report.
             - tests/PHPStan/data
     tmpDir: storage/framework/cache/phpstan
     filesRootDir: %rootDir%/../../..
@@ -50,3 +45,11 @@ parameters:
                 - 'src/*/Domain/*'
                 - 'src/*/Application/*'
             message: 'Domain and Application must not call a function from an installed package.'
+    # ADR-0002: an aggregate's state() is read only by repository implementations and tests.
+    disallowedMethodCalls:
+        -
+            method: 'TradeManeuver\*\Domain\*::state()'
+            message: 'the aggregate state is a persistence contract (ADR-0002).'
+            allowInInstanceOf:
+                - 'TradeManeuver\*\Domain\*RepositoryInterface'
+                - 'PHPUnit\Framework\TestCase'

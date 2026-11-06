@@ -5,42 +5,27 @@ declare(strict_types=1);
 namespace Tests\PHPStan;
 
 use PHPStan\Rules\Rule;
-use PHPStan\Testing\RuleTestCase;
 use Spaze\PHPStan\Rules\Disallowed\Calls\MethodCalls;
 
 /**
- * @extends RuleTestCase<MethodCalls>
+ * @extends AggregateStateRuleTestCase<MethodCalls>
  */
-final class AggregateStateCallTest extends RuleTestCase
+final class AggregateStateCallTest extends AggregateStateRuleTestCase
 {
     protected function getRule(): Rule
     {
         return self::getContainer()->getByType(MethodCalls::class);
     }
 
-    public static function getAdditionalConfigFiles(): array
-    {
-        return AggregateStateFixtures::configFiles();
-    }
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        AggregateStateFixtures::load();
-    }
-
     public function test_only_calls_outside_a_repository_implementation_or_a_test_are_reported(): void
     {
-        $message = AggregateStateFixtures::MESSAGE;
-
-        $this->analyse(AggregateStateFixtures::files(), [
-            [$message, 16],
-            [$message, 22],
-            [$message, 14],
-            [$message, 15],
-            [$message, 17],
-            [$message, 24],
+        $this->analyse($this->fixtures(), [
+            [self::MESSAGE, 16],
+            [self::MESSAGE, 22],
+            [self::MESSAGE, 14],
+            [self::MESSAGE, 15],
+            [self::MESSAGE, 17],
+            [self::MESSAGE, 24],
         ]);
     }
 }
