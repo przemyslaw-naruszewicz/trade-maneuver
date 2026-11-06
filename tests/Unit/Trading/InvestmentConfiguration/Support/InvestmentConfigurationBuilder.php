@@ -21,8 +21,6 @@ final class InvestmentConfigurationBuilder
 {
     public const string ID = '019a5a6e-0000-7000-8000-000000000001';
 
-    private string $currency = 'EUR';
-
     private OrderAmount $orderAmount;
 
     private function __construct()
@@ -47,7 +45,7 @@ final class InvestmentConfigurationBuilder
         return InvestmentConfiguration::create(
             new InvestmentConfigurationId(self::ID),
             new InvestmentConfigurationRef('demo-investment'),
-            InvestmentConfigurationCurrency::fromCode($this->currency),
+            InvestmentConfigurationCurrency::fromCode('EUR'),
             new BrokerageAccount('DEMO-ACCOUNT-1'),
             $this->orderAmount,
             LimitPriceTolerance::fromPercentage('1.50'),
