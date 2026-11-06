@@ -131,6 +131,14 @@ final class CreateInvestmentConfigurationCommandTest extends TestCase
         );
     }
 
+    public function test_an_empty_reference_is_refused_without_side_effects(): void
+    {
+        $this->assertRefusedWithoutSideEffects(
+            ['reference' => ''],
+            'The investment configuration reference must not be empty.',
+        );
+    }
+
     /**
      * @param  array<string, string|list<string>>  $overrides
      */
