@@ -106,6 +106,24 @@ final class CreateInvestmentConfigurationCommandTest extends TestCase
     }
 
     /**
+     * @return iterable<string, array{string}>
+     */
+    public static function limitPriceTolerancesOutsideBounds(): iterable
+    {
+        yield 'below 0 %' => ['-0.01'];
+        yield 'above 5 %' => ['5.01'];
+    }
+
+    #[DataProvider('limitPriceTolerancesOutsideBounds')]
+    public function test_a_limit_price_tolerance_outside_bounds_is_refused_without_side_effects(string $tolerance): void
+    {
+        $this->assertRefusedWithoutSideEffects(
+            ['--limit-price-tolerance' => $tolerance],
+            'The limit price tolerance must be from 0 % to 5 % inclusive.',
+        );
+    }
+
+    /**
      * @param  array<string, string|list<string>>  $overrides
      */
     private function assertRefusedWithoutSideEffects(array $overrides, string $message): void
