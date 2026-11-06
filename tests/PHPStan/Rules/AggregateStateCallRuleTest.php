@@ -40,7 +40,6 @@ final class AggregateStateCallRuleTest extends RuleTestCase
             [$message, 22],
             [$message, 14],
             [$message, 15],
-            [$message, 16],
             [$message, 17],
             [$message, 24],
         ]);

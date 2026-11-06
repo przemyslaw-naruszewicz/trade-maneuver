@@ -6,6 +6,11 @@ includes:
     - vendor/spaze/phpstan-disallowed-calls/extension.neon
     - vendor/tomasvotruba/cognitive-complexity/config/extension.neon
 
+rules:
+    # ADR-0002: an aggregate's state() is read only by repository implementations and tests.
+    - Tests\PHPStan\Rules\AggregateStateCallRule
+    - Tests\PHPStan\Rules\AggregateStateCallableRule
+
 parameters:
     level: 8
     parseModelCastsMethod: true
