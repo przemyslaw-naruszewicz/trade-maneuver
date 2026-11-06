@@ -29,6 +29,10 @@ parameters:
         - tests
         - behat.php
         - .php-cs-fixer.dist.php
+    excludePaths:
+        analyse:
+            # Rule test fixtures contain the violations the rule must report.
+            - tests/PHPStan/Rules/data
     tmpDir: storage/framework/cache/phpstan
     filesRootDir: %rootDir%/../../..
     # Deptrac cannot resolve an unqualified function name inside a namespace, so PHPStan keeps package functions out of the core.
