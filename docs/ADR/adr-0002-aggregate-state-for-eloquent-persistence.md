@@ -41,3 +41,5 @@ Treat `state()` as an internal persistence contract. Application workflows and d
 Verify that returned state cannot mutate the aggregate, remains unchanged after later aggregate operations, and preserves values and child state through persistence and reconstitution. Tests must also confirm that reconstitution does not emit new domain events. General transaction and concurrency requirements remain in [architecture.md](../architecture.md#aggregate-and-transaction-boundaries).
 
 [ADR-0004](adr-0004-livewire-eloquent-read-models.md) changes one statement in this record: Livewire reads use read-only Eloquent read models instead of query DTOs. Other GUI and API reads still use query DTOs.
+
+The PHPStan rule described in [architecture.md](../architecture.md#persistence-and-eloquent) now enforces the persistence-only use of `state()`.

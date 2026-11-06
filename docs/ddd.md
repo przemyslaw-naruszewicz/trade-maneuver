@@ -2,7 +2,7 @@
 
 Use Vaughn Vernon's interpretation of DDD as the primary reference for modeling and implementation reviews. Where the two differ, this project follows Vernon rather than Eric Evans's original presentation. Shared DDD terms retain their established meaning.
 
-Use DDD Crew's collaborative modeling tools to discover and test the model against business scenarios. Framework independence, CQRS, Eloquent integration, and the `state()` contract are project choices, not universal requirements of DDD. These rules describe the target model; the repository does not implement any business contexts or aggregates yet.
+Use DDD Crew's collaborative modeling tools to discover and test the model against business scenarios. Framework independence, CQRS, Eloquent integration, and the `state()` contract are project choices, not universal requirements of DDD. These rules describe the target model; the Trading context implements one aggregate so far, the investment configuration.
 
 ## Relationship to other documents
 
@@ -90,7 +90,7 @@ When using the Aggregate Design Canvas, adapt size estimates to our state-based 
 Protect both valid mutation and the model's public interface. The project accepts a specific read contract for persistence under ADR-0002: `id()` plus `state(): {Aggregate}StateDto`.
 
 - Return a detached, deeply immutable representation expressed in domain types. Never expose live mutable children or collections.
-- Use the state contract for repository translation. Its public visibility does not technically restrict access to repositories, so review how it is consumed.
+- Use the state contract only for repository translation and in tests. Its visibility is public, so a PHPStan rule reports any other call; [architecture.md](architecture.md#persistence-and-eloquent) describes what it allows.
 - Keep all business transitions behind domain behavior. Do not reconstruct decisions in application code from the state DTO, introduce public setters, or use reconstitution to overwrite a live aggregate arbitrarily.
 - Keep query DTOs and integration contracts separate from persisted domain state. A persistence DTO must not become the default response model for GUI or APIs.
 
