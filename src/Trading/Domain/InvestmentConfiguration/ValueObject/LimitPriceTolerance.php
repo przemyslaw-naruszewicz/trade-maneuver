@@ -46,11 +46,6 @@ final readonly class LimitPriceTolerance
         return new self($value);
     }
 
-    public function percentage(): BigDecimal
-    {
-        return $this->percentage;
-    }
-
     /**
      * The percentage at its fixed scale, for persistence and serialization.
      */

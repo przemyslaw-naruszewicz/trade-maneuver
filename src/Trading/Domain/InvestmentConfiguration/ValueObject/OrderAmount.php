@@ -44,11 +44,6 @@ final readonly class OrderAmount
         return new self($money);
     }
 
-    public function money(): Money
-    {
-        return $this->money;
-    }
-
     public function currency(): Currency
     {
         return $this->money->getCurrency();
