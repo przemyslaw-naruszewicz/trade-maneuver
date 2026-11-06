@@ -151,6 +151,14 @@ final class CreateInvestmentConfigurationCommandTest extends TestCase
         $this->assertSame($before, $this->storedRecords());
     }
 
+    public function test_an_analytics_application_not_in_the_registry_is_refused_without_side_effects(): void
+    {
+        $this->assertRefusedWithoutSideEffects(
+            ['--authorized-analytics-application' => ['demo-analytics', 'demo-unknown']],
+            'The analytics application "demo-unknown" is not in the registry of known analytics applications.',
+        );
+    }
+
     /**
      * @param  array<string, string|list<string>>  $overrides
      */
