@@ -66,6 +66,29 @@ final class CreateInvestmentConfigurationCommandTest extends TestCase
         $this->assertSame($expectedValues, $storedValues);
     }
 
+    public function test_a_second_run_is_refused_and_changes_nothing(): void
+    {
+        $this->createInvestmentConfiguration($this->validInput())->assertSuccessful();
+        $before = $this->storedRecords();
+
+        $this->createInvestmentConfiguration($this->validInput(['reference' => 'demo-second-investment']))
+            ->expectsOutputToContain('An investment configuration already exists.')
+            ->assertFailed();
+
+        $this->assertSame($before, $this->storedRecords());
+    }
+
+    /**
+     * @return array{investment_configurations: list<array<string, mixed>>, audit_records: list<array<string, mixed>>}
+     */
+    private function storedRecords(): array
+    {
+        return [
+            'investment_configurations' => DB::table('trading_investment_configurations')->get()->map(fn (object $row): array => (array) $row)->values()->all(),
+            'audit_records' => DB::table('trading_audit_records')->get()->map(fn (object $row): array => (array) $row)->values()->all(),
+        ];
+    }
+
     /**
      * @param  array<string, string|list<string>>  $input
      */
