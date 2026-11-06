@@ -8,7 +8,7 @@ Status: Proposed
 
 [architecture.md](../architecture.md#money-and-exact-arithmetic) forbids `float` for monetary values and requires a Money library chosen in an ADR. That ADR must give the precision, scale, rounding mode and rounding boundaries for each operation, and state how values are persisted and serialized.
 
-The investment configuration (TM-003) is the first code to hold Money: the order amount and the limit price tolerance. Later tasks compute a limit price from a reference price and an order quantity from the order amount. The project owner chose `brick/money` with `brick/math` on 2026-10-31.
+The investment configuration (TM-003) is the first code with exact values: the order amount, which is Money, and the limit price tolerance, an exact decimal percentage. Later tasks compute a limit price from a reference price and an order quantity from the order amount. The project owner chose `brick/money` with `brick/math` on 2026-10-31.
 
 The installed versions are `brick/money` 0.15.2 and `brick/math` 0.20.0. Both declare `php: ^8.2`. A smoke run under PHP 8.5.10 with every error level enabled raised no deprecation, and the project's test suite exercises them on the same runtime. `brick/money` 0.15 does not accept `brick/math` 1.0, so `brick/math` stays on 0.20.
 

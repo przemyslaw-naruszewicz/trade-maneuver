@@ -25,9 +25,9 @@ final class InvestmentConfiguration
         private readonly InvestmentConfigurationRef $reference,
         private readonly InvestmentConfigurationCurrency $currency,
         private readonly BrokerageAccount $brokerageAccount,
-        private OrderAmount $orderAmount,
-        private LimitPriceTolerance $limitPriceTolerance,
-        private AuthorizedAnalyticsApplications $authorizedAnalyticsApplications,
+        private readonly OrderAmount $orderAmount,
+        private readonly LimitPriceTolerance $limitPriceTolerance,
+        private readonly AuthorizedAnalyticsApplications $authorizedAnalyticsApplications,
     ) {
         $this->assertOrderAmountInCurrency($orderAmount);
     }
