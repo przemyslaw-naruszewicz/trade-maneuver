@@ -13,3 +13,7 @@ Feature: Trade signal intake
   Scenario: A trade signal with an invalid value is rejected
     When "demo-analytics" delivers the trade signal "purchase" with "confidence" set to "1.5"
     Then the trade signal "purchase" ends with one SignalRejected outcome listing a violation of "confidence"
+
+  Scenario: A trade signal with an invalid structure is rejected
+    When "demo-analytics" delivers the trade signal "purchase" with "instrument" set to "DEMO_A"
+    Then the trade signal "purchase" ends with one SignalRejected outcome listing a violation of "instrument"
