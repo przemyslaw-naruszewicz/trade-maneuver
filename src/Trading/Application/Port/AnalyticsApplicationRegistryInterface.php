@@ -12,4 +12,10 @@ use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\AnalyticsAp
 interface AnalyticsApplicationRegistryInterface
 {
     public function isKnown(AnalyticsApplicationId $analyticsApplication): bool;
+
+    /**
+     * Whether the publisher identity, the RabbitMQ user that published a message, is the one registered for the
+     * analytics application.
+     */
+    public function publishesAs(AnalyticsApplicationId $analyticsApplication, string $publisherIdentity): bool;
 }

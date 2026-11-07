@@ -55,6 +55,11 @@ deptrac:
           collectors:
               - type: classLike
                 value: '^Psr\\Clock\\'
+        # PSR-3, the standard logger contract, allowed in the Application.
+        - name: PsrLog
+          collectors:
+              - type: classLike
+                value: '^Psr\\Log\\'
         # Every other class outside the project and PHP itself, so a new package stays out of the core until a task allows it.
         - name: ThirdParty
           collectors:
@@ -69,6 +74,8 @@ deptrac:
                       value: MoneyLibrary
                     - type: layer
                       value: PsrClock
+                    - type: layer
+                      value: PsrLog
                     - type: php_internal
                       value: '.*'
     ruleset:
@@ -77,17 +84,20 @@ deptrac:
         TradingApplication:
             - TradingDomain
             - PsrClock
+            - PsrLog
         TradingInfrastructure:
             - TradingApplication
             - TradingDomain
             - MoneyLibrary
             - PsrClock
+            - PsrLog
             - ThirdParty
         TradingUi:
             - TradingApplication
             - TradingDomain
             - MoneyLibrary
             - PsrClock
+            - PsrLog
             - ThirdParty
         TradingCompositionRoot:
             - TradingApplication
@@ -96,9 +106,11 @@ deptrac:
             - TradingUi
             - MoneyLibrary
             - PsrClock
+            - PsrLog
             - ThirdParty
         RootApplication:
             - TradingCompositionRoot
             - MoneyLibrary
             - PsrClock
+            - PsrLog
             - ThirdParty

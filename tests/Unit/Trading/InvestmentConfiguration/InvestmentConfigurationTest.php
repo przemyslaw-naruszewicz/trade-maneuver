@@ -53,6 +53,14 @@ final class InvestmentConfigurationTest extends TestCase
         $this->assertSame([], $investmentConfiguration->releaseEvents());
     }
 
+    public function test_an_investment_configuration_authorizes_only_its_authorized_analytics_applications(): void
+    {
+        $investmentConfiguration = InvestmentConfigurationBuilder::anInvestmentConfiguration()->create();
+
+        $this->assertTrue($investmentConfiguration->authorizes(new AnalyticsApplicationId('demo-analytics')));
+        $this->assertFalse($investmentConfiguration->authorizes(new AnalyticsApplicationId('demo-research')));
+    }
+
     public function test_reconstitution_keeps_the_stored_state_and_records_no_domain_events(): void
     {
         $created = InvestmentConfigurationBuilder::anInvestmentConfiguration()->create();

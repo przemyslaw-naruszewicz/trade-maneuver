@@ -34,6 +34,11 @@ final readonly class AuthorizedAnalyticsApplications
         return $this->analyticsApplications;
     }
 
+    public function includes(AnalyticsApplicationId $analyticsApplication): bool
+    {
+        return in_array($analyticsApplication->toString(), $this->identifiers(), true);
+    }
+
     /**
      * @return list<string>
      */

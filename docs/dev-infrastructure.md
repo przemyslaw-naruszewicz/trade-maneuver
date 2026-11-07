@@ -29,7 +29,8 @@ LLM API costs and usage limits are separate from VPS resources.
 
 The existing Compose file supports local development. The VPS needs a deployment configuration
 using published images without local builds or source-code bind mounts. RabbitMQ configuration,
-an AMQP client, integration logic, and inbox/outbox processing are not implemented yet.
+an AMQP client, and outbox dispatch are not implemented yet. The trade signal intake use case
+already writes its inbox and outbox entries in PostgreSQL.
 Background jobs currently use PostgreSQL.
 Signal producers run separately, each with its own database and outbox.
 

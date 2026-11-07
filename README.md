@@ -92,7 +92,7 @@ docker compose logs -f
 
 ## Investment configuration
 
-Trade Maneuver has exactly one investment configuration, created once at deployment. List the analytics applications it may authorize in `TRADING_ANALYTICS_APPLICATIONS`, separated by commas, then run:
+Trade Maneuver has exactly one investment configuration, created once at deployment. Register the known analytics applications in `TRADING_ANALYTICS_APPLICATIONS` as comma-separated `<source>:<RabbitMQ user>` entries: the identifier each one sends as `source` and the RabbitMQ user it publishes as, for example `demo-analytics:demo-analytics`. Then run:
 
 ```sh
 docker compose exec app php artisan trading:create-investment-configuration demo-investment \
@@ -112,7 +112,7 @@ The pipeline runs Composer validation and `composer audit --locked`, PHP CS Fixe
 
 GitHub Actions runs `make ci` for pull requests, pushes to `main`, and manual dispatch. Pull requests run all checks with Infection on changed lines; pushes to `main` and manual runs include the full Infection run. Docker build layers and Composer downloads are cached between runs. Local `make ci` includes the full Infection run by default. Use `CI_WITH_MUTATION=diff make ci` for the pull-request checks, after `git fetch` so that `origin/main` is current, and `CI_WITH_MUTATION=0 make ci` to skip Infection. `CI_SKIP_BUILD=1` reuses an already built PHP image, as the workflow does after its cached build step. Composer downloads are kept in `storage/framework/cache/composer`.
 
-PHPUnit and Infection reports are written to `storage/quality/` and uploaded as workflow artifacts for seven days. The only Behat scenario so far checks service health; business scenarios are not written yet. Deptrac enforces the layer rules in `deptrac.yaml` for the Trading context and the application code under the root namespace; [the architecture](docs/architecture.md#laravel-integration) describes them. Run it separately with `docker compose exec app composer analyse:architecture`.
+PHPUnit and Infection reports are written to `storage/quality/` and uploaded as workflow artifacts for seven days. Behat runs two suites: `application` checks service health, and `trading` covers trade signal intake through the application commands against the test database. Deptrac enforces the layer rules in `deptrac.yaml` for the Trading context and the application code under the root namespace; [the architecture](docs/architecture.md#laravel-integration) describes them. Run it separately with `docker compose exec app composer analyse:architecture`.
 
 ## PostgreSQL
 
