@@ -7,6 +7,7 @@ namespace TradeManeuver\Trading\Domain\InvestmentConfiguration;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Dto\InvestmentConfigurationStateDto;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Event\InvestmentConfigurationCreated;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Exception\OrderAmountCurrencyMismatchException;
+use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\AnalyticsApplicationId;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\AuthorizedAnalyticsApplications;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\BrokerageAccount;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\InvestmentConfigurationCurrency;
@@ -82,6 +83,14 @@ final class InvestmentConfiguration
     public function id(): InvestmentConfigurationId
     {
         return $this->id;
+    }
+
+    /**
+     * Whether the analytics application may address trade signals to this investment configuration.
+     */
+    public function authorizes(AnalyticsApplicationId $analyticsApplication): bool
+    {
+        return $this->authorizedAnalyticsApplications->includes($analyticsApplication);
     }
 
     public function state(): InvestmentConfigurationStateDto

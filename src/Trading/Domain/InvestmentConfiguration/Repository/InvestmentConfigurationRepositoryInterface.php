@@ -16,6 +16,8 @@ interface InvestmentConfigurationRepositoryInterface
 
     public function existsWithReference(InvestmentConfigurationRef $reference): bool;
 
+    public function findByReference(InvestmentConfigurationRef $reference): ?InvestmentConfiguration;
+
     /**
      * Refuses a second investment configuration: this iteration has exactly one.
      *

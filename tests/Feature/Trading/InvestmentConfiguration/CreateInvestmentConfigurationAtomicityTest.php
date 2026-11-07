@@ -22,7 +22,7 @@ final class CreateInvestmentConfigurationAtomicityTest extends TestCase
     {
         parent::setUp();
 
-        config(['trading.analytics_applications' => [['id' => 'demo-analytics']]]);
+        config(['trading.analytics_applications' => [['id' => 'demo-analytics', 'rabbitmq_user' => 'demo-analytics']]]);
         DB::unprepared(<<<'SQL'
             CREATE OR REPLACE FUNCTION trading_test_fail_audit_write() RETURNS trigger LANGUAGE plpgsql AS $$
             BEGIN

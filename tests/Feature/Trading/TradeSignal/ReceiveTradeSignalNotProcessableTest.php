@@ -8,6 +8,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Mockery;
+use Mockery\MockInterface;
 use Tests\Support\Trading\TradeSignalMessageBuilder;
 use Tests\TestCase;
 use TradeManeuver\Trading\Application\TradeSignal\Command\ReceiveTradeSignal\ReceiveTradeSignalCommand;
@@ -24,12 +25,14 @@ final class ReceiveTradeSignalNotProcessableTest extends TestCase
 
     private const string PUBLISHER = 'demo-analytics';
 
+    private MockInterface $log;
+
     protected function setUp(): void
     {
         parent::setUp();
 
         config(['trading.analytics_applications' => [['id' => 'demo-analytics', 'rabbitmq_user' => self::PUBLISHER]]]);
-        Log::spy();
+        $this->log = Log::spy();
     }
 
     public function test_a_conflicting_duplicate_is_not_processable_and_audited_as_a_conflict(): void
@@ -113,7 +116,7 @@ final class ReceiveTradeSignalNotProcessableTest extends TestCase
 
     private function assertWarningLogged(string $message, string $id): void
     {
-        Log::shouldHaveReceived('warning')
+        $this->log->shouldHaveReceived('warning')
             ->once()
             ->with($message, Mockery::on(static fn (array $context): bool => $context['id'] === $id));
     }

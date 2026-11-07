@@ -91,8 +91,7 @@ final class ReceiveTradeSignalConcurrencyTest extends TestCase
     private function waitUntil(string $query): void
     {
         for ($attempt = 0; $attempt < self::WAIT_ATTEMPTS; $attempt++) {
-            $row = DB::selectOne($query);
-            if (is_object($row) && (int) $row->waiting > 0) {
+            if ((int) DB::scalar($query) > 0) {
                 return;
             }
             usleep(50_000);

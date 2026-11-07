@@ -13,33 +13,38 @@ use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\AnalyticsAp
  */
 final readonly class ConfiguredAnalyticsApplicationRegistry implements AnalyticsApplicationRegistryInterface
 {
-    /** @var list<string> */
-    private array $knownIdentifiers;
+    /** @var array<string, string> the RabbitMQ user of each known analytics application */
+    private array $rabbitMqUsers;
 
     /**
      * @param  array<mixed>  $entries
      */
     public function __construct(array $entries)
     {
-        $knownIdentifiers = [];
+        $rabbitMqUsers = [];
         foreach ($entries as $entry) {
-            $knownIdentifiers[] = self::identifierOf($entry);
+            $rabbitMqUsers[self::stringOf($entry, 'id')] = self::stringOf($entry, 'rabbitmq_user');
         }
-        $this->knownIdentifiers = $knownIdentifiers;
+        $this->rabbitMqUsers = $rabbitMqUsers;
     }
 
     public function isKnown(AnalyticsApplicationId $analyticsApplication): bool
     {
-        return in_array($analyticsApplication->toString(), $this->knownIdentifiers, true);
+        return array_key_exists($analyticsApplication->toString(), $this->rabbitMqUsers);
     }
 
-    private static function identifierOf(mixed $entry): string
+    public function publishesAs(AnalyticsApplicationId $analyticsApplication, string $publisherIdentity): bool
     {
-        $identifier = is_array($entry) ? ($entry['id'] ?? null) : null;
-        if (! is_string($identifier) || trim($identifier) === '') {
-            throw new InvalidArgumentException('Each entry in trading.analytics_applications needs a non-empty string "id".');
+        return ($this->rabbitMqUsers[$analyticsApplication->toString()] ?? null) === $publisherIdentity;
+    }
+
+    private static function stringOf(mixed $entry, string $key): string
+    {
+        $value = is_array($entry) ? ($entry[$key] ?? null) : null;
+        if (! is_string($value) || trim($value) === '') {
+            throw new InvalidArgumentException(sprintf('Each entry in trading.analytics_applications needs a non-empty string "%s".', $key));
         }
 
-        return $identifier;
+        return $value;
     }
 }

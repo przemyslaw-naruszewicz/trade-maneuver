@@ -22,8 +22,8 @@ final class CreateInvestmentConfigurationCommandTest extends TestCase
         parent::setUp();
 
         config(['trading.analytics_applications' => [
-            ['id' => 'demo-analytics'],
-            ['id' => 'demo-research'],
+            ['id' => 'demo-analytics', 'rabbitmq_user' => 'demo-analytics'],
+            ['id' => 'demo-research', 'rabbitmq_user' => 'demo-research'],
         ]]);
     }
 
