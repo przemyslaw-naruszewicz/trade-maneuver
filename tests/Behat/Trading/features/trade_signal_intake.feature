@@ -31,3 +31,8 @@ Feature: Trade signal intake
     When "demo-analytics" delivers the trade signal "purchase"
     Then the trade signal "purchase" is stored and awaits evaluation
     And no signal outcome is recorded
+
+  Scenario: A trade signal on the fictional exchange DEMO passes contract validation
+    When "demo-analytics" delivers the trade signal "purchase" with "instrument.mic" set to "DEMO"
+    Then the trade signal "purchase" is stored and awaits evaluation
+    And no signal outcome is recorded
