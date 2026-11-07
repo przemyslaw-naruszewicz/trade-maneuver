@@ -26,3 +26,8 @@ Feature: Trade signal intake
     Given the analytics application "demo-research" publishes as the RabbitMQ user "demo-research"
     When "demo-research" delivers the trade signal "purchase"
     Then the trade signal "purchase" ends with one SignalRejected outcome listing a violation of "source"
+
+  Scenario: A valid trade signal is stored and awaits evaluation
+    When "demo-analytics" delivers the trade signal "purchase"
+    Then the trade signal "purchase" is stored and awaits evaluation
+    And no signal outcome is recorded
