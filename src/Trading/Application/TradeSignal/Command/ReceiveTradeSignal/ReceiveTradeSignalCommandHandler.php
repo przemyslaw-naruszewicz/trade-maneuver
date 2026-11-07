@@ -132,24 +132,24 @@ final readonly class ReceiveTradeSignalCommandHandler
 
     private function recordRejection(TradeSignalRejected $event, TradeSignalMessage $message, DateTimeImmutable $receivedAt): void
     {
-        $this->integrationEventPublisher->publish(SignalOutcomeIntegrationEvent::of($event->id, $event->outcome, $event->source));
         $this->recordAudit($event->source, $receivedAt, $event->id->toString(), 'rejected', [
             ...$message->metadata(),
             'outcomeId' => $event->outcome->id->toString(),
             'violations' => self::describe($event->outcome),
         ]);
+        $this->integrationEventPublisher->publish(SignalOutcomeIntegrationEvent::of($event->id, $event->outcome, $event->source));
     }
 
     private function redeliver(TradeSignalId $id, AnalyticsApplicationId $source, TradeSignalMessage $message, DateTimeImmutable $receivedAt): void
     {
         $outcome = $this->tradeSignals->get($id)->outcome();
-        if ($outcome !== null) {
-            $this->integrationEventPublisher->publish(SignalOutcomeIntegrationEvent::of($id, $outcome, $source));
-        }
         $this->recordAudit($source, $receivedAt, $id->toString(), 'duplicate_delivered', [
             ...$message->metadata(),
             'outcomeId' => $outcome?->id->toString() ?? '',
         ]);
+        if ($outcome !== null) {
+            $this->integrationEventPublisher->publish(SignalOutcomeIntegrationEvent::of($id, $outcome, $source));
+        }
     }
 
     private function setAside(TradeSignalMessage $message, ReceiveTradeSignalCommand $command, DateTimeImmutable $receivedAt, string $reason): TradeSignalIntakeResult
