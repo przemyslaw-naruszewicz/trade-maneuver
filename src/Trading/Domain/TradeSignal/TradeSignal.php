@@ -75,10 +75,6 @@ final class TradeSignal
      */
     public static function reconstitute(TradeSignalId $id, TradeSignalStateDto $state): self
     {
-        if ($state->content !== null) {
-            return self::receive($id, $state->source, $state->content, $state->receivedAt);
-        }
-
         return new self($id, $state->source, $state->receivedAt, $state->content, $state->outcome);
     }
 
