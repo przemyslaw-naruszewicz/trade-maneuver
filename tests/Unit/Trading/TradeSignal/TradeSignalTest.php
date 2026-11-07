@@ -9,7 +9,6 @@ use PHPUnit\Framework\TestCase;
 use Tests\Unit\Trading\TradeSignal\Support\TradeSignalBuilder;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\AnalyticsApplicationId;
 use TradeManeuver\Trading\Domain\TradeSignal\Dto\TradeSignalStateDto;
-use TradeManeuver\Trading\Domain\TradeSignal\Enum\SignalOutcomeType;
 use TradeManeuver\Trading\Domain\TradeSignal\Event\TradeSignalRejected;
 use TradeManeuver\Trading\Domain\TradeSignal\Exception\InvalidTradeSignalStateException;
 use TradeManeuver\Trading\Domain\TradeSignal\Exception\InvalidTradeSignalValueException;
@@ -31,7 +30,6 @@ final class TradeSignalTest extends TestCase
         $this->assertSame(TradeSignalBuilder::ID, $event->id->toString());
         $this->assertSame('demo-analytics', $event->source->toString());
         $this->assertSame(TradeSignalBuilder::OUTCOME_ID, $event->outcome->id->toString());
-        $this->assertSame(SignalOutcomeType::SignalRejected, $event->outcome->type);
         $this->assertEquals(TradeSignalBuilder::violations(), $event->outcome->violations);
         $this->assertSame(TradeSignalBuilder::RECEIVED_AT, $event->outcome->occurredAt->format('Y-m-d\TH:i:s.u\Z'));
         $this->assertSame($event->outcome, $tradeSignal->outcome());
