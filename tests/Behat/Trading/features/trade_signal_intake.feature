@@ -17,3 +17,7 @@ Feature: Trade signal intake
   Scenario: A trade signal with an invalid structure is rejected
     When "demo-analytics" delivers the trade signal "purchase" with "instrument" set to "DEMO_A"
     Then the trade signal "purchase" ends with one SignalRejected outcome listing a violation of "instrument"
+
+  Scenario: A trade signal addressing an unknown investment configuration is rejected
+    When "demo-analytics" delivers the trade signal "purchase" with "investmentConfigurationRef" set to "demo-unknown"
+    Then the trade signal "purchase" ends with one SignalRejected outcome listing a violation of "investmentConfigurationRef"
