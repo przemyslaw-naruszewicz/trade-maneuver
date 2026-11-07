@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Mockery;
 use Mockery\MockInterface;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Support\Trading\TradeSignalMessageBuilder;
 use Tests\TestCase;
 use TradeManeuver\Trading\Application\TradeSignal\Command\ReceiveTradeSignal\ReceiveTradeSignalCommand;
@@ -74,6 +75,47 @@ final class ReceiveTradeSignalNotProcessableTest extends TestCase
         $body = TradeSignalMessageBuilder::aTradeSignal($id)->body();
 
         $this->assertSetAside($body, 'demo-research', $id, 'The publisher identity is not the one registered for the source.');
+    }
+
+    public function test_a_message_without_a_publisher_identity_is_not_processable_and_audited(): void
+    {
+        $id = TradeSignalMessageBuilder::idFor('purchase');
+        $body = TradeSignalMessageBuilder::aTradeSignal($id)->body();
+
+        $this->assertSetAside($body, null, $id, 'The publisher identity is not the one registered for the source.');
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function bodiesWithoutAnId(): iterable
+    {
+        yield 'not JSON' => ['{"id": '];
+        yield 'a JSON list' => ['["019a5a6e-0000-7000-8000-0000000000a1"]'];
+        yield 'an id that is not a UUID' => ['{"id": "purchase", "source": "demo-analytics"}'];
+        yield 'an id that is not a string' => ['{"id": 42, "source": "demo-analytics"}'];
+    }
+
+    #[DataProvider('bodiesWithoutAnId')]
+    public function test_a_body_without_a_valid_id_is_not_processable_and_audited(string $body): void
+    {
+        $result = $this->receive($body, self::PUBLISHER);
+
+        $this->assertSame(TradeSignalIntakeResult::NotProcessable, $result);
+        $this->assertDatabaseEmpty('trading_inbox_entries');
+        $this->assertSame('The message has no valid id.', $this->soleAuditRecord('set_aside')['values']['reason']);
+    }
+
+    public function test_a_source_that_is_not_a_string_is_not_processable(): void
+    {
+        $body = TradeSignalMessageBuilder::aTradeSignal(TradeSignalMessageBuilder::idFor('purchase'))->with('source', ['demo-analytics'])->body();
+
+        $result = $this->receive($body, self::PUBLISHER);
+
+        $this->assertSame(TradeSignalIntakeResult::NotProcessable, $result);
+        $audit = $this->soleAuditRecord('set_aside');
+        $this->assertSame('The source is not a known analytics application.', $audit['values']['reason']);
+        $this->assertSame('', $audit['values']['source']);
     }
 
     private function assertSetAside(string $body, ?string $publisherIdentity, string $id, string $reason): void

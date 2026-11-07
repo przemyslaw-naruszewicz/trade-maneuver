@@ -26,7 +26,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $reference_price_currency
  * @property string|null $reference_price_as_of
  * @property string|null $valid_until
- * @property array<string, mixed>|null $extensions
+ * @property string|null $extensions the JSON object as PostgreSQL returns it
  * @property string|null $outcome_id
  * @property string|null $outcome
  * @property string|null $outcome_occurred_at
@@ -48,7 +48,6 @@ final class TradeSignalModel extends Model
     protected function casts(): array
     {
         return [
-            'extensions' => 'array',
             'outcome_violations' => 'array',
         ];
     }

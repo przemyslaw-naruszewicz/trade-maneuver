@@ -28,6 +28,6 @@ final readonly class Extensions
             return '{}';
         }
 
-        return json_encode($this->values, JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION);
+        return json_encode($this->values, JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 }
