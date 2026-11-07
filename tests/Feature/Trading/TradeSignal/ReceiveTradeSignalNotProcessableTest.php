@@ -65,6 +65,14 @@ final class ReceiveTradeSignalNotProcessableTest extends TestCase
         $this->assertSetAside($body, self::PUBLISHER, $id, 'The source is not a known analytics application.');
     }
 
+    public function test_a_message_whose_source_does_not_belong_to_the_publisher_is_not_processable_and_audited(): void
+    {
+        $id = TradeSignalMessageBuilder::idFor('purchase');
+        $body = TradeSignalMessageBuilder::aTradeSignal($id)->body();
+
+        $this->assertSetAside($body, 'demo-research', $id, 'The publisher identity is not the one registered for the source.');
+    }
+
     private function assertSetAside(string $body, ?string $publisherIdentity, string $id, string $reason): void
     {
         $result = $this->receive($body, $publisherIdentity);
