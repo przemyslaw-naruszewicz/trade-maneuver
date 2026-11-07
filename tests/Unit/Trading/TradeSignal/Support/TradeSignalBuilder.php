@@ -13,7 +13,6 @@ use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Confidence;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ContractViolation;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ContractViolations;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ExpectedMove;
-use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Extensions;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Horizon;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Instrument;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Mic;
@@ -46,7 +45,6 @@ final class TradeSignalBuilder
             ExpectedMove::of('1.5', '4.0'),
             ReferencePrice::of('12.50', 'EUR', '2026-11-07T08:59:00Z'),
             UtcTimestamp::fromString('2026-11-10T16:00:00Z'),
-            Extensions::of(['alertLevel' => 'amber']),
         );
     }
 

@@ -29,6 +29,7 @@ final class PostgresInboxTest extends TestCase
         $entry = DB::table('trading_inbox_entries')->sole();
         $this->assertSame(self::fingerprint('body-1'), $entry->fingerprint);
         $this->assertSame('2026-11-07 09:30:00.25+00', $entry->received_at);
+        $this->assertSame('{"body": 1}', $entry->body);
     }
 
     public function test_entries_are_unique_per_consumer(): void
@@ -48,6 +49,6 @@ final class PostgresInboxTest extends TestCase
 
     private function entry(string $consumer, string $fingerprint): InboxEntryDto
     {
-        return new InboxEntryDto($consumer, self::MESSAGE_ID, $fingerprint, new DateTimeImmutable('2026-11-07T09:30:00.25Z'));
+        return new InboxEntryDto($consumer, self::MESSAGE_ID, $fingerprint, '{"body": 1}', new DateTimeImmutable('2026-11-07T09:30:00.25Z'));
     }
 }

@@ -34,7 +34,6 @@ final class TradeSignalContentTranslatorTest extends TestCase
         $this->assertSame('EUR', $content->referencePrice->currencyCode());
         $this->assertSame('2026-11-07T08:59:00.000000Z', $content->referencePrice->asOf()->toString());
         $this->assertSame('2026-11-10T16:00:00.000000Z', $content->validUntil->toString());
-        $this->assertSame('{"alertLevel":"amber"}', $content->extensions?->toJson());
     }
 
     public function test_the_optional_fields_may_be_missing(): void
@@ -48,7 +47,6 @@ final class TradeSignalContentTranslatorTest extends TestCase
 
         $this->assertInstanceOf(TradeSignalContent::class, $content);
         $this->assertNull($content->expectedMove);
-        $this->assertNull($content->extensions);
         $this->assertNull($content->horizon->sessions());
         $this->assertSame(Direction::Short, $content->direction);
     }

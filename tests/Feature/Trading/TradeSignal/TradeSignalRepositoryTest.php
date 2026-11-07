@@ -48,7 +48,6 @@ final class TradeSignalRepositoryTest extends TestCase
         $this->assertSame('1.5', $row->expected_move_min);
         $this->assertSame('4.0', $row->expected_move_max);
         $this->assertSame('2026-11-20', $row->horizon_at);
-        $this->assertSame(['alertLevel' => 'amber'], json_decode((string) $row->extensions, true));
     }
 
     public function test_decimals_keep_every_digit_and_optional_content_stays_empty(): void
@@ -67,7 +66,6 @@ final class TradeSignalRepositoryTest extends TestCase
                 null,
                 ReferencePrice::of(self::REFERENCE_PRICE, 'EUR', '2026-11-07T08:59:00Z'),
                 UtcTimestamp::fromString('2026-11-10T16:00:00Z'),
-                null,
             ),
             new \DateTimeImmutable(TradeSignalBuilder::RECEIVED_AT),
         );
@@ -80,7 +78,6 @@ final class TradeSignalRepositoryTest extends TestCase
         $this->assertSame(self::REFERENCE_PRICE, $row->reference_price_amount);
         $this->assertNull($row->expected_move_min);
         $this->assertNull($row->horizon_sessions);
-        $this->assertNull($row->extensions);
     }
 
     public function test_a_rejected_trade_signal_round_trips_with_its_signal_outcome(): void
@@ -97,6 +94,17 @@ final class TradeSignalRepositoryTest extends TestCase
         $row = DB::table('trading_trade_signals')->sole();
         $this->assertSame('SignalRejected', $row->outcome);
         $this->assertNull($row->issued_at);
+    }
+
+    public function test_a_stored_outcome_of_an_unknown_type_is_refused(): void
+    {
+        $repository = $this->app->make(TradeSignalRepositoryInterface::class);
+        $repository->add(TradeSignalBuilder::rejected());
+        DB::table('trading_trade_signals')->update(['outcome' => 'OrderFilled']);
+
+        $this->expectException(\ValueError::class);
+
+        $repository->get(new TradeSignalId(TradeSignalBuilder::ID));
     }
 
     public function test_the_database_refuses_a_second_trade_signal_with_the_same_id(): void

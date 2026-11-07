@@ -10,7 +10,6 @@ use PHPUnit\Framework\TestCase;
 use TradeManeuver\Trading\Domain\TradeSignal\Exception\InvalidTradeSignalValueException;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Confidence;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ExpectedMove;
-use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Extensions;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Horizon;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Instrument;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Mic;
@@ -288,11 +287,5 @@ final class TradeSignalValueObjectsTest extends TestCase
             $this->assertSame($message, $exception->getMessage());
             $this->assertSame($part, $exception->part);
         }
-    }
-
-    public function test_extensions_are_kept_as_a_json_object(): void
-    {
-        $this->assertSame('{"alertLevel":"amber","strength":2.0,"path":"a/b"}', Extensions::of(['alertLevel' => 'amber', 'strength' => 2.0, 'path' => 'a/b'])->toJson());
-        $this->assertSame('{}', Extensions::of([])->toJson());
     }
 }

@@ -10,7 +10,6 @@ use TradeManeuver\Trading\Domain\TradeSignal\Exception\InvalidTradeSignalValueEx
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Confidence;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ContractViolations;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ExpectedMove;
-use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Extensions;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Horizon;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Instrument;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Mic;
@@ -47,7 +46,7 @@ final class TradeSignalContentTranslator
         $expectedMove = $this->expectedMove($fields);
         $referencePrice = $this->referencePrice($fields);
         $validUntil = $fields->required('validUntil', UtcTimestamp::fromString(...));
-        $extensions = $this->extensions($fields);
+        $fields->optionalObject('extensions');
 
         return $this->content(
             $fields,
@@ -60,7 +59,6 @@ final class TradeSignalContentTranslator
             $expectedMove,
             $referencePrice,
             $validUntil,
-            $extensions,
         );
     }
 
@@ -81,7 +79,6 @@ final class TradeSignalContentTranslator
         ?ExpectedMove $expectedMove,
         ?ReferencePrice $referencePrice,
         ?UtcTimestamp $validUntil,
-        ?Extensions $extensions,
     ): TradeSignalContent|ContractViolations {
         if ($fields->violations() !== [] || $issuedAt === null || $investmentConfigurationRef === null
             || $instrument === null || $direction === null || $confidence === null || $horizon === null
@@ -99,7 +96,6 @@ final class TradeSignalContentTranslator
             $expectedMove,
             $referencePrice,
             $validUntil,
-            $extensions,
         );
     }
 
@@ -172,12 +168,5 @@ final class TradeSignalContentTranslator
         }
 
         return $fields->attempt('referencePrice', static fn (): ReferencePrice => ReferencePrice::of($amount, $currency, $asOf));
-    }
-
-    private function extensions(MessageFields $fields): ?Extensions
-    {
-        $extensions = $fields->optionalObject('extensions');
-
-        return $extensions === null ? null : Extensions::of($extensions);
     }
 }

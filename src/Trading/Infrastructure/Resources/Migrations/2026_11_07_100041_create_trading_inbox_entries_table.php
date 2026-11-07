@@ -15,6 +15,8 @@ return new class extends Migration
             $table->uuid('message_id');
             // SHA-256 of the message body, which tells a duplicate from a conflicting reuse of the message id.
             $table->char('fingerprint', 64);
+            // The body exactly as delivered: it keeps fields Trade Maneuver does not interpret, such as `extensions`.
+            $table->text('body');
             $table->timestampTz('received_at', 6);
             $table->primary(['consumer', 'message_id']);
         });

@@ -18,7 +18,6 @@ use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Confidence;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ContractViolation;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ContractViolations;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ExpectedMove;
-use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Extensions;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Horizon;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Instrument;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Mic;
@@ -70,7 +69,6 @@ final class TradeSignalStateTest extends TestCase
         yield 'horizon' => [Horizon::class];
         yield 'expected move' => [ExpectedMove::class];
         yield 'reference price' => [ReferencePrice::class];
-        yield 'extensions' => [Extensions::class];
         yield 'signal outcome' => [SignalOutcome::class];
         yield 'signal outcome identity' => [SignalOutcomeId::class];
         yield 'contract violation' => [ContractViolation::class];

@@ -26,7 +26,6 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $reference_price_currency
  * @property string|null $reference_price_as_of
  * @property string|null $valid_until
- * @property string|null $extensions the JSON object as PostgreSQL returns it
  * @property string|null $outcome_id
  * @property string|null $outcome
  * @property string|null $outcome_occurred_at
