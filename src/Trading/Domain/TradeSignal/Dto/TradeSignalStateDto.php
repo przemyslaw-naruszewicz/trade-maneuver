@@ -12,7 +12,7 @@ use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\TradeSignalContent;
 /**
  * A rejected trade signal may have no content: its message did not satisfy the contract.
  */
-final class TradeSignalStateDto
+final readonly class TradeSignalStateDto
 {
     public function __construct(
         public AnalyticsApplicationId $source,
