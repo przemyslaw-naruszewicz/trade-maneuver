@@ -31,7 +31,6 @@ return new class extends Migration
             $table->char('reference_price_currency', 3)->nullable();
             $table->timestampTz('reference_price_as_of', 6)->nullable();
             $table->timestampTz('valid_until', 6)->nullable();
-            $table->jsonb('extensions')->nullable();
 
             $table->uuid('outcome_id')->nullable();
             $table->text('outcome')->nullable();

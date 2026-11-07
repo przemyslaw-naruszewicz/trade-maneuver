@@ -52,6 +52,18 @@ final class TradeSignalMessageTest extends TestCase
         $this->assertSame('', $message->metadata()['type']);
     }
 
+    public function test_long_envelope_values_are_cut_in_the_metadata(): void
+    {
+        $source = str_repeat('ś', 250);
+        $message = TradeSignalMessage::fromBody(json_encode(['id' => str_repeat('a', 201), 'source' => $source, 'type' => 'tm.trade-signal.v1'], JSON_THROW_ON_ERROR));
+
+        $metadata = $message->metadata();
+
+        $this->assertSame(str_repeat('a', 200), $metadata['id']);
+        $this->assertSame(str_repeat('ś', 200), $metadata['source']);
+        $this->assertSame('tm.trade-signal.v1', $metadata['type']);
+    }
+
     public function test_large_integers_stay_strings_instead_of_floats(): void
     {
         $message = TradeSignalMessage::fromBody('{"horizon":{"sessions":123456789012345678901234567890}}');

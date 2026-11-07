@@ -10,6 +10,7 @@ use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\AnalyticsAp
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\InvestmentConfigurationRef;
 use TradeManeuver\Trading\Domain\TradeSignal\Dto\TradeSignalStateDto;
 use TradeManeuver\Trading\Domain\TradeSignal\Enum\Direction;
+use TradeManeuver\Trading\Domain\TradeSignal\Enum\SignalOutcomeType;
 use TradeManeuver\Trading\Domain\TradeSignal\Repository\Exception\TradeSignalDoesNotExistException;
 use TradeManeuver\Trading\Domain\TradeSignal\Repository\TradeSignalRepositoryInterface;
 use TradeManeuver\Trading\Domain\TradeSignal\TradeSignal;
@@ -17,7 +18,6 @@ use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Confidence;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ContractViolation;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ContractViolations;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ExpectedMove;
-use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Extensions;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Horizon;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Instrument;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Mic;
@@ -93,7 +93,6 @@ final class TradeSignalRepository implements TradeSignalRepositoryInterface
         $model->reference_price_currency = $content->referencePrice->currencyCode();
         $model->reference_price_as_of = $content->referencePrice->asOf()->dateTime()->format(self::TIME_FORMAT);
         $model->valid_until = $content->validUntil->dateTime()->format(self::TIME_FORMAT);
-        $model->extensions = $content->extensions?->toJson();
     }
 
     private function fillOutcome(TradeSignalModel $model, SignalOutcome $outcome): void
@@ -129,7 +128,6 @@ final class TradeSignalRepository implements TradeSignalRepositoryInterface
                 self::timestampOf((string) $model->reference_price_as_of)->toString(),
             ),
             self::timestampOf((string) $model->valid_until),
-            $model->extensions === null ? null : self::extensionsOf($model->extensions),
         );
     }
 
@@ -144,19 +142,16 @@ final class TradeSignalRepository implements TradeSignalRepositoryInterface
             $violations[] = new ContractViolation($violation['field'], $violation['message']);
         }
 
-        return SignalOutcome::rejection(
-            new SignalOutcomeId($model->outcome_id),
-            ContractViolations::of(...$violations),
-            new DateTimeImmutable((string) $model->outcome_occurred_at),
-        );
-    }
+        // Only signal rejections are stored so far; from() refuses an outcome this mapping does not know yet.
+        $type = SignalOutcomeType::from((string) $model->outcome);
 
-    private static function extensionsOf(string $json): Extensions
-    {
-        /** @var array<string, mixed> $values */
-        $values = json_decode($json, true, flags: JSON_THROW_ON_ERROR);
-
-        return Extensions::of($values);
+        return match ($type) {
+            SignalOutcomeType::SignalRejected => SignalOutcome::rejection(
+                new SignalOutcomeId($model->outcome_id),
+                ContractViolations::of(...$violations),
+                new DateTimeImmutable((string) $model->outcome_occurred_at),
+            ),
+        };
     }
 
     private static function timestampOf(string $value): UtcTimestamp

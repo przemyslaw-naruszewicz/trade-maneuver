@@ -14,6 +14,9 @@ use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\TradeSignalId;
  */
 final readonly class TradeSignalMessage
 {
+    /** Envelope values come from an untrusted body, so logs and the audit trail keep at most this many characters. */
+    private const int METADATA_LENGTH = 200;
+
     /**
      * @param  array<mixed>|null  $fields
      */
@@ -62,24 +65,35 @@ final readonly class TradeSignalMessage
         }
     }
 
+    public function body(): string
+    {
+        return $this->body;
+    }
+
     public function fingerprint(): string
     {
         return hash('sha256', $this->body);
     }
 
     /**
-     * The envelope as delivered, for logs and the audit trail; a field that is not a string is reported as empty.
+     * The envelope as delivered, for logs and the audit trail; a field that is not a string is reported as empty, and a
+     * long one is cut to its first 200 characters.
      *
      * @return array<string, string>
      */
     public function metadata(): array
     {
         return [
-            'id' => $this->stringField('id') ?? '',
-            'source' => $this->stringField('source') ?? '',
-            'type' => $this->stringField('type') ?? '',
+            'id' => $this->metadataField('id'),
+            'source' => $this->metadataField('source'),
+            'type' => $this->metadataField('type'),
             'fingerprint' => $this->fingerprint(),
         ];
+    }
+
+    private function metadataField(string $name): string
+    {
+        return mb_substr($this->stringField($name) ?? '', 0, self::METADATA_LENGTH);
     }
 
     private function stringField(string $name): ?string

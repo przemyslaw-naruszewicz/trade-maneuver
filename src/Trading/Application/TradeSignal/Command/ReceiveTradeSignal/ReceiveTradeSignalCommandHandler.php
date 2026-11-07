@@ -82,7 +82,7 @@ final readonly class ReceiveTradeSignalCommandHandler
 
     private function receive(TradeSignalId $id, AnalyticsApplicationId $source, TradeSignalMessage $message, DateTimeImmutable $receivedAt): InboxDelivery
     {
-        $delivery = $this->inbox->register(new InboxEntryDto(self::CONSUMER, $id->toString(), $message->fingerprint(), $receivedAt));
+        $delivery = $this->inbox->register(new InboxEntryDto(self::CONSUMER, $id->toString(), $message->fingerprint(), $message->body(), $receivedAt));
         match ($delivery) {
             InboxDelivery::First => $this->process($id, $source, $message, $receivedAt),
             InboxDelivery::Duplicate => $this->redeliver($id, $source, $message, $receivedAt),

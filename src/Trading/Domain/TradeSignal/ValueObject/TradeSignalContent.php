@@ -8,7 +8,8 @@ use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\InvestmentC
 use TradeManeuver\Trading\Domain\TradeSignal\Enum\Direction;
 
 /**
- * What a valid trade signal says, as the analytics application sent it.
+ * What a valid trade signal says, as the analytics application sent it. Its `extensions`, which Trade Maneuver does
+ * not interpret, stay in the message body that the inbox keeps.
  */
 final readonly class TradeSignalContent
 {
@@ -22,6 +23,5 @@ final readonly class TradeSignalContent
         public ?ExpectedMove $expectedMove,
         public ReferencePrice $referencePrice,
         public UtcTimestamp $validUntil,
-        public ?Extensions $extensions,
     ) {}
 }

@@ -25,6 +25,7 @@ final readonly class PostgresInbox implements InboxInterface
             'consumer' => $entry->consumer,
             'message_id' => $entry->messageId,
             'fingerprint' => $entry->fingerprint,
+            'body' => $entry->body,
             'received_at' => $entry->receivedAt->format('Y-m-d H:i:s.uP'),
         ]);
         if ($inserted === 1) {

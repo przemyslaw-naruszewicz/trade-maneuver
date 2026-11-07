@@ -7,7 +7,7 @@ namespace TradeManeuver\Trading\Application\Inbox;
 use DateTimeImmutable;
 
 /**
- * One delivered message as the inbox records it: the fingerprint is a hash of the message body.
+ * One delivered message as the inbox records it: the body exactly as delivered, and its fingerprint, a hash of it.
  */
 final readonly class InboxEntryDto
 {
@@ -15,6 +15,7 @@ final readonly class InboxEntryDto
         public string $consumer,
         public string $messageId,
         public string $fingerprint,
+        public string $body,
         public DateTimeImmutable $receivedAt,
     ) {}
 }

@@ -72,6 +72,22 @@ final class ReceiveTradeSignalTest extends TestCase
         $this->assertDatabaseEmpty('trading_outbox_messages');
     }
 
+    public function test_extensions_are_kept_in_the_inbox_exactly_as_delivered_without_reading_their_numbers(): void
+    {
+        $extensions = '"extensions":{"score":1e400,"precise":12345678901234567890.123}';
+        $body = str_replace(
+            '"extensions":{"alertLevel":"amber"}',
+            $extensions,
+            TradeSignalMessageBuilder::aTradeSignal(TradeSignalMessageBuilder::idFor('purchase'))->body(),
+        );
+        $this->assertStringContainsString($extensions, $body);
+
+        $this->assertSame(TradeSignalIntakeResult::Accepted, $this->receive($body, 'demo-analytics'));
+
+        $this->assertSame($body, DB::table('trading_inbox_entries')->sole()->body);
+        $this->assertNull(DB::table('trading_trade_signals')->sole()->outcome);
+    }
+
     public function test_a_rejected_trade_signal_records_its_signal_outcome_in_the_outbox(): void
     {
         $id = TradeSignalMessageBuilder::idFor('purchase');

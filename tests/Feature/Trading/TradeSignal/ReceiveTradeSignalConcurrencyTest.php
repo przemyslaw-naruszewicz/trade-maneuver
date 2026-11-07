@@ -86,7 +86,7 @@ final class ReceiveTradeSignalConcurrencyTest extends TestCase
     }
 
     /**
-     * Waits until the query reports a waiting lock; a worker that never waits shows up in the assertions instead.
+     * Waits until the query reports a waiting lock, so the test fails when the interleaving it claims did not happen.
      */
     private function waitUntil(string $query): void
     {
@@ -96,5 +96,6 @@ final class ReceiveTradeSignalConcurrencyTest extends TestCase
             }
             usleep(50_000);
         }
+        $this->fail('The expected lock wait did not happen: '.$query);
     }
 }
