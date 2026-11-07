@@ -93,7 +93,7 @@ final class TradeSignalRepository implements TradeSignalRepositoryInterface
         $model->reference_price_currency = $content->referencePrice->currencyCode();
         $model->reference_price_as_of = $content->referencePrice->asOf()->dateTime()->format(self::TIME_FORMAT);
         $model->valid_until = $content->validUntil->dateTime()->format(self::TIME_FORMAT);
-        $model->setAttribute('extensions', $content->extensions?->toJson());
+        $model->extensions = $content->extensions?->toJson();
     }
 
     private function fillOutcome(TradeSignalModel $model, SignalOutcome $outcome): void
@@ -129,7 +129,7 @@ final class TradeSignalRepository implements TradeSignalRepositoryInterface
                 self::timestampOf((string) $model->reference_price_as_of)->toString(),
             ),
             self::timestampOf((string) $model->valid_until),
-            $model->extensions === null ? null : Extensions::of($model->extensions),
+            $model->extensions === null ? null : self::extensionsOf($model->extensions),
         );
     }
 
@@ -149,6 +149,14 @@ final class TradeSignalRepository implements TradeSignalRepositoryInterface
             ContractViolations::of(...$violations),
             new DateTimeImmutable((string) $model->outcome_occurred_at),
         );
+    }
+
+    private static function extensionsOf(string $json): Extensions
+    {
+        /** @var array<string, mixed> $values */
+        $values = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+
+        return Extensions::of($values);
     }
 
     private static function timestampOf(string $value): UtcTimestamp
