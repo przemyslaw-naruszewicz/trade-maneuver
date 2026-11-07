@@ -60,7 +60,7 @@ final class TradeSignalValueObjectsTest extends TestCase
     public static function micFormats(): iterable
     {
         yield 'fictional exchange' => ['DEMO'];
-        yield 'letters and digits' => ['X2D4'];
+        yield 'letters and digits' => ['DEM0'];
     }
 
     #[DataProvider('micFormats')]
