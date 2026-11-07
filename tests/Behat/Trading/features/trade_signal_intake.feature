@@ -21,3 +21,8 @@ Feature: Trade signal intake
   Scenario: A trade signal addressing an unknown investment configuration is rejected
     When "demo-analytics" delivers the trade signal "purchase" with "investmentConfigurationRef" set to "demo-unknown"
     Then the trade signal "purchase" ends with one SignalRejected outcome listing a violation of "investmentConfigurationRef"
+
+  Scenario: A trade signal from an analytics application not authorized for the investment configuration is rejected
+    Given the analytics application "demo-research" publishes as the RabbitMQ user "demo-research"
+    When "demo-research" delivers the trade signal "purchase"
+    Then the trade signal "purchase" ends with one SignalRejected outcome listing a violation of "source"
