@@ -57,6 +57,14 @@ final class ReceiveTradeSignalNotProcessableTest extends TestCase
         $this->assertSetAside($body, self::PUBLISHER, '', 'The message has no valid id.');
     }
 
+    public function test_a_message_from_an_unknown_source_is_not_processable_and_audited(): void
+    {
+        $id = TradeSignalMessageBuilder::idFor('purchase');
+        $body = TradeSignalMessageBuilder::aTradeSignal($id, 'demo-unknown')->body();
+
+        $this->assertSetAside($body, self::PUBLISHER, $id, 'The source is not a known analytics application.');
+    }
+
     private function assertSetAside(string $body, ?string $publisherIdentity, string $id, string $reason): void
     {
         $result = $this->receive($body, $publisherIdentity);
