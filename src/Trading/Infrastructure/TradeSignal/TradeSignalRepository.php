@@ -154,7 +154,7 @@ final class TradeSignalRepository implements TradeSignalRepositoryInterface
     private static function extensionsOf(string $json): Extensions
     {
         /** @var array<string, mixed> $values */
-        $values = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+        $values = json_decode($json, true, flags: JSON_THROW_ON_ERROR);
 
         return Extensions::of($values);
     }

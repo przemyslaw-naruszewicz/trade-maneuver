@@ -13,6 +13,7 @@ use TradeManeuver\Trading\Domain\TradeSignal\Event\TradeSignalRejected;
 use TradeManeuver\Trading\Domain\TradeSignal\Exception\InvalidTradeSignalStateException;
 use TradeManeuver\Trading\Domain\TradeSignal\Exception\InvalidTradeSignalValueException;
 use TradeManeuver\Trading\Domain\TradeSignal\TradeSignal;
+use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ContractViolation;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ContractViolations;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\TradeSignalId;
 
@@ -43,6 +44,14 @@ final class TradeSignalTest extends TestCase
         $this->expectExceptionMessage('A signal rejection needs at least one contract violation.');
 
         ContractViolations::of();
+    }
+
+    public function test_the_violations_form_a_list_in_the_order_given(): void
+    {
+        $first = new ContractViolation('confidence', 'The confidence must be a decimal string from 0 to 1, such as 0.85.');
+        $second = new ContractViolation('direction', 'The field is required.');
+
+        $this->assertSame([$first, $second], ContractViolations::of(...['first' => $first, 'second' => $second])->all());
     }
 
     public function test_a_received_trade_signal_awaits_evaluation_without_an_outcome(): void

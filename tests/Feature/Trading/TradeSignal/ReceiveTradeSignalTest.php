@@ -103,6 +103,7 @@ final class ReceiveTradeSignalTest extends TestCase
         $values = json_decode((string) $audit->values, true);
         $this->assertIsArray($values);
         $this->assertSame($tradeSignal->outcome_id, $values['outcomeId']);
+        $this->assertEquals(['id' => $id, 'source' => 'demo-analytics', 'type' => 'tm.trade-signal.v1', 'fingerprint' => hash('sha256', $body)], array_intersect_key($values, array_flip(['id', 'source', 'type', 'fingerprint'])));
         $this->assertSame([
             'instrument.symbol: The field is required.',
             'confidence: The confidence must be a decimal string from 0 to 1, such as 0.85.',
@@ -148,6 +149,8 @@ final class ReceiveTradeSignalTest extends TestCase
         $values = json_decode((string) $audit->values, true);
         $this->assertIsArray($values);
         $this->assertSame('', $values['outcomeId']);
+        $this->assertSame(hash('sha256', $body), $values['fingerprint']);
+        $this->assertSame($id, $values['id']);
     }
 
     public function test_a_duplicate_of_a_rejected_trade_signal_records_the_same_outcome_message_again(): void
@@ -158,13 +161,14 @@ final class ReceiveTradeSignalTest extends TestCase
 
         $this->receive($body, 'demo-analytics');
 
-        $outboxMessages = DB::table('trading_outbox_messages')->orderBy('id')->get();
+        $outboxMessages = DB::table('trading_outbox_messages')->orderBy('id')->get()->all();
         $this->assertCount(2, $outboxMessages);
-        $this->assertSame($outboxMessages[0]->message_id, $outboxMessages[1]->message_id);
-        $this->assertSame(json_decode((string) $outboxMessages[0]->payload, true), json_decode((string) $outboxMessages[1]->payload, true));
+        [$first, $second] = $outboxMessages;
+        $this->assertSame($first->message_id, $second->message_id);
+        $this->assertSame(json_decode((string) $first->payload, true), json_decode((string) $second->payload, true));
         $values = json_decode((string) DB::table('trading_audit_records')->where('action', 'duplicate_delivered')->sole()->values, true);
         $this->assertIsArray($values);
-        $this->assertSame($outboxMessages[0]->message_id, $values['outcomeId']);
+        $this->assertSame($first->message_id, $values['outcomeId']);
     }
 
     private function receive(string $body, ?string $publisherIdentity): TradeSignalIntakeResult

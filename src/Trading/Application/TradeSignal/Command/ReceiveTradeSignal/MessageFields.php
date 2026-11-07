@@ -74,13 +74,12 @@ final class MessageFields
      */
     public function requiredObject(string $path): bool
     {
-        if (! $this->has($path)) {
-            $this->violate($path, 'The field is required.');
-
-            return false;
+        if ($this->has($path)) {
+            return $this->optionalObject($path) !== null;
         }
+        $this->violate($path, 'The field is required.');
 
-        return $this->optionalObject($path) !== null;
+        return false;
     }
 
     /**
