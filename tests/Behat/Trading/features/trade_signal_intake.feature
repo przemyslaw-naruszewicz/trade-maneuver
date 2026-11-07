@@ -9,3 +9,7 @@ Feature: Trade signal intake
   Scenario: A trade signal without a required field is rejected
     When "demo-analytics" delivers the trade signal "purchase" without "instrument.symbol"
     Then the trade signal "purchase" ends with one SignalRejected outcome listing a violation of "instrument.symbol"
+
+  Scenario: A trade signal with an invalid value is rejected
+    When "demo-analytics" delivers the trade signal "purchase" with "confidence" set to "1.5"
+    Then the trade signal "purchase" ends with one SignalRejected outcome listing a violation of "confidence"
