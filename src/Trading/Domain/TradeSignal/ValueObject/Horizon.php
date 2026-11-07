@@ -15,7 +15,7 @@ final readonly class Horizon
 {
     private const string DATE_FORMAT = 'Y-m-d';
 
-    private function __construct(private ?int $sessions, private ?DateTimeImmutable $at) {}
+    private function __construct(private ?int $sessions, private ?string $at) {}
 
     /**
      * @throws InvalidTradeSignalValueException
@@ -42,16 +42,16 @@ final readonly class Horizon
      */
     public function at(): ?string
     {
-        return $this->at?->format(self::DATE_FORMAT);
+        return $this->at;
     }
 
-    private static function dateOf(string $at): DateTimeImmutable
+    private static function dateOf(string $at): string
     {
-        $date = DateTimeImmutable::createFromFormat('!'.self::DATE_FORMAT, $at, new DateTimeZone('UTC'));
+        $date = DateTimeImmutable::createFromFormat(self::DATE_FORMAT, $at, new DateTimeZone('UTC'));
         if ($date === false || $date->format(self::DATE_FORMAT) !== $at) {
             throw new InvalidTradeSignalValueException('The horizon date must be a date such as 2026-11-20.', 'at');
         }
 
-        return $date;
+        return $at;
     }
 }

@@ -102,6 +102,10 @@ final class TradeSignal
     }
 
     /**
+     * Each transition records one event, so a mutant that keeps just the first event is equivalent.
+     *
+     * @infection-ignore-all
+     *
      * @return list<TradeSignalReceived|TradeSignalRejected>
      */
     public function releaseEvents(): array

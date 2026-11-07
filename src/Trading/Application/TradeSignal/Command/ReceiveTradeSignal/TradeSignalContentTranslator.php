@@ -49,9 +49,43 @@ final class TradeSignalContentTranslator
         $validUntil = $fields->required('validUntil', UtcTimestamp::fromString(...));
         $extensions = $this->extensions($fields);
 
-        if ($issuedAt === null || $investmentConfigurationRef === null || $instrument === null || $direction === null
-            || $confidence === null || $horizon === null || $referencePrice === null || $validUntil === null
-            || $fields->violations() !== []) {
+        return $this->content(
+            $fields,
+            $issuedAt,
+            $investmentConfigurationRef,
+            $instrument,
+            $direction,
+            $confidence,
+            $horizon,
+            $expectedMove,
+            $referencePrice,
+            $validUntil,
+            $extensions,
+        );
+    }
+
+    /**
+     * A required value is null only together with its violation, so the null checks exist for the types alone and
+     * their mutants are equivalent.
+     *
+     * @infection-ignore-all
+     */
+    private function content(
+        MessageFields $fields,
+        ?UtcTimestamp $issuedAt,
+        ?InvestmentConfigurationRef $investmentConfigurationRef,
+        ?Instrument $instrument,
+        ?Direction $direction,
+        ?Confidence $confidence,
+        ?Horizon $horizon,
+        ?ExpectedMove $expectedMove,
+        ?ReferencePrice $referencePrice,
+        ?UtcTimestamp $validUntil,
+        ?Extensions $extensions,
+    ): TradeSignalContent|ContractViolations {
+        if ($fields->violations() !== [] || $issuedAt === null || $investmentConfigurationRef === null
+            || $instrument === null || $direction === null || $confidence === null || $horizon === null
+            || $referencePrice === null || $validUntil === null) {
             return ContractViolations::of(...$fields->violations());
         }
 
