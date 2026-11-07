@@ -27,7 +27,7 @@ final class ReceiveTradeSignalAtomicityTest extends TestCase
         DB::unprepared(<<<'SQL'
             CREATE OR REPLACE FUNCTION trading_test_fail_outbox_write() RETURNS trigger LANGUAGE plpgsql AS $$
             BEGIN
-                RAISE EXCEPTION 'outbox write failed for the test';
+                RAISE EXCEPTION 'outbox write failed for the test with % audit records written', (SELECT count(*) FROM trading_audit_records);
             END
             $$;
             CREATE TRIGGER trading_test_fail_outbox_write BEFORE INSERT ON trading_outbox_messages
@@ -56,7 +56,8 @@ final class ReceiveTradeSignalAtomicityTest extends TestCase
             $this->app->make(ReceiveTradeSignalCommandHandler::class)->handle(new ReceiveTradeSignalCommand($body, 'demo-analytics'));
             $this->fail('The outbox write was expected to fail.');
         } catch (QueryException $exception) {
-            $this->assertStringContainsString('outbox write failed for the test', $exception->getMessage());
+            // The failure must come after the audit record is written, or the rollback of the audit record is not shown.
+            $this->assertStringContainsString('outbox write failed for the test with 1 audit records written', $exception->getMessage());
         }
 
         $this->assertSame(0, DB::transactionLevel());
