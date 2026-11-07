@@ -36,3 +36,7 @@ Feature: Trade signal intake
     When "demo-analytics" delivers the trade signal "purchase" with "instrument.mic" set to "DEMO"
     Then the trade signal "purchase" is stored and awaits evaluation
     And no signal outcome is recorded
+
+  Scenario: A trade signal whose exchange code does not have the MIC format is rejected
+    When "demo-analytics" delivers the trade signal "purchase" with "instrument.mic" set to "demo"
+    Then the trade signal "purchase" ends with one SignalRejected outcome listing a violation of "instrument.mic"
