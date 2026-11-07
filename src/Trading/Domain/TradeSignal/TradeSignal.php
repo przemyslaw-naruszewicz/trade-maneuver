@@ -62,8 +62,10 @@ final class TradeSignal
         DateTimeImmutable $rejectedAt,
     ): self {
         $outcome = SignalOutcome::rejection($outcomeId, $violations, $rejectedAt);
+        $tradeSignal = new self($id, $source, $rejectedAt, null, $outcome);
+        $tradeSignal->recordedEvents[] = new TradeSignalRejected($id, $source, $outcome);
 
-        return new self($id, $source, $rejectedAt, null, $outcome);
+        return $tradeSignal;
     }
 
     /**
