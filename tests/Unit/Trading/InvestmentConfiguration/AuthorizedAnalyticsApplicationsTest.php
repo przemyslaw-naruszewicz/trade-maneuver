@@ -26,4 +26,13 @@ final class AuthorizedAnalyticsApplicationsTest extends TestCase
         $this->assertSame(['demo-analytics', 'demo-research'], $authorized->identifiers());
         $this->assertSame([0, 1], array_keys($authorized->all()));
     }
+
+    public function test_the_set_includes_only_its_analytics_applications(): void
+    {
+        $authorized = AuthorizedAnalyticsApplications::of(new AnalyticsApplicationId('demo-analytics'));
+
+        $this->assertTrue($authorized->includes(new AnalyticsApplicationId('demo-analytics')));
+        $this->assertFalse($authorized->includes(new AnalyticsApplicationId('demo-research')));
+        $this->assertFalse(AuthorizedAnalyticsApplications::of()->includes(new AnalyticsApplicationId('demo-analytics')));
+    }
 }

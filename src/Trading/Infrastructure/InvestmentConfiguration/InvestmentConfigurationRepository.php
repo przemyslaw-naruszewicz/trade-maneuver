@@ -33,6 +33,13 @@ final class InvestmentConfigurationRepository implements InvestmentConfiguration
         return InvestmentConfigurationModel::query()->where('reference', $reference->toString())->exists();
     }
 
+    public function findByReference(InvestmentConfigurationRef $reference): ?InvestmentConfiguration
+    {
+        $model = InvestmentConfigurationModel::query()->where('reference', $reference->toString())->first();
+
+        return $model === null ? null : $this->reconstitute($model);
+    }
+
     public function add(InvestmentConfiguration $investmentConfiguration): void
     {
         $state = $investmentConfiguration->state();
@@ -61,6 +68,11 @@ final class InvestmentConfigurationRepository implements InvestmentConfiguration
             throw InvestmentConfigurationDoesNotExistException::withId($id);
         }
 
+        return $this->reconstitute($model);
+    }
+
+    private function reconstitute(InvestmentConfigurationModel $model): InvestmentConfiguration
+    {
         return InvestmentConfiguration::reconstitute(
             new InvestmentConfigurationId($model->id),
             new InvestmentConfigurationStateDto(

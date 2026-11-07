@@ -1,7 +1,7 @@
 # Trade Maneuver: integration overview
 
-The Trade Maneuver repository contains an
-application skeleton; the integration described here is planned. Trade Maneuver is a portfolio and educational project:
+Trade Maneuver accepts `tm.trade-signal.v1` messages and records their signal outcomes at its
+application boundary; the RabbitMQ transport described here is planned. Trade Maneuver is a portfolio and educational project:
 the service will receive trade signals from analytics applications and submit orders
 to a simulated, fictional broker. It places no real orders, and integration with a real broker is out of
 scope. In this document, "broker" means the simulated broker unless stated otherwise.
@@ -18,6 +18,7 @@ The project does not provide services to third parties.
 | Who owns what? | The analytics application issues a signal; Trade Maneuver decides on an order. A signal is not an order | [1](#1-responsibilities) |
 | What is the DDD relationship? | Trade Maneuver is upstream: an Open Host Service with its own intake contract. Proximtype is downstream: one of several possible producers, translating its signal into that contract | [2](#2-ddd-relationship) |
 | What crosses the boundary? | A `tm.trade-signal.v1` message, translated from the producer's own signal | [3](#3-contract-tmtrade-signalv1) |
+| What comes back? | One `tm.signal-outcome.v1` message per trade signal, correlated by its `id` | [3](#outcome-message-tmsignal-outcomev1) |
 | Which transport? | RabbitMQ, selected in ADR-0003 | [4](#4-transport) |
 | What remains open? | Optionality of `expectedMove` | [7](#7-open-decisions) |
 
@@ -172,6 +173,46 @@ Contract rules:
   which is accepted alongside v1 until producers migrate.
 - Messages must be complete: the producer provides all required data before publication.
   Trade Maneuver does not retrieve missing information from the producer's database.
+
+### Outcome message: `tm.signal-outcome.v1`
+
+Trade Maneuver reports each signal outcome in this message. Its envelope is inspired by CloudEvents, like
+the intake contract's. A field that does not apply to the outcome is absent.
+
+| Field | Type | Content |
+|---|---|---|
+| `id` | UUID | Identity of the outcome message; it stays the same when the message is published again |
+| `source` | `trade-maneuver` | The publisher |
+| `type` | `tm.signal-outcome.v1` | The fixed contract version |
+| `time` | ISO 8601, UTC | When Trade Maneuver reached the outcome |
+| `signalId` | UUID | The `id` of the trade signal |
+| `outcome` | `SignalRejected` \| `SignalDeclined` \| `OrderRejected` \| `OrderFilled` \| `OrderExpired` \| `OrderCancelled` | The signal outcome |
+| `reason` | Decline reason code | Only for `SignalDeclined` |
+| `executedQuantity` | Integer | Whole units executed; only for `OrderFilled`, `OrderExpired`, and `OrderCancelled` |
+| `violations` | List of `{field, message}` | Only for `SignalRejected`; one entry per contract violation |
+
+A violation's `field` is the path of the field in the trade signal, such as `instrument.mic` or
+`referencePrice.amount`. An unknown investment configuration is reported on `investmentConfigurationRef`,
+and an analytics application not authorized for it on `source`. Within one composite field, such as
+`referencePrice` or `horizon`, only the first invalid part is reported. The `message` is written for
+people; consumers must not parse it.
+
+A duplicate delivery of a trade signal whose outcome is already stored receives the same message again,
+with the same `id`, `time`, and content. Consumers deduplicate outcome messages by `id`.
+
+```json
+{
+  "id": "019a5a6e-0000-7000-8000-0000000000b1",
+  "source": "trade-maneuver",
+  "type": "tm.signal-outcome.v1",
+  "time": "2026-11-07T09:30:00.250000Z",
+  "signalId": "019a5a6e-0000-7000-8000-0000000000a1",
+  "outcome": "SignalRejected",
+  "violations": [
+    {"field": "instrument.mic", "message": "The exchange code must have the MIC format: four upper-case letters or digits."}
+  ]
+}
+```
 
 ## 4. Transport
 

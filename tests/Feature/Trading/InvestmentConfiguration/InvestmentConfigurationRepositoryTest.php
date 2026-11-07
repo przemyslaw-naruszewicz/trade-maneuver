@@ -80,6 +80,28 @@ final class InvestmentConfigurationRepositoryTest extends TestCase
         $this->assertSame('4.99', $stored->tolerance);
     }
 
+    public function test_an_investment_configuration_is_found_by_its_reference(): void
+    {
+        $repository = $this->app->make(InvestmentConfigurationRepositoryInterface::class);
+        $investmentConfiguration = InvestmentConfiguration::create(
+            $repository->nextIdentity(),
+            new InvestmentConfigurationRef('demo-investment'),
+            InvestmentConfigurationCurrency::fromCode('EUR'),
+            new BrokerageAccount('DEMO-ACCOUNT-1'),
+            OrderAmount::of('200.00', 'EUR'),
+            LimitPriceTolerance::fromPercentage('1.50'),
+            AuthorizedAnalyticsApplications::of(new AnalyticsApplicationId('demo-analytics')),
+        );
+        $repository->add($investmentConfiguration);
+
+        $found = $repository->findByReference(new InvestmentConfigurationRef('demo-investment'));
+
+        $this->assertNotNull($found);
+        $this->assertSame($investmentConfiguration->id()->toString(), $found->id()->toString());
+        $this->assertTrue($found->authorizes(new AnalyticsApplicationId('demo-analytics')));
+        $this->assertNull($repository->findByReference(new InvestmentConfigurationRef('demo-unknown')));
+    }
+
     public function test_getting_an_unknown_investment_configuration_fails(): void
     {
         $repository = $this->app->make(InvestmentConfigurationRepositoryInterface::class);

@@ -10,7 +10,8 @@
         "brick/money": "^0.15.2",
         "laravel/framework": "^13.17",
         "laravel/tinker": "^3.0",
-        "psr/clock": "^1.0"
+        "psr/clock": "^1.0",
+        "psr/log": "^3.0"
     },
     "require-dev": {
         "behat/behat": "^4.0",
