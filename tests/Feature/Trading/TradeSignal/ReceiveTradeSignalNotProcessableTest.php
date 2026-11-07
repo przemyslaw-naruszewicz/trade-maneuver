@@ -50,6 +50,13 @@ final class ReceiveTradeSignalNotProcessableTest extends TestCase
         $this->assertWarningLogged('A trade signal message reuses an id with different content and is set aside.', $id);
     }
 
+    public function test_a_message_without_an_id_is_not_processable_and_audited(): void
+    {
+        $body = TradeSignalMessageBuilder::aTradeSignal('')->without('id')->body();
+
+        $this->assertSetAside($body, self::PUBLISHER, '', 'The message has no valid id.');
+    }
+
     private function assertSetAside(string $body, ?string $publisherIdentity, string $id, string $reason): void
     {
         $result = $this->receive($body, $publisherIdentity);
