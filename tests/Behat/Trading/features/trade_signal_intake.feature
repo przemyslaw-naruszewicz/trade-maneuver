@@ -40,3 +40,9 @@ Feature: Trade signal intake
   Scenario: A trade signal whose exchange code does not have the MIC format is rejected
     When "demo-analytics" delivers the trade signal "purchase" with "instrument.mic" set to "demo"
     Then the trade signal "purchase" ends with one SignalRejected outcome listing a violation of "instrument.mic"
+
+  Scenario: A duplicate delivery of a rejected trade signal records the stored outcome again
+    Given "demo-analytics" delivers the trade signal "purchase" with "confidence" set to "1.5"
+    When "demo-analytics" redelivers the trade signal "purchase"
+    Then the stored outcome of the trade signal "purchase" is recorded again with the same message identity
+    And nothing new is processed for the trade signal "purchase"
