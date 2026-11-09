@@ -27,6 +27,8 @@ final readonly class PostgresOutbox
     public function due(DateTimeImmutable $now, int $limit): array
     {
         $rows = $this->connection->table(self::TABLE)
+            ->select(['id', 'message_id', 'message_type', 'recipient', 'payload', 'attempts'])
+            ->selectRaw("payload->>'signalId' AS signal_id")
             ->whereNull('sent_at')
             ->where(static function ($query) use ($now): void {
                 $query->whereNull('next_attempt_at')->orWhere('next_attempt_at', '<=', $now->format(self::TIMESTAMP_FORMAT));
@@ -43,6 +45,7 @@ final readonly class PostgresOutbox
                 (string) $row->message_type,
                 (string) $row->recipient,
                 (string) $row->payload,
+                (string) $row->signal_id,
                 (int) $row->attempts,
             );
         }

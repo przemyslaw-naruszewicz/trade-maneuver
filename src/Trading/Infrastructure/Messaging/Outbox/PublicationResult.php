@@ -12,9 +12,6 @@ enum PublicationResult
     /** RabbitMQ returned the mandatory message because no queue is bound for its routing key. */
     case Returned;
 
-    /** RabbitMQ refused the message with a negative confirmation. */
-    case Refused;
-
-    /** No confirmation arrived in time, so the outcome of the publication is unknown. */
+    /** RabbitMQ refused the message, or no confirmation arrived in time. */
     case Unconfirmed;
 }

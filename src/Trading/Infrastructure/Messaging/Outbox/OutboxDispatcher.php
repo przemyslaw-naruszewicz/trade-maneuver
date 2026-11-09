@@ -49,7 +49,7 @@ final readonly class OutboxDispatcher
     {
         $routingKey = $this->analyticsApplicationRegistry->outcomeRoutingKey(new AnalyticsApplicationId($message->recipient));
         if ($routingKey === null) {
-            $this->fail($message, 'The recipient is not a known analytics application.', isError: true);
+            $this->fail($message, 'The recipient is not a known analytics application.');
 
             return false;
         }
@@ -57,9 +57,8 @@ final readonly class OutboxDispatcher
         $result = $this->publisher->publish($message, $routingKey);
         match ($result) {
             PublicationResult::Confirmed => $this->markSent($message),
-            PublicationResult::Returned => $this->fail($message, 'RabbitMQ cannot route the signal outcome to an outcome queue.', isError: true),
-            PublicationResult::Refused => $this->fail($message, 'RabbitMQ refused the signal outcome.', isError: false),
-            PublicationResult::Unconfirmed => $this->fail($message, 'RabbitMQ did not confirm the signal outcome in time.', isError: false),
+            PublicationResult::Returned => $this->fail($message, 'RabbitMQ cannot route the signal outcome to an outcome queue.'),
+            PublicationResult::Unconfirmed => $this->fail($message, 'RabbitMQ did not confirm the signal outcome.'),
         };
 
         return $result === PublicationResult::Confirmed;
@@ -71,18 +70,17 @@ final readonly class OutboxDispatcher
         $this->logger->info('A signal outcome is published.', $this->contextOf($message));
     }
 
-    private function fail(OutboxMessageDto $message, string $error, bool $isError): void
+    private function fail(OutboxMessageDto $message, string $error): void
     {
         $delaySeconds = min(self::MAX_RETRY_DELAY_SECONDS, self::FIRST_RETRY_DELAY_SECONDS * 2 ** $message->attempts);
         $nextAttemptAt = $this->clock->now()->modify(sprintf('+%d seconds', $delaySeconds));
         $this->outbox->recordFailedAttempt($message, $error, $nextAttemptAt);
 
-        $context = [...$this->contextOf($message), 'error' => $error, 'nextAttemptAt' => $nextAttemptAt->format(DATE_ATOM)];
-        if ($isError) {
-            $this->logger->error('A signal outcome stays unsent.', $context);
-        } else {
-            $this->logger->warning('A signal outcome stays unsent and will be retried.', $context);
-        }
+        $this->logger->error('A signal outcome stays unsent.', [
+            ...$this->contextOf($message),
+            'error' => $error,
+            'nextAttemptAt' => $nextAttemptAt->format(DATE_ATOM),
+        ]);
     }
 
     /**
@@ -90,11 +88,9 @@ final readonly class OutboxDispatcher
      */
     private function contextOf(OutboxMessageDto $message): array
     {
-        $payload = json_decode($message->payload, true);
-
         return [
             'messageId' => $message->messageId,
-            'signalId' => is_array($payload) && is_string($payload['signalId'] ?? null) ? $payload['signalId'] : '',
+            'signalId' => $message->signalId,
             'recipient' => $message->recipient,
             'attempts' => $message->attempts + 1,
         ];

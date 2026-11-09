@@ -15,7 +15,7 @@ use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\SignalOutcomePublisher
 /**
  * Publishes persistent, mandatory messages to tm.signal-outcomes on a channel in confirm mode, and waits for each
  * confirmation. RabbitMQ returns a mandatory message it cannot route before confirming it, so a return wins over the
- * confirmation that follows it.
+ * confirmation that follows it. A refusal leaves the result unconfirmed, like a confirmation that never arrives.
  */
 final class RabbitMqSignalOutcomePublisher implements SignalOutcomePublisherInterface
 {
@@ -61,7 +61,7 @@ final class RabbitMqSignalOutcomePublisher implements SignalOutcomePublisherInte
 
     private function channel(): AMQPChannel
     {
-        if ($this->channel !== null && $this->channel->is_open()) {
+        if ($this->channel !== null) {
             return $this->channel;
         }
         $this->connection = $this->connections->connect();
@@ -72,9 +72,6 @@ final class RabbitMqSignalOutcomePublisher implements SignalOutcomePublisherInte
         });
         $channel->set_ack_handler(function (): void {
             $this->result ??= PublicationResult::Confirmed;
-        });
-        $channel->set_nack_handler(function (): void {
-            $this->result ??= PublicationResult::Refused;
         });
 
         return $this->channel = $channel;
