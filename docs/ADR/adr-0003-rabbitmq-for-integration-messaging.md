@@ -2,7 +2,7 @@
 
 Date: 2026-10-27
 
-Status: Accepted as the target design; implementation is pending.
+Status: Accepted. TM-005 implemented the intake consumer, the outbox dispatcher, and the local RabbitMQ service.
 
 ## Context
 
