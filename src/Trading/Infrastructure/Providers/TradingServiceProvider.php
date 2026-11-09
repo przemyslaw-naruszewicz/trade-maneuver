@@ -7,6 +7,7 @@ namespace TradeManeuver\Trading\Infrastructure\Providers;
 use Carbon\FactoryImmutable;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\ServiceProvider;
+use PhpAmqpLib\Connection\AMQPConnectionConfig;
 use Psr\Clock\ClockInterface;
 use TradeManeuver\Trading\Application\Port\AnalyticsApplicationRegistryInterface;
 use TradeManeuver\Trading\Application\Port\AuditTrailInterface;
@@ -23,7 +24,6 @@ use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\DispatchOutboxCommand;
 use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\OutboxIntegrationEventPublisher;
 use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\SignalOutcomePublisherInterface;
 use TradeManeuver\Trading\Infrastructure\Messaging\RabbitMq\ConsumeTradeSignalsCommand;
-use TradeManeuver\Trading\Infrastructure\Messaging\RabbitMq\RabbitMqConnectionFactory;
 use TradeManeuver\Trading\Infrastructure\Messaging\RabbitMq\RabbitMqSignalOutcomePublisher;
 use TradeManeuver\Trading\Infrastructure\Persistence\LaravelTransactionManager;
 use TradeManeuver\Trading\Infrastructure\TradeSignal\TradeSignalRepository;
@@ -63,16 +63,16 @@ final class TradingServiceProvider extends ServiceProvider
                 $app->make(ClockInterface::class),
             ),
         );
-        $this->app->bind(RabbitMqConnectionFactory::class, function ($app): RabbitMqConnectionFactory {
+        $this->app->bind(AMQPConnectionConfig::class, function ($app): AMQPConnectionConfig {
             $config = $app->make('config');
+            $connection = new AMQPConnectionConfig;
+            $connection->setHost((string) $config->get('trading.rabbitmq.host'));
+            $connection->setPort((int) $config->get('trading.rabbitmq.port'));
+            $connection->setVhost((string) $config->get('trading.rabbitmq.vhost'));
+            $connection->setUser((string) $config->get('trading.rabbitmq.user'));
+            $connection->setPassword((string) $config->get('trading.rabbitmq.password'));
 
-            return new RabbitMqConnectionFactory(
-                (string) $config->get('trading.rabbitmq.host'),
-                (int) $config->get('trading.rabbitmq.port'),
-                (string) $config->get('trading.rabbitmq.vhost'),
-                (string) $config->get('trading.rabbitmq.user'),
-                (string) $config->get('trading.rabbitmq.password'),
-            );
+            return $connection;
         });
         $this->app->singleton(SignalOutcomePublisherInterface::class, RabbitMqSignalOutcomePublisher::class);
     }

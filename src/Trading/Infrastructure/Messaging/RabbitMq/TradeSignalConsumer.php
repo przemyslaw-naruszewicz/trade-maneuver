@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace TradeManeuver\Trading\Infrastructure\Messaging\RabbitMq;
 
+use PhpAmqpLib\Connection\AMQPConnectionConfig;
+use PhpAmqpLib\Connection\AMQPConnectionFactory;
 use PhpAmqpLib\Exception\AMQPTimeoutException;
 use PhpAmqpLib\Message\AMQPMessage;
 use Psr\Log\LoggerInterface;
@@ -29,7 +31,7 @@ final readonly class TradeSignalConsumer
     private const float WAIT_SECONDS = 1.0;
 
     public function __construct(
-        private RabbitMqConnectionFactory $connections,
+        private AMQPConnectionConfig $connectionConfig,
         private ReceiveTradeSignalCommandHandler $intake,
         private LoggerInterface $logger,
     ) {}
@@ -41,7 +43,7 @@ final readonly class TradeSignalConsumer
      */
     public function consume(callable $shouldStop): void
     {
-        $connection = $this->connections->connect();
+        $connection = AMQPConnectionFactory::create($this->connectionConfig);
         try {
             $channel = $connection->channel();
             $channel->basic_qos(0, self::PREFETCH, false);

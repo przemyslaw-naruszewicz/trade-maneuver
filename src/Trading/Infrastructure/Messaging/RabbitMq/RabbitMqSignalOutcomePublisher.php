@@ -6,6 +6,8 @@ namespace TradeManeuver\Trading\Infrastructure\Messaging\RabbitMq;
 
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AbstractConnection;
+use PhpAmqpLib\Connection\AMQPConnectionConfig;
+use PhpAmqpLib\Connection\AMQPConnectionFactory;
 use PhpAmqpLib\Exception\AMQPTimeoutException;
 use PhpAmqpLib\Message\AMQPMessage;
 use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\OutboxMessageDto;
@@ -29,7 +31,7 @@ final class RabbitMqSignalOutcomePublisher implements SignalOutcomePublisherInte
 
     private ?PublicationResult $result = null;
 
-    public function __construct(private readonly RabbitMqConnectionFactory $connections) {}
+    public function __construct(private readonly AMQPConnectionConfig $connectionConfig) {}
 
     public function publish(OutboxMessageDto $message, string $routingKey): PublicationResult
     {
@@ -64,7 +66,7 @@ final class RabbitMqSignalOutcomePublisher implements SignalOutcomePublisherInte
         if ($this->channel !== null) {
             return $this->channel;
         }
-        $this->connection = $this->connections->connect();
+        $this->connection = AMQPConnectionFactory::create($this->connectionConfig);
         $channel = $this->connection->channel();
         $channel->confirm_select();
         $channel->set_return_listener(function (): void {
