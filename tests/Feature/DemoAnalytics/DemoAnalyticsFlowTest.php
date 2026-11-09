@@ -130,14 +130,15 @@ final class DemoAnalyticsFlowTest extends TestCase
 
     private function createInvestmentConfigurationAuthorizingTheDemo(): void
     {
-        $this->artisan('trading:create-investment-configuration', [
+        $exitCode = Artisan::call('trading:create-investment-configuration', [
             'reference' => 'demo-investment',
             '--currency' => 'EUR',
             '--brokerage-account' => 'DEMO-ACCOUNT-1',
             '--order-amount' => '200.00',
             '--limit-price-tolerance' => '1.50',
             '--authorized-analytics-application' => ['demo-analytics'],
-        ])->assertSuccessful();
+        ]);
+        $this->assertSame(0, $exitCode, Artisan::output());
     }
 
     /**

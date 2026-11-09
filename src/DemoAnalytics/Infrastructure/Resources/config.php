@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 // The demo analytics application connects like any analytics application: with its own identifier and its own
 // RabbitMQ producer user, to the message broker that RABBITMQ_HOST, RABBITMQ_PORT and RABBITMQ_VHOST name.
+
+// The identifier sent as `source`; it also routes the application's outcome queue.
+$source = (string) env('DEMO_ANALYTICS_SOURCE', 'demo-analytics');
+
 return [
-    // The identifier sent as `source`; it also routes the application's outcome queue, tm.signal-outcomes.<source>.
-    'source' => (string) env('DEMO_ANALYTICS_SOURCE', 'demo-analytics'),
+    'source' => $source,
+    'outcome_queue' => 'tm.signal-outcomes.'.$source,
     // The investment configuration that trade signals address unless --investment-configuration-ref says otherwise.
     'investment_configuration_ref' => (string) env('DEMO_ANALYTICS_INVESTMENT_CONFIGURATION_REF', ''),
     'rabbitmq' => [
