@@ -75,6 +75,30 @@ final class TradeSignalConsumerTest extends TestCase
         $this->assertDatabaseEmpty('trading_trade_signals');
     }
 
+    public function test_a_failure_before_commit_leads_to_redelivery_and_the_trade_signal_is_processed_once(): void
+    {
+        $this->failTradeSignalInserts();
+        $consumer = $this->startTradingProcess('trading:consume-trade-signals');
+        $this->producer->publishTradeSignal($this->tradeSignalBody(), 'demo-analytics');
+
+        $this->assertNotSame(0, $this->waitForExit($consumer), 'The consumer was expected to stop on the database failure.');
+        $this->waitUntil(
+            fn (): bool => $this->tradeManeuver->readyCount(RabbitMqTestClient::INTAKE_QUEUE) === 1,
+            'the trade signal is back in the intake queue',
+        );
+        $this->assertDatabaseEmpty('trading_trade_signals');
+
+        DB::unprepared('DROP TRIGGER trading_test_trade_signal_insert ON trading_trade_signals');
+        $restarted = $this->startTradingProcess('trading:consume-trade-signals');
+        $this->waitUntil(static fn (): bool => DB::table('trading_trade_signals')->exists(), 'the redelivered trade signal is stored');
+        $restarted->signal(SIGTERM);
+        $this->waitForExit($restarted);
+
+        $this->assertSame(1, DB::table('trading_trade_signals')->count());
+        $this->assertSame(1, DB::table('trading_inbox_entries')->count());
+        $this->assertSame(0, $this->tradeManeuver->readyCount(RabbitMqTestClient::INTAKE_QUEUE), 'The stored trade signal was expected to be acknowledged.');
+    }
+
     private function tradeSignalBody(): string
     {
         return TradeSignalMessageBuilder::aTradeSignal(TradeSignalMessageBuilder::idFor('purchase'))->body();
@@ -92,5 +116,18 @@ final class TradeSignalConsumerTest extends TestCase
             CREATE TRIGGER trading_test_trade_signal_insert BEFORE INSERT ON trading_trade_signals
                 FOR EACH ROW EXECUTE FUNCTION trading_test_hold_trade_signal_insert();
             SQL, self::LOCK_KEY));
+    }
+
+    private function failTradeSignalInserts(): void
+    {
+        DB::unprepared(<<<'SQL'
+            CREATE OR REPLACE FUNCTION trading_test_fail_trade_signal_insert() RETURNS trigger LANGUAGE plpgsql AS $$
+            BEGIN
+                RAISE EXCEPTION 'the database is unavailable for the test';
+            END
+            $$;
+            CREATE TRIGGER trading_test_trade_signal_insert BEFORE INSERT ON trading_trade_signals
+                FOR EACH ROW EXECUTE FUNCTION trading_test_fail_trade_signal_insert();
+            SQL);
     }
 }
