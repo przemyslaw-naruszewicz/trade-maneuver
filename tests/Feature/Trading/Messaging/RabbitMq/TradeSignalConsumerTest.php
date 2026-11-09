@@ -45,7 +45,7 @@ final class TradeSignalConsumerTest extends TestCase
             DROP TRIGGER IF EXISTS trading_test_trade_signal_insert ON trading_trade_signals;
             DROP FUNCTION IF EXISTS trading_test_hold_trade_signal_insert();
             DROP FUNCTION IF EXISTS trading_test_fail_trade_signal_insert();
-            TRUNCATE trading_inbox_entries, trading_trade_signals, trading_outbox_messages, trading_audit_records;
+            TRUNCATE trading_inbox_entries, trading_trade_signals, trading_outbox_messages, trading_audit_records, jobs, failed_jobs;
             SQL);
         $this->tradeManeuver->purge(RabbitMqTestClient::INTAKE_QUEUE);
         $this->tradeManeuver->purge(RabbitMqTestClient::DEAD_LETTER_QUEUE);
@@ -71,13 +71,9 @@ final class TradeSignalConsumerTest extends TestCase
         $consumer->wait();
 
         retry(
-
             self::WAIT_ATTEMPTS,
-
             fn () => $this->assertSame(1, $this->tradeManeuver->readyCount(RabbitMqTestClient::INTAKE_QUEUE), 'RabbitMQ returns the unacknowledged trade signal to the intake queue'),
-
             self::WAIT_PAUSE_MILLISECONDS,
-
         );
         $this->assertDatabaseEmpty('trading_trade_signals');
     }
@@ -117,13 +113,9 @@ final class TradeSignalConsumerTest extends TestCase
         $this->producer->publishTradeSignal('not a trade signal', 'demo-analytics');
 
         retry(
-
             self::WAIT_ATTEMPTS,
-
             fn () => $this->assertSame(1, $this->tradeManeuver->readyCount(RabbitMqTestClient::DEAD_LETTER_QUEUE), 'the message reaches the dead letter queue'),
-
             self::WAIT_PAUSE_MILLISECONDS,
-
         );
         $consumer->signal(SIGTERM);
         $consumer->wait();
