@@ -99,6 +99,23 @@ final class TradeSignalConsumerTest extends TestCase
         $this->assertSame(0, $this->tradeManeuver->readyCount(RabbitMqTestClient::INTAKE_QUEUE), 'The stored trade signal was expected to be acknowledged.');
     }
 
+    public function test_a_message_that_cannot_be_processed_ends_in_the_dead_letter_queue_and_is_not_redelivered(): void
+    {
+        $consumer = $this->startTradingProcess('trading:consume-trade-signals');
+        $this->producer->publishTradeSignal('not a trade signal', 'demo-analytics');
+
+        $this->waitUntil(
+            fn (): bool => $this->tradeManeuver->readyCount(RabbitMqTestClient::DEAD_LETTER_QUEUE) === 1,
+            'the message reaches the dead letter queue',
+        );
+        $consumer->signal(SIGTERM);
+        $this->waitForExit($consumer);
+
+        $this->assertSame(0, $this->tradeManeuver->readyCount(RabbitMqTestClient::INTAKE_QUEUE), 'The message was expected not to return to the intake queue.');
+        $this->assertSame('not a trade signal', $this->tradeManeuver->take(RabbitMqTestClient::DEAD_LETTER_QUEUE)?->getBody());
+        $this->assertSame(1, DB::table('trading_audit_records')->where('action', 'set_aside')->count());
+    }
+
     private function tradeSignalBody(): string
     {
         return TradeSignalMessageBuilder::aTradeSignal(TradeSignalMessageBuilder::idFor('purchase'))->body();
