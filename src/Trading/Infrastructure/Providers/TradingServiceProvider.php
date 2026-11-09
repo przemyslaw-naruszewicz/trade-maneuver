@@ -20,8 +20,10 @@ use TradeManeuver\Trading\Infrastructure\Audit\PostgresAuditTrail;
 use TradeManeuver\Trading\Infrastructure\InvestmentConfiguration\InvestmentConfigurationRepository;
 use TradeManeuver\Trading\Infrastructure\Messaging\Inbox\PostgresInbox;
 use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\OutboxIntegrationEventPublisher;
+use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\SignalOutcomePublisherInterface;
 use TradeManeuver\Trading\Infrastructure\Messaging\RabbitMq\ConsumeTradeSignalsCommand;
 use TradeManeuver\Trading\Infrastructure\Messaging\RabbitMq\RabbitMqConnectionFactory;
+use TradeManeuver\Trading\Infrastructure\Messaging\RabbitMq\RabbitMqSignalOutcomePublisher;
 use TradeManeuver\Trading\Infrastructure\Persistence\LaravelTransactionManager;
 use TradeManeuver\Trading\Infrastructure\TradeSignal\TradeSignalRepository;
 use TradeManeuver\Trading\Ui\ConsoleCommands\CreateInvestmentConfigurationCommand;
@@ -71,6 +73,7 @@ final class TradingServiceProvider extends ServiceProvider
                 (string) $config->get('trading.rabbitmq.password'),
             );
         });
+        $this->app->singleton(SignalOutcomePublisherInterface::class, RabbitMqSignalOutcomePublisher::class);
     }
 
     public function boot(): void
