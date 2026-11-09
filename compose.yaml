@@ -84,6 +84,17 @@ services:
       retries: 12
       start_period: 20s
 
+  trade-signal-consumer:
+    <<: *php
+    command: ["php", "artisan", "trading:consume-trade-signals"]
+    restart: unless-stopped
+    stop_grace_period: 30s
+    depends_on:
+      app:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
   queue:
     <<: *php
     command: ["php", "artisan", "queue:work", "--sleep=3", "--tries=3", "--timeout=90"]
