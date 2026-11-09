@@ -52,7 +52,7 @@ final class TradeSignalIntakeContext implements Context
             Artisan::call('migrate', ['--force' => true]);
             self::$migrated = true;
         }
-        DB::statement('TRUNCATE trading_inbox_entries, trading_trade_signals, trading_outbox_messages, trading_audit_records, trading_investment_configurations');
+        DB::statement('TRUNCATE trading_inbox_entries, trading_trade_signals, trading_outbox_messages, trading_audit_records, jobs, failed_jobs, trading_investment_configurations');
     }
 
     #[AfterScenario]

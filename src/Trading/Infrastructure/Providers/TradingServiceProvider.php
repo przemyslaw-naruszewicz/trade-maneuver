@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace TradeManeuver\Trading\Infrastructure\Providers;
 
 use Carbon\FactoryImmutable;
+use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\ServiceProvider;
 use PhpAmqpLib\Connection\AMQPConnectionConfig;
@@ -20,7 +21,6 @@ use TradeManeuver\Trading\Infrastructure\AnalyticsApplication\ConfiguredAnalytic
 use TradeManeuver\Trading\Infrastructure\Audit\PostgresAuditTrail;
 use TradeManeuver\Trading\Infrastructure\InvestmentConfiguration\InvestmentConfigurationRepository;
 use TradeManeuver\Trading\Infrastructure\Messaging\Inbox\PostgresInbox;
-use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\DispatchOutboxCommand;
 use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\OutboxIntegrationEventPublisher;
 use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\SignalOutcomePublisherInterface;
 use TradeManeuver\Trading\Infrastructure\Messaging\RabbitMq\ConsumeTradeSignalsCommand;
@@ -61,6 +61,7 @@ final class TradingServiceProvider extends ServiceProvider
             fn ($app): OutboxIntegrationEventPublisher => new OutboxIntegrationEventPublisher(
                 $app->make(ConnectionInterface::class),
                 $app->make(ClockInterface::class),
+                $app->make(Dispatcher::class),
             ),
         );
         $this->app->bind(AMQPConnectionConfig::class, function ($app): AMQPConnectionConfig {
@@ -82,7 +83,7 @@ final class TradingServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(dirname(__DIR__).'/Resources/Migrations');
 
         if ($this->app->runningInConsole()) {
-            $this->commands([CreateInvestmentConfigurationCommand::class, ConsumeTradeSignalsCommand::class, DispatchOutboxCommand::class]);
+            $this->commands([CreateInvestmentConfigurationCommand::class, ConsumeTradeSignalsCommand::class]);
         }
     }
 }

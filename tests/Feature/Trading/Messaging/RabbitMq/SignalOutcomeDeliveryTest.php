@@ -12,8 +12,8 @@ use Tests\Support\Trading\TradingProcesses;
 use Tests\TestCase;
 
 /**
- * The whole round trip through RabbitMQ: the local producer publishes a trade signal, and the consumer and the outbox
- * dispatcher run as their own processes.
+ * The whole round trip through RabbitMQ: the local producer publishes a trade signal, and the consumer and the
+ * Laravel queue worker that publishes the outbox run as their own processes.
  */
 final class SignalOutcomeDeliveryTest extends TestCase
 {
@@ -36,7 +36,7 @@ final class SignalOutcomeDeliveryTest extends TestCase
         $this->killTradingProcesses();
         $this->producer->purge(RabbitMqTestClient::outcomeQueueOf('demo-analytics'));
         $this->producer->close();
-        DB::unprepared('TRUNCATE trading_inbox_entries, trading_trade_signals, trading_outbox_messages, trading_audit_records');
+        DB::unprepared('TRUNCATE trading_inbox_entries, trading_trade_signals, trading_outbox_messages, trading_audit_records, jobs, failed_jobs');
 
         parent::tearDown();
     }
@@ -45,7 +45,7 @@ final class SignalOutcomeDeliveryTest extends TestCase
     {
         $id = TradeSignalMessageBuilder::idFor('purchase');
         $consumer = $this->startTradingProcess('trading:consume-trade-signals');
-        $dispatcher = $this->startTradingProcess('trading:dispatch-outbox');
+        $queueWorker = $this->startTradingProcess('queue:work', ['database', '--sleep=1']);
 
         $this->producer->publishTradeSignal(TradeSignalMessageBuilder::aTradeSignal($id)->with('confidence', '1.5')->body(), 'demo-analytics');
         retry(
@@ -54,9 +54,9 @@ final class SignalOutcomeDeliveryTest extends TestCase
             self::WAIT_PAUSE_MILLISECONDS,
         );
         $consumer->signal(SIGTERM);
-        $dispatcher->signal(SIGTERM);
+        $queueWorker->signal(SIGTERM);
         $consumer->wait();
-        $this->assertSame(0, $dispatcher->wait()->exitCode(), $dispatcher->latestErrorOutput());
+        $this->assertSame(0, $queueWorker->wait()->exitCode(), $queueWorker->latestErrorOutput());
 
         $message = $this->producer->take(RabbitMqTestClient::outcomeQueueOf('demo-analytics'));
         $this->assertNotNull($message);

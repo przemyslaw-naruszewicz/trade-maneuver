@@ -18,7 +18,7 @@ if ! grep -q '^LOCAL_GID=' .env; then
     printf 'LOCAL_GID=%s\n' "${LOCAL_GID:-${mount_owner#*:}}" >> .env
 fi
 
-docker compose stop nginx app queue scheduler trade-signal-consumer outbox-dispatcher node
+docker compose stop nginx app queue scheduler trade-signal-consumer node
 docker compose run --rm -T --no-deps app composer install --no-interaction --prefer-dist
 if ! grep -q '^APP_KEY=base64:' .env; then
     docker compose run --rm -T --no-deps app php artisan key:generate --no-interaction

@@ -95,23 +95,14 @@ services:
       rabbitmq:
         condition: service_healthy
 
-  outbox-dispatcher:
-    <<: *php
-    command: ["php", "artisan", "trading:dispatch-outbox"]
-    restart: unless-stopped
-    stop_grace_period: 30s
-    depends_on:
-      app:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-
   queue:
     <<: *php
     command: ["php", "artisan", "queue:work", "--sleep=3", "--tries=3", "--timeout=90"]
     stop_grace_period: 100s
     depends_on:
       app:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   scheduler:

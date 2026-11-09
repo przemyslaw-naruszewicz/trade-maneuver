@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace TradeManeuver\Trading\Infrastructure\Messaging\Outbox;
 
 /**
- * One unsent outbox entry: the message as the use case committed it, the trade signal its payload names, and how often
- * publishing it has failed.
+ * One unsent outbox entry: the message as the use case committed it, and the trade signal its payload names.
  */
 final readonly class OutboxMessageDto
 {
@@ -17,6 +16,5 @@ final readonly class OutboxMessageDto
         public string $recipient,
         public string $payload,
         public string $signalId,
-        public int $attempts,
     ) {}
 }

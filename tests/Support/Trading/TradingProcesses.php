@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Process;
 
 /**
- * Starts the long-running Trading processes as separate Artisan processes, with their own database and RabbitMQ
+ * Starts the long-running Trading processes, the intake consumer and the queue worker, as separate Artisan processes, with their own database and RabbitMQ
  * connections to the test database and the test vhost.
  */
 trait TradingProcesses
@@ -22,7 +22,10 @@ trait TradingProcesses
     /** @var list<InvokedProcess> */
     private array $tradingProcesses = [];
 
-    protected function startTradingProcess(string $command): InvokedProcess
+    /**
+     * @param  list<string>  $arguments
+     */
+    protected function startTradingProcess(string $command, array $arguments = []): InvokedProcess
     {
         $process = Process::path(base_path())
             ->env([
@@ -33,7 +36,7 @@ trait TradingProcesses
                 'TRADING_ANALYTICS_APPLICATIONS' => 'demo-analytics:demo-analytics,demo-research:demo-research',
             ])
             ->timeout(60)
-            ->start([PHP_BINARY, 'artisan', $command]);
+            ->start([PHP_BINARY, 'artisan', $command, ...$arguments]);
         $this->tradingProcesses[] = $process;
 
         return $process;
