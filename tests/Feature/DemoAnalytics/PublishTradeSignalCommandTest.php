@@ -108,14 +108,27 @@ final class PublishTradeSignalCommandTest extends TestCase
         $this->assertSame('0', $message['confidence']);
     }
 
-    public function test_a_failed_publication_is_reported_as_an_error(): void
+    /**
+     * @return iterable<string, array{array<string, mixed>}>
+     */
+    public static function unusableConnections(): iterable
     {
-        config(['demo_analytics.rabbitmq.password' => 'not-the-demo-analytics-password']);
+        yield 'wrong password' => [['demo_analytics.rabbitmq.password' => 'not-the-demo-analytics-password']];
+        yield 'nothing listening on the port' => [['demo_analytics.rabbitmq.port' => 1]];
+    }
+
+    /**
+     * @param  array<string, mixed>  $connection
+     */
+    #[DataProvider('unusableConnections')]
+    public function test_a_failed_publication_is_reported_as_an_error(array $connection): void
+    {
+        config($connection);
 
         $exitCode = Artisan::call(self::COMMAND);
 
         $this->assertSame(1, $exitCode);
-        $this->assertStringContainsString('The trade signal was not published:', Artisan::output());
+        $this->assertMatchesRegularExpression('/^The trade signal was not published: \S.*$/m', Artisan::output());
         $this->assertNothingPublished();
     }
 
@@ -205,7 +218,10 @@ final class PublishTradeSignalCommandTest extends TestCase
         $exitCode = Artisan::call(self::COMMAND);
 
         $this->assertSame(2, $exitCode);
-        $this->assertStringContainsString('The investment configuration reference must not be empty', Artisan::output());
+        $this->assertSame(
+            "The investment configuration reference must not be empty; set --investment-configuration-ref or DEMO_ANALYTICS_INVESTMENT_CONFIGURATION_REF.\n",
+            Artisan::output(),
+        );
         $this->assertNothingPublished();
     }
 
