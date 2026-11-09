@@ -218,14 +218,14 @@
       "vhost": "trade-maneuver-testing",
       "configure": "^$",
       "write": "^tm\\.trade-signals$",
-      "read": "^tm\\.signal-outcomes\\..*$"
+      "read": "^tm\\.signal-outcomes\\.demo-analytics$"
     },
     {
       "user": "demo-research",
       "vhost": "trade-maneuver-testing",
       "configure": "^$",
       "write": "^tm\\.trade-signals$",
-      "read": "^tm\\.signal-outcomes\\..*$"
+      "read": "^tm\\.signal-outcomes\\.demo-research$"
     }
   ]
 }
