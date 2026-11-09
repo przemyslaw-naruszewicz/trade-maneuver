@@ -153,6 +153,8 @@ src/{BoundedContext}/
     │   └── {Action}InputDto.php
     ├── Livewire/
     │   └── {Component}.php
+    ├── Messaging/
+    │   └── {Message}Consumer.php
     └── ConsoleCommands/
         └── {Action}{Aggregate}Command.php
 ```
@@ -269,7 +271,7 @@ Separate internal business facts from public integration contracts, so the domai
 
 ## PostgreSQL-backed queues
 
-Use PostgreSQL for internal Laravel jobs, including local dispatch of committed outgoing messages and processing of incoming messages. Use RabbitMQ for external signal and result messaging, as selected in [ADR-0003](ADR/adr-0003-rabbitmq-for-integration-messaging.md). The RabbitMQ consumer is a transport adapter, so it and the Artisan command that runs it as a long-running process live in `Infrastructure/Messaging`, where RabbitMQ and `php-amqplib` types stay.
+Use PostgreSQL for internal Laravel jobs, including local dispatch of committed outgoing messages and processing of incoming messages. Use RabbitMQ for external signal and result messaging, as selected in [ADR-0003](ADR/adr-0003-rabbitmq-for-integration-messaging.md).
 
 - Keep enqueueing, reservation, acknowledgement, retry, and failed-job handling in infrastructure adapters; the core must remain independent of queue implementation details.
 - Run a recoverable dispatcher for committed outbox entries, preserving message identities across enqueue attempts. Workers must process committed state and safely handle retries and concurrent delivery under the reliable messaging rules below.
