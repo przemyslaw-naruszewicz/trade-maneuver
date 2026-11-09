@@ -41,6 +41,33 @@ deptrac:
           collectors:
               - type: classLike
                 value: '^TradeManeuver\\Trading\\Infrastructure\\Providers\\TradingServiceProvider$'
+        # The demo analytics application: a stand-in analytics application in its own namespace, with the same layers.
+        # No rule allows a dependency between it and Trading, in either direction.
+        - name: DemoAnalyticsDomain
+          collectors:
+              - type: directory
+                value: '^%projectDirectory%/src/DemoAnalytics/Domain/'
+        - name: DemoAnalyticsApplication
+          collectors:
+              - type: directory
+                value: '^%projectDirectory%/src/DemoAnalytics/Application/'
+        - name: DemoAnalyticsInfrastructure
+          collectors:
+              - type: bool
+                must:
+                    - type: directory
+                      value: '^%projectDirectory%/src/DemoAnalytics/Infrastructure/'
+                must_not:
+                    - type: layer
+                      value: DemoAnalyticsCompositionRoot
+        - name: DemoAnalyticsUi
+          collectors:
+              - type: directory
+                value: '^%projectDirectory%/src/DemoAnalytics/Ui/'
+        - name: DemoAnalyticsCompositionRoot
+          collectors:
+              - type: classLike
+                value: '^TradeManeuver\\DemoAnalytics\\Infrastructure\\Providers\\DemoAnalyticsServiceProvider$'
         - name: RootApplication
           collectors:
               - type: directory
@@ -108,8 +135,34 @@ deptrac:
             - PsrClock
             - PsrLog
             - ThirdParty
+        DemoAnalyticsDomain:
+            - MoneyLibrary
+        DemoAnalyticsApplication:
+            - DemoAnalyticsDomain
+            - PsrClock
+        DemoAnalyticsInfrastructure:
+            - DemoAnalyticsApplication
+            - DemoAnalyticsDomain
+            - MoneyLibrary
+            - PsrClock
+            - ThirdParty
+        DemoAnalyticsUi:
+            - DemoAnalyticsApplication
+            - DemoAnalyticsDomain
+            - MoneyLibrary
+            - PsrClock
+            - ThirdParty
+        DemoAnalyticsCompositionRoot:
+            - DemoAnalyticsApplication
+            - DemoAnalyticsDomain
+            - DemoAnalyticsInfrastructure
+            - DemoAnalyticsUi
+            - MoneyLibrary
+            - PsrClock
+            - ThirdParty
         RootApplication:
             - TradingCompositionRoot
+            - DemoAnalyticsCompositionRoot
             - MoneyLibrary
             - PsrClock
             - PsrLog

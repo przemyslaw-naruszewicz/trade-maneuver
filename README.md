@@ -118,37 +118,42 @@ RabbitMQ carries trade signals from analytics applications to Trade Maneuver and
 
 `docker/rabbitmq/rabbitmq.conf` seeds the users with passwords from the environment: `trade-maneuver` (`RABBITMQ_PASSWORD`) and the producer users of the fictional analytics applications, `demo-analytics` (`DEMO_ANALYTICS_RABBITMQ_PASSWORD`) and `demo-research` (`DEMO_RESEARCH_RABBITMQ_PASSWORD`). `.env.example` has local defaults. A producer user may write only to `tm.trade-signals` and read only its own outcome queue, and none has a tag, so none may set another user's `user_id`. Like the PostgreSQL users, RabbitMQ users are created only when the `rabbitmq_data` volume is empty: after adding or changing a user, recreate the volume with `docker compose down -v`, which also deletes the database, or add the user with `docker compose exec rabbitmq rabbitmqctl add_user` and `set_permissions -p trade-maneuver`.
 
-Connecting another analytics application takes only configuration: an entry in `TRADING_ANALYTICS_APPLICATIONS`, a producer user with its permissions in `rabbitmq.conf` and its permissions in the test vhost in `definitions.json`, and an outcome queue with its binding in both vhosts of `definitions.json`.
+Connecting another analytics application takes only configuration; [the integration overview](docs/integration.md#connecting-an-analytics-application) lists the steps.
 
 The trade signal consumer acknowledges a delivery only after the intake transaction commits. It rejects a message that cannot be processed without requeue, so RabbitMQ moves it to the dead letter queue. When the database fails, it requeues the delivery and stops, and Compose restarts it. On SIGTERM it finishes the current delivery and stops; RabbitMQ requeues the deliveries it had prefetched. The intake use case queues a publication job for each signal outcome in its own transaction, on Laravel's PostgreSQL job queue, and the `queue` service runs it. The job publishes the outbox entry as a persistent message whose message id is the outcome message `id`, and marks it sent only after RabbitMQ confirms it. When RabbitMQ cannot route or does not confirm a signal outcome, the entry stays unsent, the failure is logged as an error, and the job is retried up to 10 times with a delay that doubles after each failed attempt, from 1 second to 256 seconds. When RabbitMQ drops the connection, for example after a restart, the attempt fails and the next one opens a new connection; if the queue worker stops, Compose restarts it. After the last attempt the job stays in `failed_jobs`; `docker compose exec app php artisan queue:retry all` queues it again.
 
-To publish a test trade signal as the demo analytics application and read its signal outcome, run the following. Its confidence of `1.5` breaks the contract, so the signal outcome is `SignalRejected`; a valid trade signal needs the investment configuration above.
-
-```sh
-docker compose exec -T app php <<'PHP'
-<?php
-require 'vendor/autoload.php';
-
-use PhpAmqpLib\Connection\AMQPStreamConnection;
-use PhpAmqpLib\Message\AMQPMessage;
-
-$connection = new AMQPStreamConnection('rabbitmq', 5672, 'demo-analytics', 'local_demo_analytics_password', 'trade-maneuver');
-$channel = $connection->channel();
-$signal = [
-    'id' => '019a5a6e-0000-7000-8000-0000000000a1', 'source' => 'demo-analytics', 'type' => 'tm.trade-signal.v1',
-    'time' => '2026-11-07T09:00:00Z', 'investmentConfigurationRef' => 'demo-investment',
-    'instrument' => ['symbol' => 'DEMO_A', 'mic' => 'DEMO'], 'direction' => 'long', 'confidence' => '1.5',
-    'horizon' => ['sessions' => 5], 'referencePrice' => ['amount' => '12.50', 'currency' => 'EUR', 'asOf' => '2026-11-07T08:59:00Z'],
-    'validUntil' => '2026-11-10T16:00:00Z',
-];
-$channel->basic_publish(new AMQPMessage(json_encode($signal), ['user_id' => 'demo-analytics', 'delivery_mode' => 2]), 'tm.trade-signals');
-sleep(3);
-echo $channel->basic_get('tm.signal-outcomes.demo-analytics', true)?->getBody() ?? 'No signal outcome yet.', PHP_EOL;
-$connection->close();
-PHP
-```
+To publish a trade signal and read its signal outcome, use the [demo analytics application](#demo-analytics-application).
 
 Inspect the queues with `docker compose exec rabbitmq rabbitmqctl list_queues -p trade-maneuver name messages`.
+
+## Demo analytics application
+
+The demo analytics application is a simulated stand-in for an analytics application, so the flow can run locally without a real one. Its trade signals name fictional instruments on the fictional exchange `DEMO` and carry invented values. It has no analytical model, reads no market data, and recommends nothing. Its code lives in `src/DemoAnalytics`, outside the Trading context. It connects the way any analytics application does: through RabbitMQ, as the producer user `demo-analytics`, with `tm.trade-signal.v1` messages. Its registry entry and producer user exist only in the local and CI configuration.
+
+1. Create an investment configuration that authorizes it with the command under [Investment configuration](#investment-configuration). `DEMO_ANALYTICS_INVESTMENT_CONFIGURATION_REF` names the investment configuration its trade signals address; `.env.example` sets it to `demo-investment`. An `.env` created before this variable existed lacks it, so copy the line from `.env.example` or pass `--investment-configuration-ref`.
+
+2. Publish a trade signal:
+
+   ```sh
+   docker compose exec app php artisan demo-analytics:publish-trade-signal
+   ```
+
+   The command prints `Published trade signal <id>.` By default it publishes a `long` trade signal for `DEMO_A` with confidence `0.75`, a horizon of 5 trading sessions, an expected move from 1.0 to 3.0 percent, an invented reference price of 12.50 EUR, and signal validity of three days. Options choose each value: `--symbol`, `--direction`, `--confidence`, `--horizon-sessions`, `--expected-move-min`, `--expected-move-max`, `--reference-price`, `--currency`, `--valid-until`, and `--investment-configuration-ref`; `--help` describes them. `--twice` publishes the same message twice to exercise duplicate delivery. The command refuses a symbol that does not start with `DEMO_` and any other invalid value, and then publishes nothing. It has no outbox and does not retry: when RabbitMQ does not confirm the message, it reports the error and exits with code 1, and you can run it again.
+
+3. Read the signal outcomes:
+
+   ```sh
+   docker compose exec app php artisan demo-analytics:read-signal-outcomes
+   ```
+
+   The command prints each signal outcome from `tm.signal-outcomes.demo-analytics` with the trade signal `id`, the outcome, and its details, and then acknowledges it. It says so when the queue is empty.
+
+Until the simulated broker exists, a valid trade signal is accepted at intake and has no signal outcome yet. To see a signal outcome now, address an investment configuration that does not exist; the outcome is `SignalRejected`:
+
+```sh
+docker compose exec app php artisan demo-analytics:publish-trade-signal --investment-configuration-ref=demo-unknown-investment
+docker compose exec app php artisan demo-analytics:read-signal-outcomes
+```
 
 ## Quality checks
 
