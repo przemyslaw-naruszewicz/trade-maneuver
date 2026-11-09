@@ -54,12 +54,11 @@ If you need different ports, copy `.env.example` to `.env` before starting and c
 | `postgres` | PostgreSQL, persistent `postgres_data` volume | `127.0.0.1:54320` |
 | `rabbitmq` | RabbitMQ for trade signals and signal outcomes, persistent `rabbitmq_data` volume | internal |
 | `trade-signal-consumer` | `trading:consume-trade-signals`, which consumes trade signals from RabbitMQ | internal |
-| `outbox-dispatcher` | `trading:dispatch-outbox`, which publishes signal outcomes from the outbox to RabbitMQ | internal |
-| `queue` | Separate `queue:work` worker | internal |
+| `queue` | Separate `queue:work` worker, which also publishes signal outcomes from the outbox to RabbitMQ | internal |
 | `scheduler` | Separate `schedule:work` process | internal |
 | `node` | Node.js, Vite with hot reload | `127.0.0.1:5173` |
 
-The project directory is mounted into the containers, so editing PHP does not require rebuilding the image. After changing job code run `docker compose restart queue`; after changing the schedule run `docker compose restart scheduler`; after changing the consumer or the dispatcher run `docker compose restart trade-signal-consumer outbox-dispatcher`.
+The project directory is mounted into the containers, so editing PHP does not require rebuilding the image. After changing job code run `docker compose restart queue`; after changing the schedule run `docker compose restart scheduler`; after changing the consumer run `docker compose restart trade-signal-consumer`.
 
 Sessions, cache and the queue use PostgreSQL and the standard Laravel migrations. The worker has a 90-second timeout, and `DB_QUEUE_RETRY_AFTER=120` prevents a job from being picked up again before that timeout expires. Mail goes to the application log (`MAIL_MAILER=log`).
 
@@ -121,7 +120,7 @@ RabbitMQ carries trade signals from analytics applications to Trade Maneuver and
 
 Connecting another analytics application takes only configuration: an entry in `TRADING_ANALYTICS_APPLICATIONS`, a producer user with its permissions in `rabbitmq.conf` and its permissions in the test vhost in `definitions.json`, and an outcome queue with its binding in both vhosts of `definitions.json`.
 
-The trade signal consumer acknowledges a delivery only after the intake transaction commits. It rejects a message that cannot be processed without requeue, so RabbitMQ moves it to the dead letter queue. When the database fails, it requeues the delivery and stops, and Compose restarts it. On SIGTERM it finishes the current delivery and stops; RabbitMQ requeues the deliveries it had prefetched. The outbox dispatcher publishes each committed signal outcome as a persistent message whose message id is the outcome message `id`, and marks it sent only after RabbitMQ confirms it. A signal outcome that RabbitMQ cannot route, or does not confirm, stays unsent, is logged as an error, and is retried with a delay that doubles after each failed attempt, from 1 second up to 5 minutes.
+The trade signal consumer acknowledges a delivery only after the intake transaction commits. It rejects a message that cannot be processed without requeue, so RabbitMQ moves it to the dead letter queue. When the database fails, it requeues the delivery and stops, and Compose restarts it. On SIGTERM it finishes the current delivery and stops; RabbitMQ requeues the deliveries it had prefetched. The intake use case queues a publication job for each signal outcome in its own transaction, on Laravel's PostgreSQL job queue, and the `queue` service runs it. The job publishes the outbox entry as a persistent message whose message id is the outcome message `id`, and marks it sent only after RabbitMQ confirms it. When RabbitMQ cannot route or does not confirm a signal outcome, the entry stays unsent, the failure is logged as an error, and the job is retried up to 10 times with a delay that doubles after each failed attempt, from 1 second to 256 seconds. After the last attempt the job stays in `failed_jobs`; `docker compose exec app php artisan queue:retry all` queues it again.
 
 To publish a test trade signal as the demo analytics application and read its signal outcome, run the following. Its confidence of `1.5` breaks the contract, so the signal outcome is `SignalRejected`; a valid trade signal needs the investment configuration above.
 
