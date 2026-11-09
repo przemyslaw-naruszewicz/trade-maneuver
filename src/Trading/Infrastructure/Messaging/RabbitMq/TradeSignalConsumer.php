@@ -10,11 +10,13 @@ use Psr\Log\LoggerInterface;
 use Throwable;
 use TradeManeuver\Trading\Application\TradeSignal\Command\ReceiveTradeSignal\ReceiveTradeSignalCommand;
 use TradeManeuver\Trading\Application\TradeSignal\Command\ReceiveTradeSignal\ReceiveTradeSignalCommandHandler;
+use TradeManeuver\Trading\Application\TradeSignal\Command\ReceiveTradeSignal\TradeSignalIntakeResult;
 use TradeManeuver\Trading\Application\TradeSignal\Command\ReceiveTradeSignal\TradeSignalMessage;
 
 /**
  * Consumes trade signals from Trade Maneuver's intake queue with manual acknowledgement. A delivery is acknowledged
- * only after the intake use case has committed it. When the use case fails, for example because the database is
+ * only after the intake use case has committed it; one the use case cannot process is rejected without requeue, so
+ * RabbitMQ moves it to the dead letter queue. When the use case fails, for example because the database is
  * unavailable, the delivery is requeued and the failure ends consumption, so the process supervisor restarts it.
  */
 final readonly class TradeSignalConsumer
@@ -62,7 +64,7 @@ final readonly class TradeSignalConsumer
         $publisherIdentity = $message->has('user_id') ? (string) $message->get('user_id') : null;
         $context = $this->contextOf($message, $publisherIdentity);
         try {
-            $this->intake->handle(new ReceiveTradeSignalCommand($message->getBody(), $publisherIdentity));
+            $result = $this->intake->handle(new ReceiveTradeSignalCommand($message->getBody(), $publisherIdentity));
         } catch (Throwable $exception) {
             $message->nack(true);
             $this->logger->error('A trade signal delivery failed before commit and is requeued.', [...$context, 'exception' => $exception]);
@@ -70,6 +72,12 @@ final readonly class TradeSignalConsumer
             throw $exception;
         }
 
+        if ($result === TradeSignalIntakeResult::NotProcessable) {
+            $message->reject(false);
+            $this->logger->info('A trade signal delivery is rejected to the dead letter exchange.', $context);
+
+            return;
+        }
         $message->ack();
         $this->logger->info('A trade signal delivery is acknowledged.', $context);
     }
