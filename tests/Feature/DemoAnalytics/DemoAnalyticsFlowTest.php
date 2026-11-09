@@ -99,6 +99,35 @@ final class DemoAnalyticsFlowTest extends TestCase
         );
     }
 
+    public function test_a_trade_signal_addressed_to_an_unknown_investment_configuration_ends_with_signal_rejected_which_the_reading_command_prints(): void
+    {
+        $consumer = $this->startTradingProcess('trading:consume-trade-signals');
+        $queueWorker = $this->startTradingProcess('queue:work', ['database', '--sleep=1']);
+
+        $id = $this->publishTradeSignal(['--investment-configuration-ref' => 'demo-unknown-investment']);
+
+        $producer = RabbitMqTestClient::asProducer('demo-analytics');
+        retry(
+            self::WAIT_ATTEMPTS,
+            fn () => $this->assertSame(1, $producer->readyCount(self::OUTCOME_QUEUE), 'the signal outcome reaches the outcome queue of demo-analytics'),
+            self::WAIT_PAUSE_MILLISECONDS,
+        );
+        $consumer->signal(SIGTERM);
+        $queueWorker->signal(SIGTERM);
+        $consumer->wait();
+        $queueWorker->wait();
+
+        $exitCode = Artisan::call('demo-analytics:read-signal-outcomes');
+
+        $this->assertSame(0, $exitCode);
+        $this->assertSame(
+            "Trade signal {$id}: SignalRejected\n  investmentConfigurationRef: The investment configuration is unknown.\n",
+            Artisan::output(),
+        );
+        $this->assertSame(0, $producer->readyCount(self::OUTCOME_QUEUE), 'The printed signal outcome was expected to be acknowledged.');
+        $producer->close();
+    }
+
     private function createInvestmentConfigurationAuthorizingTheDemo(): void
     {
         $this->artisan('trading:create-investment-configuration', [
