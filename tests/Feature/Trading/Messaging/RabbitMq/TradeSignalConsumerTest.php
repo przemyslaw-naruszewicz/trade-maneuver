@@ -61,17 +61,23 @@ final class TradeSignalConsumerTest extends TestCase
         DB::select('SELECT pg_advisory_lock(?)', [self::LOCK_KEY]);
         $consumer = $this->startTradingProcess('trading:consume-trade-signals');
         $this->producer->publishTradeSignal($this->tradeSignalBody(), 'demo-analytics');
-        $this->waitUntil(
-            static fn (): bool => (int) DB::scalar("SELECT count(*) FROM pg_locks WHERE locktype = 'advisory' AND NOT granted") > 0,
-            'the consumer waits inside the intake transaction',
+        retry(
+            self::WAIT_ATTEMPTS,
+            fn () => $this->assertTrue((int) DB::scalar("SELECT count(*) FROM pg_locks WHERE locktype = 'advisory' AND NOT granted") > 0, 'the consumer waits inside the intake transaction'),
+            self::WAIT_PAUSE_MILLISECONDS,
         );
 
         $consumer->signal(SIGKILL);
-        $this->waitForExit($consumer);
+        $consumer->wait();
 
-        $this->waitUntil(
-            fn (): bool => $this->tradeManeuver->readyCount(RabbitMqTestClient::INTAKE_QUEUE) === 1,
-            'RabbitMQ returns the unacknowledged trade signal to the intake queue',
+        retry(
+
+            self::WAIT_ATTEMPTS,
+
+            fn () => $this->assertSame(1, $this->tradeManeuver->readyCount(RabbitMqTestClient::INTAKE_QUEUE), 'RabbitMQ returns the unacknowledged trade signal to the intake queue'),
+
+            self::WAIT_PAUSE_MILLISECONDS,
+
         );
         $this->assertDatabaseEmpty('trading_trade_signals');
     }
@@ -82,18 +88,23 @@ final class TradeSignalConsumerTest extends TestCase
         $consumer = $this->startTradingProcess('trading:consume-trade-signals');
         $this->producer->publishTradeSignal($this->tradeSignalBody(), 'demo-analytics');
 
-        $this->assertNotSame(0, $this->waitForExit($consumer), 'The consumer was expected to stop on the database failure.');
-        $this->waitUntil(
-            fn (): bool => $this->tradeManeuver->readyCount(RabbitMqTestClient::INTAKE_QUEUE) === 1,
-            'the trade signal is back in the intake queue',
+        $this->assertNotSame(0, $consumer->wait()->exitCode(), 'The consumer was expected to stop on the database failure.');
+        retry(
+            self::WAIT_ATTEMPTS,
+            fn () => $this->assertSame(1, $this->tradeManeuver->readyCount(RabbitMqTestClient::INTAKE_QUEUE), 'the trade signal is back in the intake queue'),
+            self::WAIT_PAUSE_MILLISECONDS,
         );
         $this->assertDatabaseEmpty('trading_trade_signals');
 
         DB::unprepared('DROP TRIGGER trading_test_trade_signal_insert ON trading_trade_signals');
         $restarted = $this->startTradingProcess('trading:consume-trade-signals');
-        $this->waitUntil(static fn (): bool => DB::table('trading_trade_signals')->exists(), 'the redelivered trade signal is stored');
+        retry(
+            self::WAIT_ATTEMPTS,
+            fn () => $this->assertTrue(DB::table('trading_trade_signals')->exists(), 'the redelivered trade signal is stored'),
+            self::WAIT_PAUSE_MILLISECONDS,
+        );
         $restarted->signal(SIGTERM);
-        $this->waitForExit($restarted);
+        $restarted->wait();
 
         $this->assertSame(1, DB::table('trading_trade_signals')->count());
         $this->assertSame(1, DB::table('trading_inbox_entries')->count());
@@ -105,12 +116,17 @@ final class TradeSignalConsumerTest extends TestCase
         $consumer = $this->startTradingProcess('trading:consume-trade-signals');
         $this->producer->publishTradeSignal('not a trade signal', 'demo-analytics');
 
-        $this->waitUntil(
-            fn (): bool => $this->tradeManeuver->readyCount(RabbitMqTestClient::DEAD_LETTER_QUEUE) === 1,
-            'the message reaches the dead letter queue',
+        retry(
+
+            self::WAIT_ATTEMPTS,
+
+            fn () => $this->assertSame(1, $this->tradeManeuver->readyCount(RabbitMqTestClient::DEAD_LETTER_QUEUE), 'the message reaches the dead letter queue'),
+
+            self::WAIT_PAUSE_MILLISECONDS,
+
         );
         $consumer->signal(SIGTERM);
-        $this->waitForExit($consumer);
+        $consumer->wait();
 
         $this->assertSame(0, $this->tradeManeuver->readyCount(RabbitMqTestClient::INTAKE_QUEUE), 'The message was expected not to return to the intake queue.');
         $this->assertSame('not a trade signal', $this->tradeManeuver->take(RabbitMqTestClient::DEAD_LETTER_QUEUE)?->getBody());
@@ -127,15 +143,16 @@ final class TradeSignalConsumerTest extends TestCase
             TradeSignalMessageBuilder::aTradeSignal(TradeSignalMessageBuilder::idFor('second purchase'))->body(),
             'demo-analytics',
         );
-        $this->waitUntil(
-            static fn (): bool => (int) DB::scalar("SELECT count(*) FROM pg_locks WHERE locktype = 'advisory' AND NOT granted") > 0,
-            'the consumer waits inside the intake transaction of the first trade signal',
+        retry(
+            self::WAIT_ATTEMPTS,
+            fn () => $this->assertTrue((int) DB::scalar("SELECT count(*) FROM pg_locks WHERE locktype = 'advisory' AND NOT granted") > 0, 'the consumer waits inside the intake transaction of the first trade signal'),
+            self::WAIT_PAUSE_MILLISECONDS,
         );
 
         $consumer->signal(SIGTERM);
         DB::select('SELECT pg_advisory_unlock(?)', [self::LOCK_KEY]);
 
-        $this->assertSame(0, $this->waitForExit($consumer), $consumer->latestErrorOutput());
+        $this->assertSame(0, $consumer->wait()->exitCode(), $consumer->latestErrorOutput());
         $this->assertSame([TradeSignalMessageBuilder::idFor('purchase')], DB::table('trading_trade_signals')->pluck('id')->all());
         $this->assertSame(1, $this->tradeManeuver->readyCount(RabbitMqTestClient::INTAKE_QUEUE), 'The second trade signal was expected back in the intake queue.');
     }

@@ -48,14 +48,15 @@ final class SignalOutcomeDeliveryTest extends TestCase
         $dispatcher = $this->startTradingProcess('trading:dispatch-outbox');
 
         $this->producer->publishTradeSignal(TradeSignalMessageBuilder::aTradeSignal($id)->with('confidence', '1.5')->body(), 'demo-analytics');
-        $this->waitUntil(
-            fn (): bool => $this->producer->readyCount(RabbitMqTestClient::outcomeQueueOf('demo-analytics')) === 1,
-            'the signal outcome reaches the outcome queue of demo-analytics',
+        retry(
+            self::WAIT_ATTEMPTS,
+            fn () => $this->assertSame(1, $this->producer->readyCount(RabbitMqTestClient::outcomeQueueOf('demo-analytics')), 'the signal outcome reaches the outcome queue of demo-analytics'),
+            self::WAIT_PAUSE_MILLISECONDS,
         );
         $consumer->signal(SIGTERM);
         $dispatcher->signal(SIGTERM);
-        $this->waitForExit($consumer);
-        $this->assertSame(0, $this->waitForExit($dispatcher), $dispatcher->latestErrorOutput());
+        $consumer->wait();
+        $this->assertSame(0, $dispatcher->wait()->exitCode(), $dispatcher->latestErrorOutput());
 
         $message = $this->producer->take(RabbitMqTestClient::outcomeQueueOf('demo-analytics'));
         $this->assertNotNull($message);
