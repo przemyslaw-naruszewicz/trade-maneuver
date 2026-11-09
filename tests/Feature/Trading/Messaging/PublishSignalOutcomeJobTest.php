@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Log;
+use PhpAmqpLib\Connection\AMQPConnectionConfig;
 use RuntimeException;
 use Tests\Support\Trading\AnsweringSignalOutcomePublisher;
 use Tests\Support\Trading\RabbitMqTestClient;
@@ -22,6 +23,7 @@ use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\OutboxMessageDto;
 use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\PublicationResult;
 use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\SignalOutcomeNotPublishedException;
 use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\SignalOutcomePublisherInterface;
+use TradeManeuver\Trading\Infrastructure\Messaging\RabbitMq\RabbitMqSignalOutcomePublisher;
 
 /**
  * Publication of outbox entries through Laravel's PostgreSQL job queue, against the database and the RabbitMQ of the
@@ -191,6 +193,28 @@ final class PublishSignalOutcomeJobTest extends TestCase
         $this->assertSame('SignalRejected', json_decode($published->getBody(), true, 512, JSON_THROW_ON_ERROR)['outcome']);
     }
 
+    public function test_after_rabbitmq_drops_the_connection_a_later_attempt_publishes_on_a_new_connection(): void
+    {
+        // RabbitMQ closes a connection that misses two heartbeats, and the publisher sends none while it is idle.
+        $connectionConfig = $this->app->make(AMQPConnectionConfig::class);
+        $connectionConfig->setHeartbeat(1);
+        $publisher = new RabbitMqSignalOutcomePublisher($connectionConfig);
+        $this->commitASignalRejection();
+        $this->publishWith($publisher);
+        $this->assertNotNull($this->recipient->take(RabbitMqTestClient::outcomeQueueOf('demo-analytics')));
+
+        sleep(4);
+        $this->commitASignalRejection(alias: 'second purchase');
+        $this->publishWith($publisher);
+        $this->travel(1)->hours();
+        $this->publishWith($publisher);
+
+        $this->assertSame(0, DB::table('trading_outbox_messages')->whereNull('sent_at')->count(), 'The entry was expected to be published after the lost connection.');
+        $published = $this->recipient->take(RabbitMqTestClient::outcomeQueueOf('demo-analytics'));
+        $this->assertNotNull($published);
+        $this->assertSame(TradeSignalMessageBuilder::idFor('second purchase'), json_decode($published->getBody(), true, 512, JSON_THROW_ON_ERROR)['signalId']);
+    }
+
     public function test_the_publication_job_is_queued_in_the_use_case_transaction(): void
     {
         DB::unprepared(<<<'SQL'
@@ -216,9 +240,9 @@ final class PublishSignalOutcomeJobTest extends TestCase
         $this->assertDatabaseEmpty('trading_trade_signals');
     }
 
-    private function commitASignalRejection(string $source = 'demo-analytics'): void
+    private function commitASignalRejection(string $source = 'demo-analytics', string $alias = 'purchase'): void
     {
-        $body = TradeSignalMessageBuilder::aTradeSignal(TradeSignalMessageBuilder::idFor('purchase'), $source)->with('confidence', '1.5')->body();
+        $body = TradeSignalMessageBuilder::aTradeSignal(TradeSignalMessageBuilder::idFor($alias), $source)->with('confidence', '1.5')->body();
         $this->app->make(ReceiveTradeSignalCommandHandler::class)->handle(new ReceiveTradeSignalCommand($body, $source));
     }
 
