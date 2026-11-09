@@ -73,6 +73,32 @@ final class DemoAnalyticsFlowTest extends TestCase
         $this->assertSame('EUR', $tradeSignal->reference_price_currency);
     }
 
+    public function test_publishing_the_same_message_twice_creates_one_trade_signal(): void
+    {
+        $this->createInvestmentConfigurationAuthorizingTheDemo();
+        $consumer = $this->startTradingProcess('trading:consume-trade-signals');
+
+        $id = $this->publishTradeSignal(['--twice' => true]);
+
+        retry(
+            self::WAIT_ATTEMPTS,
+            fn () => $this->assertTrue(
+                DB::table('trading_audit_records')->where('entity_id', $id)->where('action', 'duplicate_delivered')->exists(),
+                'the second delivery is handled as a duplicate',
+            ),
+            self::WAIT_PAUSE_MILLISECONDS,
+        );
+        $consumer->signal(SIGTERM);
+        $consumer->wait();
+
+        $this->assertSame(1, DB::table('trading_trade_signals')->where('id', $id)->count());
+        $this->assertSame(1, DB::table('trading_trade_signals')->count());
+        $this->assertSame(
+            ['duplicate_delivered', 'received'],
+            DB::table('trading_audit_records')->where('entity_id', $id)->orderBy('action')->pluck('action')->all(),
+        );
+    }
+
     private function createInvestmentConfigurationAuthorizingTheDemo(): void
     {
         $this->artisan('trading:create-investment-configuration', [
