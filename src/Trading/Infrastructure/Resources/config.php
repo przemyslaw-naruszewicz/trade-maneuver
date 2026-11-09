@@ -16,4 +16,12 @@ foreach (explode(',', (string) env('TRADING_ANALYTICS_APPLICATIONS', '')) as $en
 
 return [
     'analytics_applications' => $analyticsApplications,
+    // The connection of Trade Maneuver's own RabbitMQ user; docker/rabbitmq holds the topology and the users.
+    'rabbitmq' => [
+        'host' => (string) env('RABBITMQ_HOST', 'rabbitmq'),
+        'port' => (int) env('RABBITMQ_PORT', 5672),
+        'vhost' => (string) env('RABBITMQ_VHOST', 'trade-maneuver'),
+        'user' => (string) env('RABBITMQ_USER', 'trade-maneuver'),
+        'password' => (string) env('RABBITMQ_PASSWORD', ''),
+    ],
 ];
