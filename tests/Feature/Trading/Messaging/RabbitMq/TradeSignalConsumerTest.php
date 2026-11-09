@@ -116,6 +116,29 @@ final class TradeSignalConsumerTest extends TestCase
         $this->assertSame(1, DB::table('trading_audit_records')->where('action', 'set_aside')->count());
     }
 
+    public function test_the_consumer_stops_gracefully_on_sigterm_without_losing_an_unacknowledged_trade_signal(): void
+    {
+        $this->holdTradeSignalInserts();
+        DB::select('SELECT pg_advisory_lock(?)', [self::LOCK_KEY]);
+        $consumer = $this->startTradingProcess('trading:consume-trade-signals');
+        $this->producer->publishTradeSignal($this->tradeSignalBody(), 'demo-analytics');
+        $this->producer->publishTradeSignal(
+            TradeSignalMessageBuilder::aTradeSignal(TradeSignalMessageBuilder::idFor('second purchase'))->body(),
+            'demo-analytics',
+        );
+        $this->waitUntil(
+            static fn (): bool => (int) DB::scalar("SELECT count(*) FROM pg_locks WHERE locktype = 'advisory' AND NOT granted") > 0,
+            'the consumer waits inside the intake transaction of the first trade signal',
+        );
+
+        $consumer->signal(SIGTERM);
+        DB::select('SELECT pg_advisory_unlock(?)', [self::LOCK_KEY]);
+
+        $this->assertSame(0, $this->waitForExit($consumer), $consumer->latestErrorOutput());
+        $this->assertSame([TradeSignalMessageBuilder::idFor('purchase')], DB::table('trading_trade_signals')->pluck('id')->all());
+        $this->assertSame(1, $this->tradeManeuver->readyCount(RabbitMqTestClient::INTAKE_QUEUE), 'The second trade signal was expected back in the intake queue.');
+    }
+
     private function tradeSignalBody(): string
     {
         return TradeSignalMessageBuilder::aTradeSignal(TradeSignalMessageBuilder::idFor('purchase'))->body();
