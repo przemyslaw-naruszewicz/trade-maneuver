@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 use Symfony\Component\Clock\MockClock;
+use Tests\Support\Trading\AnsweringSignalOutcomePublisher;
 use Tests\Support\Trading\RabbitMqTestClient;
 use Tests\Support\Trading\TradeSignalMessageBuilder;
 use Tests\TestCase;
@@ -187,14 +188,6 @@ final class OutboxDispatcherTest extends TestCase
 
     private function publisherAnswering(PublicationResult $result): SignalOutcomePublisherInterface
     {
-        return new readonly class($result) implements SignalOutcomePublisherInterface
-        {
-            public function __construct(private PublicationResult $result) {}
-
-            public function publish(OutboxMessageDto $message, string $routingKey): PublicationResult
-            {
-                return $this->result;
-            }
-        };
+        return new AnsweringSignalOutcomePublisher($result);
     }
 }
