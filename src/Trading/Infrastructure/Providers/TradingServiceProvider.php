@@ -20,6 +20,8 @@ use TradeManeuver\Trading\Infrastructure\Audit\PostgresAuditTrail;
 use TradeManeuver\Trading\Infrastructure\InvestmentConfiguration\InvestmentConfigurationRepository;
 use TradeManeuver\Trading\Infrastructure\Messaging\Inbox\PostgresInbox;
 use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\OutboxIntegrationEventPublisher;
+use TradeManeuver\Trading\Infrastructure\Messaging\RabbitMq\ConsumeTradeSignalsCommand;
+use TradeManeuver\Trading\Infrastructure\Messaging\RabbitMq\RabbitMqConnectionFactory;
 use TradeManeuver\Trading\Infrastructure\Persistence\LaravelTransactionManager;
 use TradeManeuver\Trading\Infrastructure\TradeSignal\TradeSignalRepository;
 use TradeManeuver\Trading\Ui\ConsoleCommands\CreateInvestmentConfigurationCommand;
@@ -58,6 +60,17 @@ final class TradingServiceProvider extends ServiceProvider
                 $app->make(ClockInterface::class),
             ),
         );
+        $this->app->bind(RabbitMqConnectionFactory::class, function ($app): RabbitMqConnectionFactory {
+            $config = $app->make('config');
+
+            return new RabbitMqConnectionFactory(
+                (string) $config->get('trading.rabbitmq.host'),
+                (int) $config->get('trading.rabbitmq.port'),
+                (string) $config->get('trading.rabbitmq.vhost'),
+                (string) $config->get('trading.rabbitmq.user'),
+                (string) $config->get('trading.rabbitmq.password'),
+            );
+        });
     }
 
     public function boot(): void
@@ -65,7 +78,7 @@ final class TradingServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(dirname(__DIR__).'/Resources/Migrations');
 
         if ($this->app->runningInConsole()) {
-            $this->commands([CreateInvestmentConfigurationCommand::class]);
+            $this->commands([CreateInvestmentConfigurationCommand::class, ConsumeTradeSignalsCommand::class]);
         }
     }
 }

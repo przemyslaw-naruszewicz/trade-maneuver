@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Support\Trading;
 
+use Illuminate\Support\Env;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
@@ -43,7 +44,7 @@ final class RabbitMqTestClient
 
     public static function asProducer(string $user): self
     {
-        return new self($user, (string) env(self::PASSWORD_VARIABLES[$user]));
+        return new self($user, (string) Env::get(self::PASSWORD_VARIABLES[$user]));
     }
 
     public static function outcomeQueueOf(string $analyticsApplication): string
