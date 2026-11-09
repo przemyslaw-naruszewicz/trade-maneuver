@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\DemoAnalytics;
 
 use Illuminate\Support\Facades\Artisan;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Support\Trading\RabbitMqTestClient;
 use Tests\TestCase;
 
@@ -43,6 +44,28 @@ final class PublishTradeSignalCommandTest extends TestCase
 
         $this->assertSame(1, $exitCode);
         $this->assertStringContainsString('The trade signal was not published:', Artisan::output());
+        $this->assertNothingPublished();
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function symbolsWithoutTheDemoPrefix(): iterable
+    {
+        yield 'prefix not at the start' => ['XDEMO_A'];
+        yield 'hyphen instead of underscore' => ['DEMO-A'];
+        yield 'lower case' => ['demo_a'];
+        yield 'nothing after the prefix' => ['DEMO_'];
+        yield 'no prefix' => ['A'];
+    }
+
+    #[DataProvider('symbolsWithoutTheDemoPrefix')]
+    public function test_a_symbol_without_the_demo_prefix_is_refused_and_nothing_is_published(string $symbol): void
+    {
+        $exitCode = Artisan::call(self::COMMAND, ['--symbol' => $symbol]);
+
+        $this->assertSame(2, $exitCode);
+        $this->assertStringContainsString('The symbol must start with DEMO_', Artisan::output());
         $this->assertNothingPublished();
     }
 
