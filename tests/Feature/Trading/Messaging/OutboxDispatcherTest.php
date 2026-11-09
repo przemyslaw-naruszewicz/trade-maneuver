@@ -7,6 +7,7 @@ namespace Tests\Feature\Trading\Messaging;
 use DateTimeImmutable;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 use Symfony\Component\Clock\MockClock;
 use Tests\Support\Trading\RabbitMqTestClient;
 use Tests\Support\Trading\TradeSignalMessageBuilder;
@@ -64,6 +65,32 @@ final class OutboxDispatcherTest extends TestCase
 
         $this->assertNotNull(DB::table('trading_outbox_messages')->sole()->sent_at);
         $this->assertNotNull($this->recipient->take(RabbitMqTestClient::outcomeQueueOf('demo-analytics')));
+    }
+
+    public function test_after_a_crash_between_commit_and_publication_the_entry_is_published_later_with_the_same_message_id(): void
+    {
+        $this->commitASignalRejection();
+        $crashing = new class implements SignalOutcomePublisherInterface
+        {
+            public function publish(OutboxMessageDto $message, string $routingKey): PublicationResult
+            {
+                throw new RuntimeException('The dispatcher process crashed before publication.');
+            }
+        };
+        try {
+            $this->dispatcherPublishingWith($crashing)->dispatchDue();
+        } catch (RuntimeException) {
+            // The crash ends the dispatcher run.
+        }
+
+        $this->dispatcherPublishingWith($this->app->make(SignalOutcomePublisherInterface::class))->dispatchDue();
+
+        $entry = DB::table('trading_outbox_messages')->sole();
+        $published = $this->recipient->take(RabbitMqTestClient::outcomeQueueOf('demo-analytics'));
+        $this->assertNotNull($published, 'The committed entry was expected to be published after the crash.');
+        $this->assertSame($entry->message_id, $published->get('message_id'));
+        $this->assertSame($entry->message_id, json_decode($published->getBody(), true, 512, JSON_THROW_ON_ERROR)['id']);
+        $this->assertNotNull($entry->sent_at);
     }
 
     private function commitASignalRejection(): void
