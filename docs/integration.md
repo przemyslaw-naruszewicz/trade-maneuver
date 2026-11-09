@@ -174,6 +174,31 @@ Contract rules:
 - Messages must be complete: the producer provides all required data before publication.
   Trade Maneuver does not retrieve missing information from the producer's database.
 
+### Example message
+
+A complete `tm.trade-signal.v1` message with fictional values:
+
+```json
+{
+  "id": "019a5a6e-0000-7000-8000-0000000000a1",
+  "source": "demo-analytics",
+  "type": "tm.trade-signal.v1",
+  "time": "2026-11-09T10:00:00Z",
+  "investmentConfigurationRef": "demo-investment",
+  "instrument": {"symbol": "DEMO_A", "mic": "DEMO"},
+  "direction": "long",
+  "confidence": "0.75",
+  "horizon": {"sessions": 5, "at": "2026-11-16"},
+  "expectedMove": {"min": "1.0", "max": "3.0"},
+  "referencePrice": {"amount": "12.50", "currency": "EUR", "asOf": "2026-11-09T10:00:00Z"},
+  "validUntil": "2026-11-12T10:00:00Z",
+  "extensions": {"alertLevel": "amber"}
+}
+```
+
+The demo analytics application publishes the same fields apart from `horizon.at` and `extensions`. The values are
+invented and carry no analytical meaning.
+
 ### Outcome message: `tm.signal-outcome.v1`
 
 Trade Maneuver reports each signal outcome in this message. Its envelope is inspired by CloudEvents, like
@@ -218,7 +243,8 @@ with the same `id`, `time`, and content. Consumers deduplicate outcome messages 
 
 RabbitMQ is the selected integration transport. Signals use the `tm.trade-signals` exchange;
 signal outcomes use `tm.signal-outcomes`, with a separate queue for each producer, routed by its identifier. The
-[README](../README.md#rabbitmq) describes the local service, its users, and how to connect another producer.
+[README](../README.md#rabbitmq) describes the local service and its users, and
+[Connecting an analytics application](#connecting-an-analytics-application) lists the configuration a new producer needs.
 [ADR-0003](ADR/adr-0003-rabbitmq-for-integration-messaging.md) records the alternatives,
 selection rationale, delivery configuration, and operational consequences.
 
@@ -237,6 +263,30 @@ selection rationale, delivery configuration, and operational consequences.
   `user_id` set to the producer's RabbitMQ user. RabbitMQ rejects a publication whose `user_id`
   differs from the connection's user, so the property proves the publisher. Producer users never
   receive the `impersonator` tag. Trade Maneuver dead-letters a message without `user_id`.
+
+The demo analytics application has no outbox and does not retry, unlike these requirements. It is a
+command run by hand: it reports a failed publication, and it can be run again. The
+[README](../README.md#demo-analytics-application) describes its local use.
+
+### Connecting an analytics application
+
+Connecting an analytics application takes only configuration on Trade Maneuver's side, with no change
+to its code. For an analytics application with the identifier `<id>`:
+
+1. Registry entry: add `<id>:<RabbitMQ user>` to `TRADING_ANALYTICS_APPLICATIONS`. The identifier is
+   the `source` it sends; the user is the RabbitMQ user it publishes as.
+2. Producer user: add the user to `docker/rabbitmq/rabbitmq.conf` with its password from the
+   environment and these permissions in the `trade-maneuver` vhost: configure `^$`, write
+   `^tm\.trade-signals$`, and read `^tm\.signal-outcomes\.<id>$`. Give it no tag, so it cannot set
+   another user's `user_id`. Grant the same permissions in the `trade-maneuver-testing` vhost in
+   `docker/rabbitmq/definitions.json`.
+3. Outcome queue: add the durable queue `tm.signal-outcomes.<id>` and its binding from
+   `tm.signal-outcomes` with the routing key `<id>` to both vhosts in `definitions.json`.
+4. Authorization: authorize `<id>` in the investment configuration with
+   `--authorized-analytics-application`.
+
+RabbitMQ creates users only on an empty data volume; the [README](../README.md#rabbitmq) describes how
+to add one to a running node.
 
 ## 5. Message flow
 
