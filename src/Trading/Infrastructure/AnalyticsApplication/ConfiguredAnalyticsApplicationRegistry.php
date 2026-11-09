@@ -38,6 +38,11 @@ final readonly class ConfiguredAnalyticsApplicationRegistry implements Analytics
         return ($this->rabbitMqUsers[$analyticsApplication->toString()] ?? null) === $publisherIdentity;
     }
 
+    public function outcomeRoutingKey(AnalyticsApplicationId $analyticsApplication): ?string
+    {
+        return $this->isKnown($analyticsApplication) ? $analyticsApplication->toString() : null;
+    }
+
     private static function stringOf(mixed $entry, string $key): string
     {
         $value = is_array($entry) ? ($entry[$key] ?? null) : null;

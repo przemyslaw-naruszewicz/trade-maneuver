@@ -64,12 +64,46 @@ services:
       retries: 20
       start_period: 10s
 
+  rabbitmq:
+    image: rabbitmq:4.2-alpine
+    # The node name, and so the data directory, depends on the host name.
+    hostname: rabbitmq
+    environment:
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-local_trade_maneuver_rabbitmq_password}
+      DEMO_ANALYTICS_RABBITMQ_PASSWORD: ${DEMO_ANALYTICS_RABBITMQ_PASSWORD:-local_demo_analytics_password}
+      DEMO_RESEARCH_RABBITMQ_PASSWORD: ${DEMO_RESEARCH_RABBITMQ_PASSWORD:-local_demo_research_password}
+    mem_limit: 512m
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./docker/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_port_connectivity"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 20s
+
+  trade-signal-consumer:
+    <<: *php
+    command: ["php", "artisan", "trading:consume-trade-signals"]
+    restart: unless-stopped
+    stop_grace_period: 30s
+    depends_on:
+      app:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
   queue:
     <<: *php
     command: ["php", "artisan", "queue:work", "--sleep=3", "--tries=3", "--timeout=90"]
+    restart: unless-stopped
     stop_grace_period: 100s
     depends_on:
       app:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   scheduler:
@@ -101,3 +135,4 @@ services:
 
 volumes:
   postgres_data:
+  rabbitmq_data:

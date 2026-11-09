@@ -28,9 +28,10 @@ LLM API costs and usage limits are separate from VPS resources.
 | RabbitMQ | Integration messages, results, and failed deliveries |
 
 The existing Compose file supports local development. The VPS needs a deployment configuration
-using published images without local builds or source-code bind mounts. RabbitMQ configuration,
-an AMQP client, and outbox dispatch are not implemented yet. The trade signal intake use case
-already writes its inbox and outbox entries in PostgreSQL.
+using published images without local builds or source-code bind mounts. The local RabbitMQ
+service and its trade signal consumer run in Compose, and the Laravel queue worker publishes
+signal outcomes to RabbitMQ; the VPS deployment of RabbitMQ is not configured yet. The trade
+signal intake use case writes its inbox and outbox entries in PostgreSQL.
 Background jobs currently use PostgreSQL.
 Signal producers run separately, each with its own database and outbox.
 

@@ -1,0 +1,231 @@
+{
+  "vhosts": [
+    {
+      "name": "trade-maneuver"
+    },
+    {
+      "name": "trade-maneuver-testing"
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "tm.trade-signals",
+      "vhost": "trade-maneuver",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "tm.trade-signals.dead-letter",
+      "vhost": "trade-maneuver",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "tm.signal-outcomes",
+      "vhost": "trade-maneuver",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "tm.trade-signals",
+      "vhost": "trade-maneuver-testing",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "tm.trade-signals.dead-letter",
+      "vhost": "trade-maneuver-testing",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "tm.signal-outcomes",
+      "vhost": "trade-maneuver-testing",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "queues": [
+    {
+      "name": "tm.trade-signals.intake",
+      "vhost": "trade-maneuver",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic",
+        "x-dead-letter-exchange": "tm.trade-signals.dead-letter"
+      }
+    },
+    {
+      "name": "tm.trade-signals.dead-letter",
+      "vhost": "trade-maneuver",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic"
+      }
+    },
+    {
+      "name": "tm.signal-outcomes.demo-analytics",
+      "vhost": "trade-maneuver",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic"
+      }
+    },
+    {
+      "name": "tm.signal-outcomes.demo-research",
+      "vhost": "trade-maneuver",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic"
+      }
+    },
+    {
+      "name": "tm.trade-signals.intake",
+      "vhost": "trade-maneuver-testing",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic",
+        "x-dead-letter-exchange": "tm.trade-signals.dead-letter"
+      }
+    },
+    {
+      "name": "tm.trade-signals.dead-letter",
+      "vhost": "trade-maneuver-testing",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic"
+      }
+    },
+    {
+      "name": "tm.signal-outcomes.demo-analytics",
+      "vhost": "trade-maneuver-testing",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic"
+      }
+    },
+    {
+      "name": "tm.signal-outcomes.demo-research",
+      "vhost": "trade-maneuver-testing",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic"
+      }
+    }
+  ],
+  "bindings": [
+    {
+      "source": "tm.trade-signals",
+      "vhost": "trade-maneuver",
+      "destination": "tm.trade-signals.intake",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
+    },
+    {
+      "source": "tm.trade-signals.dead-letter",
+      "vhost": "trade-maneuver",
+      "destination": "tm.trade-signals.dead-letter",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
+    },
+    {
+      "source": "tm.signal-outcomes",
+      "vhost": "trade-maneuver",
+      "destination": "tm.signal-outcomes.demo-analytics",
+      "destination_type": "queue",
+      "routing_key": "demo-analytics",
+      "arguments": {}
+    },
+    {
+      "source": "tm.signal-outcomes",
+      "vhost": "trade-maneuver",
+      "destination": "tm.signal-outcomes.demo-research",
+      "destination_type": "queue",
+      "routing_key": "demo-research",
+      "arguments": {}
+    },
+    {
+      "source": "tm.trade-signals",
+      "vhost": "trade-maneuver-testing",
+      "destination": "tm.trade-signals.intake",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
+    },
+    {
+      "source": "tm.trade-signals.dead-letter",
+      "vhost": "trade-maneuver-testing",
+      "destination": "tm.trade-signals.dead-letter",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
+    },
+    {
+      "source": "tm.signal-outcomes",
+      "vhost": "trade-maneuver-testing",
+      "destination": "tm.signal-outcomes.demo-analytics",
+      "destination_type": "queue",
+      "routing_key": "demo-analytics",
+      "arguments": {}
+    },
+    {
+      "source": "tm.signal-outcomes",
+      "vhost": "trade-maneuver-testing",
+      "destination": "tm.signal-outcomes.demo-research",
+      "destination_type": "queue",
+      "routing_key": "demo-research",
+      "arguments": {}
+    }
+  ],
+  "permissions": [
+    {
+      "user": "trade-maneuver",
+      "vhost": "trade-maneuver-testing",
+      "configure": "^$",
+      "write": "^tm\\.signal-outcomes$",
+      "read": "^tm\\.trade-signals\\.(intake|dead-letter)$"
+    },
+    {
+      "user": "demo-analytics",
+      "vhost": "trade-maneuver-testing",
+      "configure": "^$",
+      "write": "^tm\\.trade-signals$",
+      "read": "^tm\\.signal-outcomes\\.demo-analytics$"
+    },
+    {
+      "user": "demo-research",
+      "vhost": "trade-maneuver-testing",
+      "configure": "^$",
+      "write": "^tm\\.trade-signals$",
+      "read": "^tm\\.signal-outcomes\\.demo-research$"
+    }
+  ]
+}

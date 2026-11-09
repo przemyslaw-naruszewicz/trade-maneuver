@@ -18,4 +18,10 @@ interface AnalyticsApplicationRegistryInterface
      * analytics application.
      */
     public function publishesAs(AnalyticsApplicationId $analyticsApplication, string $publisherIdentity): bool;
+
+    /**
+     * The routing key that selects the analytics application's own outcome queue, its identifier; null when the
+     * analytics application is not known.
+     */
+    public function outcomeRoutingKey(AnalyticsApplicationId $analyticsApplication): ?string;
 }

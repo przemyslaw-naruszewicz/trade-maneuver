@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace TradeManeuver\Trading\Infrastructure\Providers;
 
 use Carbon\FactoryImmutable;
+use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\ServiceProvider;
+use PhpAmqpLib\Connection\AMQPConnectionConfig;
 use Psr\Clock\ClockInterface;
 use TradeManeuver\Trading\Application\Port\AnalyticsApplicationRegistryInterface;
 use TradeManeuver\Trading\Application\Port\AuditTrailInterface;
@@ -20,9 +22,12 @@ use TradeManeuver\Trading\Infrastructure\Audit\PostgresAuditTrail;
 use TradeManeuver\Trading\Infrastructure\InvestmentConfiguration\InvestmentConfigurationRepository;
 use TradeManeuver\Trading\Infrastructure\Messaging\Inbox\PostgresInbox;
 use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\OutboxIntegrationEventPublisher;
+use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\SignalOutcomePublisherInterface;
+use TradeManeuver\Trading\Infrastructure\Messaging\RabbitMq\RabbitMqSignalOutcomePublisher;
 use TradeManeuver\Trading\Infrastructure\Persistence\LaravelTransactionManager;
 use TradeManeuver\Trading\Infrastructure\TradeSignal\TradeSignalRepository;
 use TradeManeuver\Trading\Ui\ConsoleCommands\CreateInvestmentConfigurationCommand;
+use TradeManeuver\Trading\Ui\Messaging\ConsumeTradeSignalsCommand;
 
 final class TradingServiceProvider extends ServiceProvider
 {
@@ -56,8 +61,21 @@ final class TradingServiceProvider extends ServiceProvider
             fn ($app): OutboxIntegrationEventPublisher => new OutboxIntegrationEventPublisher(
                 $app->make(ConnectionInterface::class),
                 $app->make(ClockInterface::class),
+                $app->make(Dispatcher::class),
             ),
         );
+        $this->app->bind(AMQPConnectionConfig::class, function ($app): AMQPConnectionConfig {
+            $config = $app->make('config');
+            $connection = new AMQPConnectionConfig;
+            $connection->setHost((string) $config->get('trading.rabbitmq.host'));
+            $connection->setPort((int) $config->get('trading.rabbitmq.port'));
+            $connection->setVhost((string) $config->get('trading.rabbitmq.vhost'));
+            $connection->setUser((string) $config->get('trading.rabbitmq.user'));
+            $connection->setPassword((string) $config->get('trading.rabbitmq.password'));
+
+            return $connection;
+        });
+        $this->app->singleton(SignalOutcomePublisherInterface::class, RabbitMqSignalOutcomePublisher::class);
     }
 
     public function boot(): void
@@ -65,7 +83,7 @@ final class TradingServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(dirname(__DIR__).'/Resources/Migrations');
 
         if ($this->app->runningInConsole()) {
-            $this->commands([CreateInvestmentConfigurationCommand::class]);
+            $this->commands([CreateInvestmentConfigurationCommand::class, ConsumeTradeSignalsCommand::class]);
         }
     }
 }

@@ -1,6 +1,6 @@
 # Architecture
 
-The repository contains a Laravel skeleton with PostgreSQL integration and the Trading context. The context so far holds the investment configuration aggregate and the console command that creates it, the trade signal aggregate and the intake use case that receives trade signals through the inbox and records signal rejections in the transactional outbox, the append-only audit trail, and the transaction manager. The rest of the domain model, the other use cases, the RabbitMQ transport, and the outbox dispatcher are target requirements that are not implemented yet. Deptrac runs in CI and enforces the rules described under [Laravel integration](#laravel-integration). Accepted ADRs record decisions about the target architecture, whether or not those decisions are implemented yet.
+The repository contains a Laravel skeleton with PostgreSQL integration and the Trading context. The context so far holds the investment configuration aggregate and the console command that creates it, the trade signal aggregate and the intake use case that receives trade signals through the inbox and records signal rejections in the transactional outbox, the append-only audit trail, and the transaction manager. Its RabbitMQ transport consumes trade signals from the intake queue, and a job on the PostgreSQL job queue publishes each signal outcome from the outbox to its analytics application's outcome queue. The rest of the domain model and the other use cases are target requirements that are not implemented yet. Deptrac runs in CI and enforces the rules described under [Laravel integration](#laravel-integration). Accepted ADRs record decisions about the target architecture, whether or not those decisions are implemented yet.
 
 ## Service purpose
 
@@ -153,6 +153,8 @@ src/{BoundedContext}/
     │   └── {Action}InputDto.php
     ├── Livewire/
     │   └── {Component}.php
+    ├── Messaging/
+    │   └── {Message}Consumer.php
     └── ConsoleCommands/
         └── {Action}{Aggregate}Command.php
 ```
@@ -269,7 +271,7 @@ Separate internal business facts from public integration contracts, so the domai
 
 ## PostgreSQL-backed queues
 
-Use PostgreSQL for internal Laravel jobs, including local dispatch of committed outgoing messages and processing of incoming messages. Use RabbitMQ for external signal and result messaging, as selected in [ADR-0003](ADR/adr-0003-rabbitmq-for-integration-messaging.md). RabbitMQ integration is pending.
+Use PostgreSQL for internal Laravel jobs, including local dispatch of committed outgoing messages and processing of incoming messages. Use RabbitMQ for external signal and result messaging, as selected in [ADR-0003](ADR/adr-0003-rabbitmq-for-integration-messaging.md).
 
 - Keep enqueueing, reservation, acknowledgement, retry, and failed-job handling in infrastructure adapters; the core must remain independent of queue implementation details.
 - Run a recoverable dispatcher for committed outbox entries, preserving message identities across enqueue attempts. Workers must process committed state and safely handle retries and concurrent delivery under the reliable messaging rules below.

@@ -1,7 +1,7 @@
 # Trade Maneuver: integration overview
 
 Trade Maneuver accepts `tm.trade-signal.v1` messages and records their signal outcomes at its
-application boundary; the RabbitMQ transport described here is planned. Trade Maneuver is a portfolio and educational project:
+application boundary and exchanges them over the RabbitMQ transport described here. Trade Maneuver is a portfolio and educational project:
 the service will receive trade signals from analytics applications and submit orders
 to a simulated, fictional broker. It places no real orders, and integration with a real broker is out of
 scope. In this document, "broker" means the simulated broker unless stated otherwise.
@@ -217,7 +217,8 @@ with the same `id`, `time`, and content. Consumers deduplicate outcome messages 
 ## 4. Transport
 
 RabbitMQ is the selected integration transport. Signals use the `tm.trade-signals` exchange;
-signal outcomes use `tm.signal-outcomes`, with a separate queue for each producer. Implementation is pending.
+signal outcomes use `tm.signal-outcomes`, with a separate queue for each producer, routed by its identifier. The
+[README](../README.md#rabbitmq) describes the local service, its users, and how to connect another producer.
 [ADR-0003](ADR/adr-0003-rabbitmq-for-integration-messaging.md) records the alternatives,
 selection rationale, delivery configuration, and operational consequences.
 

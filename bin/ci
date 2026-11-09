@@ -27,7 +27,7 @@ export LOCAL_GID="${LOCAL_GID:-${mount_owner#*:}}"
 docker compose run --rm -T --no-deps \
     -e COMPOSER_CACHE_DIR=/var/www/html/storage/framework/cache/composer \
     app composer install --no-interaction --prefer-dist --no-progress
-docker compose up -d --wait postgres
+docker compose up -d --wait postgres rabbitmq
 docker compose exec -T postgres sh /docker-entrypoint-initdb.d/10-create-test-database.sh
 
 printf 'Running CI checks: composer %s\n' "$composer_script"
@@ -44,4 +44,6 @@ docker compose run --rm -T --no-deps \
     -e CACHE_STORE=array \
     -e SESSION_DRIVER=array \
     -e QUEUE_CONNECTION=sync \
+    -e RABBITMQ_HOST=rabbitmq \
+    -e RABBITMQ_VHOST=trade-maneuver-testing \
     app composer "$composer_script"

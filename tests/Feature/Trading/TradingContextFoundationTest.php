@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Trading;
 
 use Illuminate\Support\Facades\Process;
+use PhpAmqpLib\Connection\AMQPConnectionConfig;
 use ReflectionClass;
 use Tests\TestCase;
 use TradeManeuver\Trading\Infrastructure\Providers\TradingServiceProvider;
@@ -48,6 +49,24 @@ final class TradingContextFoundationTest extends TestCase
         $this->assertContains(
             base_path('src/Trading/Infrastructure/Resources/Migrations'),
             $this->app->make('migrator')->paths(),
+        );
+    }
+
+    public function test_the_rabbitmq_connection_uses_the_configured_server_and_credentials(): void
+    {
+        config(['trading.rabbitmq' => [
+            'host' => 'demo-rabbitmq',
+            'port' => 5673,
+            'vhost' => 'demo-vhost',
+            'user' => 'demo-user',
+            'password' => 'demo-password',
+        ]]);
+
+        $connection = $this->app->make(AMQPConnectionConfig::class);
+
+        $this->assertSame(
+            ['demo-rabbitmq', 5673, 'demo-vhost', 'demo-user', 'demo-password'],
+            [$connection->getHost(), $connection->getPort(), $connection->getVhost(), $connection->getUser(), $connection->getPassword()],
         );
     }
 }

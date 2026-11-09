@@ -1,6 +1,6 @@
 # Testing strategy
 
-Test observable business behavior against the modeling rules in [ddd.md](ddd.md) and the guarantees in [architecture.md](architecture.md), including retries, concurrency, and partial failure. This is the target strategy; the skeleton currently has PHPUnit coverage for application availability, user serialization and casts, PostgreSQL integration, and the autoloading and registration of the Trading context, plus a Behat health-check scenario. The investment configuration has domain unit tests, PostgreSQL mapping and atomicity tests, and a console command feature test. Trade signal intake has domain and application unit tests, PostgreSQL mapping, atomicity, and concurrency tests, and Behat scenarios at the Trading application boundary.
+Test observable business behavior against the modeling rules in [ddd.md](ddd.md) and the guarantees in [architecture.md](architecture.md), including retries, concurrency, and partial failure. This is the target strategy; the skeleton currently has PHPUnit coverage for application availability, user serialization and casts, PostgreSQL integration, and the autoloading and registration of the Trading context, plus a Behat health-check scenario. The investment configuration has domain unit tests, PostgreSQL mapping and atomicity tests, and a console command feature test. Trade signal intake has domain and application unit tests, PostgreSQL mapping, atomicity, and concurrency tests, and Behat scenarios at the Trading application boundary. The RabbitMQ consumer and the publication of signal outcomes have integration tests against RabbitMQ and PostgreSQL, which run the consumer and the queue worker as separate processes where the test needs acknowledgement, redelivery, or signal handling.
 
 ## Test pyramid
 
@@ -62,7 +62,7 @@ Feature: Idempotent trade signals
 
 ## Real infrastructure and failure testing
 
-- Run persistence and messaging integration tests against a separate PostgreSQL test database. Isolate test data and keep tests deterministic.
+- Run persistence and messaging integration tests against a separate PostgreSQL test database and the separate `trade-maneuver-testing` RabbitMQ vhost. Isolate test data and keep tests deterministic.
 - Use independent database connections and controlled interleavings to verify concurrency, including changes between root and child reads. Commit setup data before workers use it, and clean up records committed by every connection. A test wrapped in one connection's transaction cannot prove concurrent-worker behavior.
 - Exercise the PostgreSQL-backed queue when testing queue and worker guarantees. The current PHPUnit configuration uses the `sync` queue driver; these scenarios require explicit test configuration using the database driver.
 - Test atomic rollback across aggregate, inbox, audit, and outbox writes. Cover crashes before publication, duplicate and out-of-order messages, lost acknowledgements, and recovery after worker failure. Verify that terminal rejections retain a deduplicated outcome after rollback and that accepted but unprocessed inbox entries remain recoverable.

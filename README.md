@@ -52,11 +52,13 @@ If you need different ports, copy `.env.example` to `.env` before starting and c
 | `nginx` | HTTP, static files, forwarding requests to PHP-FPM | `127.0.0.1:8080` |
 | `app` | PHP-FPM, Artisan, Composer | via Nginx |
 | `postgres` | PostgreSQL, persistent `postgres_data` volume | `127.0.0.1:54320` |
-| `queue` | Separate `queue:work` worker | internal |
+| `rabbitmq` | RabbitMQ for trade signals and signal outcomes, persistent `rabbitmq_data` volume | internal |
+| `trade-signal-consumer` | `trading:consume-trade-signals`, which consumes trade signals from RabbitMQ | internal |
+| `queue` | Separate `queue:work` worker, which also publishes signal outcomes from the outbox to RabbitMQ | internal |
 | `scheduler` | Separate `schedule:work` process | internal |
 | `node` | Node.js, Vite with hot reload | `127.0.0.1:5173` |
 
-The project directory is mounted into the containers, so editing PHP does not require rebuilding the image. After changing job code run `docker compose restart queue`; after changing the schedule run `docker compose restart scheduler`.
+The project directory is mounted into the containers, so editing PHP does not require rebuilding the image. After changing job code run `docker compose restart queue`; after changing the schedule run `docker compose restart scheduler`; after changing the consumer run `docker compose restart trade-signal-consumer`.
 
 Sessions, cache and the queue use PostgreSQL and the standard Laravel migrations. The worker has a 90-second timeout, and `DB_QUEUE_RETRY_AFTER=120` prevents a job from being picked up again before that timeout expires. Mail goes to the application log (`MAIL_MAILER=log`).
 
@@ -92,7 +94,7 @@ docker compose logs -f
 
 ## Investment configuration
 
-Trade Maneuver has exactly one investment configuration, created once at deployment. Register the known analytics applications in `TRADING_ANALYTICS_APPLICATIONS` as comma-separated `<source>:<RabbitMQ user>` entries: the identifier each one sends as `source` and the RabbitMQ user it publishes as, for example `demo-analytics:demo-analytics`. Then run:
+Trade Maneuver has exactly one investment configuration, created once at deployment. Register the known analytics applications in `TRADING_ANALYTICS_APPLICATIONS` as comma-separated `<source>:<RabbitMQ user>` entries: the identifier each one sends as `source` and the RabbitMQ user it publishes as, for example `demo-analytics:demo-analytics`. The identifier is also the routing key of the analytics application's outcome queue. Then run:
 
 ```sh
 docker compose exec app php artisan trading:create-investment-configuration demo-investment \
@@ -102,17 +104,63 @@ docker compose exec app php artisan trading:create-investment-configuration demo
 
 The reference (`demo-investment`) is what trade signals send as `investmentConfigurationRef`. The currency is EUR. The order amount is in that currency unless `--order-amount-currency` says otherwise, and the tolerance is a percentage from 0 to 5. Repeat `--authorized-analytics-application` for each application, or leave it out to reject every trade signal. The command refuses invalid input and a second investment configuration without writing anything, and records the creation in the audit trail.
 
+## RabbitMQ
+
+RabbitMQ carries trade signals from analytics applications to Trade Maneuver and signal outcomes back to them ([ADR-0003](docs/ADR/adr-0003-rabbitmq-for-integration-messaging.md)). It publishes no host port. The container has a 512 MB memory limit, and RabbitMQ blocks publishers at an absolute threshold of 256 MiB. `docker/rabbitmq/definitions.json` holds the topology, loaded at every start, in two vhosts: `trade-maneuver` for the application and `trade-maneuver-testing` for the tests.
+
+| Element | Purpose |
+| --- | --- |
+| `tm.trade-signals` | Fanout exchange to which analytics applications publish trade signals |
+| `tm.trade-signals.intake` | Trade Maneuver's durable intake queue, dead-lettering to `tm.trade-signals.dead-letter` |
+| `tm.trade-signals.dead-letter` | Exchange and queue for messages that cannot be processed, kept for manual inspection |
+| `tm.signal-outcomes` | Direct exchange for signal outcomes, routed by the analytics application identifier |
+| `tm.signal-outcomes.<identifier>` | Durable outcome queue of one analytics application |
+
+`docker/rabbitmq/rabbitmq.conf` seeds the users with passwords from the environment: `trade-maneuver` (`RABBITMQ_PASSWORD`) and the producer users of the fictional analytics applications, `demo-analytics` (`DEMO_ANALYTICS_RABBITMQ_PASSWORD`) and `demo-research` (`DEMO_RESEARCH_RABBITMQ_PASSWORD`). `.env.example` has local defaults. A producer user may write only to `tm.trade-signals` and read only its own outcome queue, and none has a tag, so none may set another user's `user_id`. Like the PostgreSQL users, RabbitMQ users are created only when the `rabbitmq_data` volume is empty: after adding or changing a user, recreate the volume with `docker compose down -v`, which also deletes the database, or add the user with `docker compose exec rabbitmq rabbitmqctl add_user` and `set_permissions -p trade-maneuver`.
+
+Connecting another analytics application takes only configuration: an entry in `TRADING_ANALYTICS_APPLICATIONS`, a producer user with its permissions in `rabbitmq.conf` and its permissions in the test vhost in `definitions.json`, and an outcome queue with its binding in both vhosts of `definitions.json`.
+
+The trade signal consumer acknowledges a delivery only after the intake transaction commits. It rejects a message that cannot be processed without requeue, so RabbitMQ moves it to the dead letter queue. When the database fails, it requeues the delivery and stops, and Compose restarts it. On SIGTERM it finishes the current delivery and stops; RabbitMQ requeues the deliveries it had prefetched. The intake use case queues a publication job for each signal outcome in its own transaction, on Laravel's PostgreSQL job queue, and the `queue` service runs it. The job publishes the outbox entry as a persistent message whose message id is the outcome message `id`, and marks it sent only after RabbitMQ confirms it. When RabbitMQ cannot route or does not confirm a signal outcome, the entry stays unsent, the failure is logged as an error, and the job is retried up to 10 times with a delay that doubles after each failed attempt, from 1 second to 256 seconds. When RabbitMQ drops the connection, for example after a restart, the attempt fails and the next one opens a new connection; if the queue worker stops, Compose restarts it. After the last attempt the job stays in `failed_jobs`; `docker compose exec app php artisan queue:retry all` queues it again.
+
+To publish a test trade signal as the demo analytics application and read its signal outcome, run the following. Its confidence of `1.5` breaks the contract, so the signal outcome is `SignalRejected`; a valid trade signal needs the investment configuration above.
+
+```sh
+docker compose exec -T app php <<'PHP'
+<?php
+require 'vendor/autoload.php';
+
+use PhpAmqpLib\Connection\AMQPStreamConnection;
+use PhpAmqpLib\Message\AMQPMessage;
+
+$connection = new AMQPStreamConnection('rabbitmq', 5672, 'demo-analytics', 'local_demo_analytics_password', 'trade-maneuver');
+$channel = $connection->channel();
+$signal = [
+    'id' => '019a5a6e-0000-7000-8000-0000000000a1', 'source' => 'demo-analytics', 'type' => 'tm.trade-signal.v1',
+    'time' => '2026-11-07T09:00:00Z', 'investmentConfigurationRef' => 'demo-investment',
+    'instrument' => ['symbol' => 'DEMO_A', 'mic' => 'DEMO'], 'direction' => 'long', 'confidence' => '1.5',
+    'horizon' => ['sessions' => 5], 'referencePrice' => ['amount' => '12.50', 'currency' => 'EUR', 'asOf' => '2026-11-07T08:59:00Z'],
+    'validUntil' => '2026-11-10T16:00:00Z',
+];
+$channel->basic_publish(new AMQPMessage(json_encode($signal), ['user_id' => 'demo-analytics', 'delivery_mode' => 2]), 'tm.trade-signals');
+sleep(3);
+echo $channel->basic_get('tm.signal-outcomes.demo-analytics', true)?->getBody() ?? 'No signal outcome yet.', PHP_EOL;
+$connection->close();
+PHP
+```
+
+Inspect the queues with `docker compose exec rabbitmq rabbitmqctl list_queues -p trade-maneuver name messages`.
+
 ## Quality checks
 
 For CI configuration changes, follow the [three-step verification process](SDLC.md#changes-to-ci-configuration). `make ci-lint` checks workflows, shell scripts, and Compose; GitHub Actions runs it before building the PHP image.
 
-Run `make ci` (or `sh bin/ci`) from the host. It builds the PHP image with PCOV, installs locked Composer dependencies, starts PostgreSQL, ensures the separate test database exists, and runs `composer ci` in a disposable PHP container with test configuration. It keeps the existing application key and database data. PCOV is disabled during normal development and enabled for mutation coverage.
+Run `make ci` (or `sh bin/ci`) from the host. It builds the PHP image with PCOV, installs locked Composer dependencies, starts PostgreSQL and RabbitMQ, ensures the separate test database exists, and runs `composer ci` in a disposable PHP container with test configuration. It keeps the existing application key and database data. PCOV is disabled during normal development and enabled for mutation coverage.
 
 The pipeline runs Composer validation and `composer audit --locked`, PHP CS Fixer in check mode, PHPStan with Larastan at level 8, Deptrac, PHPUnit, Behat, and Infection. PHP CS Fixer follows PSR-12 with explicit adjustments matching the existing Pint style. PHPStan also enforces cognitive complexity limits on every path it analyses, through `tomasvotruba/cognitive-complexity`: 9 per function or method and 40 per class, set in `phpstan.neon.dist`. The `spaze/phpstan-disallowed-calls` extension rejects calls from `Domain` and `Application` to functions from installed packages, which Deptrac cannot detect. Its `disallowedMethodCalls` entry reports a call to an aggregate's `state()` outside repository implementations and tests ([ADR-0002](docs/ADR/adr-0002-aggregate-state-for-eloquent-persistence.md)). Infection uses minimum MSI 80% and covered MSI 100%. The full run checks all configured application sources (`app/` and `src/`), including uncovered code, and fails when no mutations are generated. The changed-line run checks only the lines changed since the merge base with `origin/main`. It ignores lines PHPUnit does not run and passes when the changes generate no mutations. These initial thresholds apply to the small skeleton and should be reviewed as business code is introduced.
 
 GitHub Actions runs `make ci` for pull requests, pushes to `main`, and manual dispatch. Pull requests run all checks with Infection on changed lines; pushes to `main` and manual runs include the full Infection run. Docker build layers and Composer downloads are cached between runs. Local `make ci` includes the full Infection run by default. Use `CI_WITH_MUTATION=diff make ci` for the pull-request checks, after `git fetch` so that `origin/main` is current, and `CI_WITH_MUTATION=0 make ci` to skip Infection. `CI_SKIP_BUILD=1` reuses an already built PHP image, as the workflow does after its cached build step. Composer downloads are kept in `storage/framework/cache/composer`.
 
-PHPUnit and Infection reports are written to `storage/quality/` and uploaded as workflow artifacts for seven days. Behat runs two suites: `application` checks service health, and `trading` covers trade signal intake through the application commands against the test database. Deptrac enforces the layer rules in `deptrac.yaml` for the Trading context and the application code under the root namespace; [the architecture](docs/architecture.md#laravel-integration) describes them. Run it separately with `docker compose exec app composer analyse:architecture`.
+PHPUnit runs the RabbitMQ integration tests against the `trade-maneuver-testing` vhost. PHPUnit and Infection reports are written to `storage/quality/` and uploaded as workflow artifacts for seven days. Behat runs two suites: `application` checks service health, and `trading` covers trade signal intake through the application commands against the test database. Deptrac enforces the layer rules in `deptrac.yaml` for the Trading context and the application code under the root namespace; [the architecture](docs/architecture.md#laravel-integration) describes them. Run it separately with `docker compose exec app composer analyse:architecture`.
 
 ## PostgreSQL
 
