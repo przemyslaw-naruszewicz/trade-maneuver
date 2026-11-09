@@ -98,6 +98,7 @@ services:
   queue:
     <<: *php
     command: ["php", "artisan", "queue:work", "--sleep=3", "--tries=3", "--timeout=90"]
+    restart: unless-stopped
     stop_grace_period: 100s
     depends_on:
       app:

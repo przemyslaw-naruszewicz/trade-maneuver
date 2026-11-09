@@ -8,6 +8,7 @@ use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AbstractConnection;
 use PhpAmqpLib\Connection\AMQPConnectionConfig;
 use PhpAmqpLib\Connection\AMQPConnectionFactory;
+use PhpAmqpLib\Exception\AMQPExceptionInterface;
 use PhpAmqpLib\Exception\AMQPTimeoutException;
 use PhpAmqpLib\Message\AMQPMessage;
 use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\OutboxMessageDto;
@@ -18,6 +19,7 @@ use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\SignalOutcomePublisher
  * Publishes persistent, mandatory messages to tm.signal-outcomes on a channel in confirm mode, and waits for each
  * confirmation. RabbitMQ returns a mandatory message it cannot route before confirming it, so a return wins over the
  * confirmation that follows it. A refusal leaves the result unconfirmed, like a confirmation that never arrives.
+ * After an AMQP failure, such as a connection RabbitMQ dropped, the next publication opens a new connection.
  */
 final class RabbitMqSignalOutcomePublisher implements SignalOutcomePublisherInterface
 {
@@ -34,6 +36,17 @@ final class RabbitMqSignalOutcomePublisher implements SignalOutcomePublisherInte
     public function __construct(private readonly AMQPConnectionConfig $connectionConfig) {}
 
     public function publish(OutboxMessageDto $message, string $routingKey): PublicationResult
+    {
+        try {
+            return $this->publishOnChannel($message, $routingKey);
+        } catch (AMQPExceptionInterface $exception) {
+            $this->forgetConnection();
+
+            throw $exception;
+        }
+    }
+
+    private function publishOnChannel(OutboxMessageDto $message, string $routingKey): PublicationResult
     {
         $channel = $this->channel();
         $this->result = null;
@@ -53,7 +66,8 @@ final class RabbitMqSignalOutcomePublisher implements SignalOutcomePublisherInte
             $channel->wait_for_pending_acks_returns(self::CONFIRMATION_TIMEOUT_SECONDS);
         } catch (AMQPTimeoutException) {
             // A late confirmation would belong to this message, so the next one starts on a new connection.
-            $this->disconnect();
+            $this->connection?->close();
+            $this->forgetConnection();
 
             return PublicationResult::Unconfirmed;
         }
@@ -79,9 +93,11 @@ final class RabbitMqSignalOutcomePublisher implements SignalOutcomePublisherInte
         return $this->channel = $channel;
     }
 
-    private function disconnect(): void
+    /**
+     * PHP destroys the forgotten connection later, and php-amqplib then closes it, ignoring a socket that is already gone.
+     */
+    private function forgetConnection(): void
     {
-        $this->connection?->close();
         $this->connection = null;
         $this->channel = null;
     }

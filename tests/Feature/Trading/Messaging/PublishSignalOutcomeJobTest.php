@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Log;
 use PhpAmqpLib\Connection\AMQPConnectionConfig;
+use PhpAmqpLib\Exception\AMQPHeartbeatMissedException;
 use RuntimeException;
 use Tests\Support\Trading\AnsweringSignalOutcomePublisher;
 use Tests\Support\Trading\RabbitMqTestClient;
@@ -195,7 +196,8 @@ final class PublishSignalOutcomeJobTest extends TestCase
 
     public function test_after_rabbitmq_drops_the_connection_a_later_attempt_publishes_on_a_new_connection(): void
     {
-        // RabbitMQ closes a connection that misses two heartbeats, and the publisher sends none while it is idle.
+        // The publisher sends no heartbeats while it is idle, so after a few seconds RabbitMQ closes the connection and
+        // php-amqplib refuses to write to it, as after a RabbitMQ restart.
         $connectionConfig = $this->app->make(AMQPConnectionConfig::class);
         $connectionConfig->setHeartbeat(1);
         $publisher = new RabbitMqSignalOutcomePublisher($connectionConfig);
@@ -206,6 +208,7 @@ final class PublishSignalOutcomeJobTest extends TestCase
         sleep(4);
         $this->commitASignalRejection(alias: 'second purchase');
         $this->publishWith($publisher);
+        Exceptions::assertReported(AMQPHeartbeatMissedException::class);
         $this->travel(1)->hours();
         $this->publishWith($publisher);
 
