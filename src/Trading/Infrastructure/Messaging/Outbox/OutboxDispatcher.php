@@ -73,7 +73,7 @@ final readonly class OutboxDispatcher
 
     private function fail(OutboxMessageDto $message, string $error, bool $isError): void
     {
-        $delaySeconds = min(self::MAX_RETRY_DELAY_SECONDS, self::FIRST_RETRY_DELAY_SECONDS * 2 ** min($message->attempts, 16));
+        $delaySeconds = min(self::MAX_RETRY_DELAY_SECONDS, self::FIRST_RETRY_DELAY_SECONDS * 2 ** $message->attempts);
         $nextAttemptAt = $this->clock->now()->modify(sprintf('+%d seconds', $delaySeconds));
         $this->outbox->recordFailedAttempt($message, $error, $nextAttemptAt);
 

@@ -7,6 +7,7 @@ namespace Tests\Feature\Trading\Messaging;
 use DateTimeImmutable;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 use Symfony\Component\Clock\MockClock;
 use Tests\Support\Trading\RabbitMqTestClient;
@@ -93,10 +94,90 @@ final class OutboxDispatcherTest extends TestCase
         $this->assertNotNull($entry->sent_at);
     }
 
-    private function commitASignalRejection(): void
+    public function test_a_signal_outcome_rabbitmq_cannot_route_stays_unsent_and_is_logged_as_an_error(): void
     {
-        $body = TradeSignalMessageBuilder::aTradeSignal(TradeSignalMessageBuilder::idFor('purchase'))->with('confidence', '1.5')->body();
-        $this->app->make(ReceiveTradeSignalCommandHandler::class)->handle(new ReceiveTradeSignalCommand($body, 'demo-analytics'));
+        config(['trading.analytics_applications' => [['id' => 'demo-unbound', 'rabbitmq_user' => 'demo-unbound']]]);
+        $this->commitASignalRejection('demo-unbound');
+        $log = Log::spy();
+
+        $sent = $this->dispatcherPublishingWith($this->app->make(SignalOutcomePublisherInterface::class))->dispatchDue();
+
+        $entry = DB::table('trading_outbox_messages')->sole();
+        $this->assertSame(0, $sent);
+        $this->assertNull($entry->sent_at);
+        $this->assertSame('RabbitMQ cannot route the signal outcome to an outcome queue.', $entry->last_error);
+        $log->shouldHaveReceived('error')->once()->withArgs(
+            static fn (string $message, array $context): bool => $message === 'A signal outcome stays unsent.'
+                && $context['messageId'] === $entry->message_id
+                && $context['signalId'] === TradeSignalMessageBuilder::idFor('purchase')
+                && $context['recipient'] === 'demo-unbound',
+        );
+    }
+
+    public function test_an_entry_for_a_recipient_no_longer_registered_stays_unsent_and_is_logged_as_an_error(): void
+    {
+        $this->commitASignalRejection();
+        config(['trading.analytics_applications' => []]);
+        $log = Log::spy();
+
+        $this->dispatcherPublishingWith($this->publisherAnswering(PublicationResult::Confirmed))->dispatchDue();
+
+        $entry = DB::table('trading_outbox_messages')->sole();
+        $this->assertNull($entry->sent_at);
+        $this->assertSame('The recipient is not a known analytics application.', $entry->last_error);
+        $log->shouldHaveReceived('error')->once();
+    }
+
+    public function test_retries_wait_twice_as_long_after_each_failed_attempt_up_to_five_minutes(): void
+    {
+        $this->commitASignalRejection();
+        $log = Log::spy();
+
+        $dispatcher = $this->dispatcherPublishingWith($this->publisherAnswering(PublicationResult::Refused));
+        $dispatcher->dispatchDue();
+        $this->assertNextAttemptAt('2026-11-09 10:00:01+00', 1);
+        $dispatcher->dispatchDue();
+        $this->assertNextAttemptAt('2026-11-09 10:00:01+00', 1, 'An entry that is not due yet was expected to wait.');
+
+        $this->clock->modify('+1 second');
+        $dispatcher->dispatchDue();
+        $this->assertNextAttemptAt('2026-11-09 10:00:03+00', 2);
+
+        DB::table('trading_outbox_messages')->update(['attempts' => 8, 'next_attempt_at' => null]);
+        $dispatcher->dispatchDue();
+        $this->assertNextAttemptAt('2026-11-09 10:04:17+00', 9);
+
+        DB::table('trading_outbox_messages')->update(['attempts' => 40, 'next_attempt_at' => null]);
+        $dispatcher->dispatchDue();
+        $this->assertNextAttemptAt('2026-11-09 10:05:01+00', 41);
+        $this->assertSame('RabbitMQ refused the signal outcome.', DB::table('trading_outbox_messages')->sole()->last_error);
+        $log->shouldHaveReceived('warning')->times(4);
+        $log->shouldNotHaveReceived('error');
+    }
+
+    public function test_dispatching_returns_how_many_entries_were_sent(): void
+    {
+        $this->commitASignalRejection();
+
+        $dispatcher = $this->dispatcherPublishingWith($this->publisherAnswering(PublicationResult::Confirmed));
+
+        $this->assertSame(1, $dispatcher->dispatchDue());
+        $this->assertSame(0, $dispatcher->dispatchDue());
+        $this->assertSame('2026-11-09 10:00:00+00', DB::table('trading_outbox_messages')->sole()->sent_at);
+    }
+
+    private function assertNextAttemptAt(string $expected, int $attempts, string $message = ''): void
+    {
+        $entry = DB::table('trading_outbox_messages')->sole();
+        $this->assertSame($expected, $entry->next_attempt_at, $message);
+        $this->assertSame($attempts, $entry->attempts, $message);
+        $this->assertNull($entry->sent_at);
+    }
+
+    private function commitASignalRejection(string $source = 'demo-analytics'): void
+    {
+        $body = TradeSignalMessageBuilder::aTradeSignal(TradeSignalMessageBuilder::idFor('purchase'), $source)->with('confidence', '1.5')->body();
+        $this->app->make(ReceiveTradeSignalCommandHandler::class)->handle(new ReceiveTradeSignalCommand($body, $source));
     }
 
     private function dispatcherPublishingWith(SignalOutcomePublisherInterface $publisher): OutboxDispatcher

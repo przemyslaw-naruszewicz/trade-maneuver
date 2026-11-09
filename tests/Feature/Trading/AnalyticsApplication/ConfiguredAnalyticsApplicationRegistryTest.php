@@ -40,6 +40,18 @@ final class ConfiguredAnalyticsApplicationRegistryTest extends TestCase
         $this->assertFalse($registry->publishesAs(new AnalyticsApplicationId('demo-unknown'), 'demo-analytics-publisher'));
     }
 
+    public function test_the_outcome_routing_key_of_a_known_analytics_application_is_its_identifier(): void
+    {
+        config(['trading.analytics_applications' => [
+            ['id' => 'demo-analytics', 'rabbitmq_user' => 'demo-analytics-publisher'],
+        ]]);
+
+        $registry = $this->app->make(AnalyticsApplicationRegistryInterface::class);
+
+        $this->assertSame('demo-analytics', $registry->outcomeRoutingKey(new AnalyticsApplicationId('demo-analytics')));
+        $this->assertNull($registry->outcomeRoutingKey(new AnalyticsApplicationId('demo-unknown')));
+    }
+
     public function test_the_configuration_reads_the_registry_from_the_environment(): void
     {
         $_SERVER['TRADING_ANALYTICS_APPLICATIONS'] = ' demo-analytics : demo-analytics-publisher , ,demo-research:demo-research-publisher,demo-unpaired';
