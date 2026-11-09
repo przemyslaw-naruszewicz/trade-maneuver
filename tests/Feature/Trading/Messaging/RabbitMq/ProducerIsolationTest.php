@@ -26,4 +26,18 @@ final class ProducerIsolationTest extends TestCase
             $producer->close();
         }
     }
+
+    public function test_rabbitmq_refuses_a_publication_whose_user_id_is_not_the_publishing_producer_user(): void
+    {
+        $producer = RabbitMqTestClient::asProducer('demo-analytics');
+
+        try {
+            $producer->publishTradeSignal('{}', 'demo-research');
+            $this->fail('A publication by demo-analytics with the user_id demo-research was expected to be refused.');
+        } catch (AMQPProtocolChannelException $exception) {
+            $this->assertStringContainsString('PRECONDITION_FAILED', $exception->getMessage());
+        } finally {
+            $producer->close();
+        }
+    }
 }
