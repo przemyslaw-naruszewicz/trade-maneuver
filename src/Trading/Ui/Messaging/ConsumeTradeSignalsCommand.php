@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace TradeManeuver\Trading\Infrastructure\Messaging\RabbitMq;
+namespace TradeManeuver\Trading\Ui\Messaging;
 
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
