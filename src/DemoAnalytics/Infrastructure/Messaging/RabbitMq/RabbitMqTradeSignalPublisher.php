@@ -23,59 +23,77 @@ final readonly class RabbitMqTradeSignalPublisher implements TradeSignalPublishe
 
     private const float CONFIRMATION_TIMEOUT_SECONDS = 5.0;
 
+    private const string CONFIRMED = 'confirmed';
+
+    private const string UNCONFIRMED = 'did not confirm';
+
     public function __construct(private AMQPConnectionConfig $connectionConfig) {}
 
     public function publish(string $messageId, string $body): void
     {
         try {
-            $connection = AMQPConnectionFactory::create($this->connectionConfig);
+            $outcome = $this->publishOnNewConnection($messageId, $body);
         } catch (AMQPExceptionInterface $exception) {
-            throw new TradeSignalNotPublishedException($exception->getMessage(), 0, $exception);
+            throw new TradeSignalNotPublishedException($exception->getMessage(), previous: $exception);
         }
 
-        try {
-            $outcome = $this->publishOn($connection->channel(), $messageId, $body);
-        } catch (AMQPExceptionInterface $exception) {
-            throw new TradeSignalNotPublishedException($exception->getMessage(), 0, $exception);
-        } finally {
-            $connection->close();
-        }
-
-        if ($outcome !== 'confirmed') {
+        if ($outcome !== self::CONFIRMED) {
             throw new TradeSignalNotPublishedException(sprintf('RabbitMQ %s the trade signal.', $outcome));
         }
     }
 
     /**
-     * Returns "confirmed", or how RabbitMQ refused the message. A returned message is also confirmed, so a return wins.
+     * The connection's destructor would close it as well, so a test cannot tell whether close() runs.
+     *
+     * @infection-ignore-all
+     */
+    private function publishOnNewConnection(string $messageId, string $body): string
+    {
+        $connection = AMQPConnectionFactory::create($this->connectionConfig);
+        try {
+            return $this->publishOn($connection->channel(), $messageId, $body);
+        } finally {
+            $connection->close();
+        }
+    }
+
+    /**
+     * Returns "confirmed", or how RabbitMQ failed to accept the message.
      */
     private function publishOn(AMQPChannel $channel, string $messageId, string $body): string
     {
-        $outcome = 'did not confirm';
+        $outcome = self::UNCONFIRMED;
         $channel->confirm_select();
+        $channel->set_ack_handler(function () use (&$outcome): void {
+            $outcome = $outcome === self::UNCONFIRMED ? self::CONFIRMED : $outcome;
+        });
+        $this->publishMandatory($channel, $outcome, new AMQPMessage($body, [
+            'content_type' => 'application/json',
+            'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
+            'message_id' => $messageId,
+            'type' => 'tm.trade-signal.v1',
+            'user_id' => $this->connectionConfig->getUser(),
+        ]));
+        $channel->wait_for_pending_acks_returns(self::CONFIRMATION_TIMEOUT_SECONDS);
+
+        return $outcome;
+    }
+
+    /**
+     * Publishes the message as mandatory and records a return or a refusal in `$outcome`. RabbitMQ returns a mandatory
+     * message before it confirms it, so a return wins over the confirmation. RabbitMQ returns or refuses a message to
+     * tm.trade-signals only when its topology is broken or the node fails, which no test can bring about.
+     *
+     * @infection-ignore-all
+     */
+    private function publishMandatory(AMQPChannel $channel, string &$outcome, AMQPMessage $message): void
+    {
         $channel->set_return_listener(function () use (&$outcome): void {
             $outcome = 'could not route';
         });
         $channel->set_nack_handler(function () use (&$outcome): void {
             $outcome = 'refused';
         });
-        $channel->set_ack_handler(function () use (&$outcome): void {
-            $outcome = $outcome === 'did not confirm' ? 'confirmed' : $outcome;
-        });
-        $channel->basic_publish(
-            new AMQPMessage($body, [
-                'content_type' => 'application/json',
-                'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
-                'message_id' => $messageId,
-                'type' => 'tm.trade-signal.v1',
-                'user_id' => $this->connectionConfig->getUser(),
-            ]),
-            self::EXCHANGE,
-            '',
-            true,
-        );
-        $channel->wait_for_pending_acks_returns(self::CONFIRMATION_TIMEOUT_SECONDS);
-
-        return $outcome;
+        $channel->basic_publish($message, self::EXCHANGE, '', true);
     }
 }

@@ -20,7 +20,7 @@ final class SignalOutcomeMessageReader
     public function read(string $body): SignalOutcomeDto
     {
         try {
-            $message = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
+            $message = json_decode($body, true, flags: JSON_THROW_ON_ERROR);
         } catch (JsonException) {
             throw new UnreadableSignalOutcomeException('the message is not JSON.');
         }

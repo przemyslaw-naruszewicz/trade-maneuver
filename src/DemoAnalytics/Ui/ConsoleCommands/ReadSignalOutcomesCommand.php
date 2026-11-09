@@ -15,18 +15,20 @@ use TradeManeuver\DemoAnalytics\Application\SignalOutcome\Exception\UnreadableSi
 #[Description('Print and acknowledge the signal outcomes in the demo analytics application\'s outcome queue')]
 final class ReadSignalOutcomesCommand extends Command
 {
+    private bool $printedAny = false;
+
     public function handle(ReadSignalOutcomesCommandHandler $handler): int
     {
         try {
-            $count = $handler->handle($this->print(...));
+            $handler->handle($this->print(...));
         } catch (UnreadableSignalOutcomeException $exception) {
             $this->error('A signal outcome could not be read: '.$exception->getMessage());
 
             return self::FAILURE;
         }
 
-        if ($count === 0) {
-            $this->line(sprintf('The outcome queue %s is empty.', (string) config('demo_analytics.outcome_queue')));
+        if (! $this->printedAny) {
+            $this->line(sprintf('The outcome queue %s is empty.', config()->string('demo_analytics.outcome_queue')));
         }
 
         return self::SUCCESS;
@@ -34,6 +36,7 @@ final class ReadSignalOutcomesCommand extends Command
 
     private function print(SignalOutcomeDto $signalOutcome): void
     {
+        $this->printedAny = true;
         $this->line(sprintf('Trade signal %s: %s', $signalOutcome->signalId, $signalOutcome->outcome));
         if ($signalOutcome->reason !== null) {
             $this->line('  reason: '.$signalOutcome->reason);

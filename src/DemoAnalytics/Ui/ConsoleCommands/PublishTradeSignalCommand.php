@@ -34,7 +34,7 @@ final class PublishTradeSignalCommand extends Command
 {
     public function handle(PublishTradeSignalCommandHandler $handler): int
     {
-        $investmentConfigurationRef = $this->stringOption('investment-configuration-ref') ?? (string) config('demo_analytics.investment_configuration_ref');
+        $investmentConfigurationRef = $this->stringOption('investment-configuration-ref') ?? config()->string('demo_analytics.investment_configuration_ref');
         if (trim($investmentConfigurationRef) === '') {
             $this->error('The investment configuration reference must not be empty; set --investment-configuration-ref or DEMO_ANALYTICS_INVESTMENT_CONFIGURATION_REF.');
 

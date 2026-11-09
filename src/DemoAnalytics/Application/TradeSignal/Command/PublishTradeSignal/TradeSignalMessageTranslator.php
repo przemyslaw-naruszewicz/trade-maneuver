@@ -38,6 +38,6 @@ final readonly class TradeSignalMessageTranslator
                 'asOf' => $tradeSignal->referencePrice->asOf()->toString(),
             ],
             'validUntil' => $tradeSignal->validUntil->toString(),
-        ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
+        ], JSON_THROW_ON_ERROR);
     }
 }

@@ -17,20 +17,14 @@ final readonly class ReadSignalOutcomesCommandHandler
     public function __construct(private SignalOutcomeQueueInterface $queue, private SignalOutcomeMessageReader $reader) {}
 
     /**
-     * Returns the number of signal outcomes taken.
-     *
      * @param  callable(SignalOutcomeDto): void  $print
      *
      * @throws UnreadableSignalOutcomeException
      */
-    public function handle(callable $print): int
+    public function handle(callable $print): void
     {
-        $count = 0;
-        $this->queue->takeEach(function (string $body) use ($print, &$count): void {
+        $this->queue->takeEach(function (string $body) use ($print): void {
             $print($this->reader->read($body));
-            $count++;
         });
-
-        return $count;
     }
 }
