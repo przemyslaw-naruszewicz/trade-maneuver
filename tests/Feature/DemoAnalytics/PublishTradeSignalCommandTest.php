@@ -6,6 +6,7 @@ namespace Tests\Feature\DemoAnalytics;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Artisan;
+use PhpAmqpLib\Message\AMQPMessage;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Support\Trading\RabbitMqTestClient;
 use Tests\TestCase;
@@ -35,6 +36,76 @@ final class PublishTradeSignalCommandTest extends TestCase
         $this->tradeManeuver->close();
 
         parent::tearDown();
+    }
+
+    public function test_the_defaults_publish_a_persistent_long_trade_signal_for_demo_a_as_the_demo_analytics_producer_user(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-11-09T10:00:00.654321Z'));
+
+        $id = $this->publish();
+
+        $message = $this->takePublishedMessage();
+        $this->assertSame(2, $message->get('delivery_mode'));
+        $this->assertSame('demo-analytics', $message->get('user_id'));
+        $this->assertSame('application/json', $message->get('content_type'));
+        $this->assertSame($id, $message->get('message_id'));
+        $this->assertSame('tm.trade-signal.v1', $message->get('type'));
+        $this->assertSame([
+            'id' => $id,
+            'source' => 'demo-analytics',
+            'type' => 'tm.trade-signal.v1',
+            'time' => '2026-11-09T10:00:00Z',
+            'investmentConfigurationRef' => 'demo-investment',
+            'instrument' => ['symbol' => 'DEMO_A', 'mic' => 'DEMO'],
+            'direction' => 'long',
+            'confidence' => '0.75',
+            'horizon' => ['sessions' => 5],
+            'expectedMove' => ['min' => '1.0', 'max' => '3.0'],
+            'referencePrice' => ['amount' => '12.50', 'currency' => 'EUR', 'asOf' => '2026-11-09T10:00:00Z'],
+            'validUntil' => '2026-11-12T10:00:00Z',
+        ], json_decode($message->getBody(), true, 512, JSON_THROW_ON_ERROR));
+        $this->assertNothingPublished();
+    }
+
+    public function test_options_choose_the_values_of_the_trade_signal(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-11-09T10:00:00Z'));
+
+        $id = $this->publish([
+            '--symbol' => 'DEMO_B2',
+            '--direction' => 'short',
+            '--confidence' => '1',
+            '--horizon-sessions' => '1',
+            '--expected-move-min' => '-2.5',
+            '--expected-move-max' => '-2.5',
+            '--reference-price' => '0.01',
+            '--currency' => 'USD',
+            '--valid-until' => '2026-11-09T10:00:01Z',
+            '--investment-configuration-ref' => 'demo-other-investment',
+        ]);
+
+        $this->assertSame([
+            'id' => $id,
+            'source' => 'demo-analytics',
+            'type' => 'tm.trade-signal.v1',
+            'time' => '2026-11-09T10:00:00Z',
+            'investmentConfigurationRef' => 'demo-other-investment',
+            'instrument' => ['symbol' => 'DEMO_B2', 'mic' => 'DEMO'],
+            'direction' => 'short',
+            'confidence' => '1',
+            'horizon' => ['sessions' => 1],
+            'expectedMove' => ['min' => '-2.5', 'max' => '-2.5'],
+            'referencePrice' => ['amount' => '0.01', 'currency' => 'USD', 'asOf' => '2026-11-09T10:00:00Z'],
+            'validUntil' => '2026-11-09T10:00:01Z',
+        ], json_decode($this->takePublishedMessage()->getBody(), true, 512, JSON_THROW_ON_ERROR));
+    }
+
+    public function test_the_lowest_confidence_is_accepted(): void
+    {
+        $this->publish(['--confidence' => '0']);
+
+        $message = json_decode($this->takePublishedMessage()->getBody(), true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame('0', $message['confidence']);
     }
 
     public function test_a_failed_publication_is_reported_as_an_error(): void
@@ -136,6 +207,29 @@ final class PublishTradeSignalCommandTest extends TestCase
         $this->assertSame(2, $exitCode);
         $this->assertStringContainsString('The investment configuration reference must not be empty', Artisan::output());
         $this->assertNothingPublished();
+    }
+
+    /**
+     * Runs the command and returns the trade signal `id` it printed.
+     *
+     * @param  array<string, string>  $options
+     */
+    private function publish(array $options = []): string
+    {
+        $exitCode = Artisan::call(self::COMMAND, $options);
+        $output = Artisan::output();
+        $this->assertSame(0, $exitCode, $output);
+        $this->assertSame(1, preg_match('/^Published trade signal ([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.$/m', $output, $matches), $output);
+
+        return $matches[1];
+    }
+
+    private function takePublishedMessage(): AMQPMessage
+    {
+        $message = $this->tradeManeuver->take(RabbitMqTestClient::INTAKE_QUEUE);
+        $this->assertNotNull($message, 'A trade signal was expected in the intake queue.');
+
+        return $message;
     }
 
     private function assertNothingPublished(): void
