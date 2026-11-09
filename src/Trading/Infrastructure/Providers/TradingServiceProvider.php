@@ -19,6 +19,7 @@ use TradeManeuver\Trading\Infrastructure\AnalyticsApplication\ConfiguredAnalytic
 use TradeManeuver\Trading\Infrastructure\Audit\PostgresAuditTrail;
 use TradeManeuver\Trading\Infrastructure\InvestmentConfiguration\InvestmentConfigurationRepository;
 use TradeManeuver\Trading\Infrastructure\Messaging\Inbox\PostgresInbox;
+use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\DispatchOutboxCommand;
 use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\OutboxIntegrationEventPublisher;
 use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\SignalOutcomePublisherInterface;
 use TradeManeuver\Trading\Infrastructure\Messaging\RabbitMq\ConsumeTradeSignalsCommand;
@@ -81,7 +82,7 @@ final class TradingServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(dirname(__DIR__).'/Resources/Migrations');
 
         if ($this->app->runningInConsole()) {
-            $this->commands([CreateInvestmentConfigurationCommand::class, ConsumeTradeSignalsCommand::class]);
+            $this->commands([CreateInvestmentConfigurationCommand::class, ConsumeTradeSignalsCommand::class, DispatchOutboxCommand::class]);
         }
     }
 }

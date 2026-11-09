@@ -17,9 +17,12 @@ trait TradingProcesses
 {
     private const int WAIT_ATTEMPTS = 200;
 
+    /** @var list<InvokedProcess> */
+    private array $tradingProcesses = [];
+
     protected function startTradingProcess(string $command): InvokedProcess
     {
-        return Process::path(base_path())
+        $process = Process::path(base_path())
             ->env([
                 'APP_ENV' => 'testing',
                 'DB_CONNECTION' => 'pgsql',
@@ -29,6 +32,22 @@ trait TradingProcesses
             ])
             ->timeout(60)
             ->start([PHP_BINARY, 'artisan', $command]);
+        $this->tradingProcesses[] = $process;
+
+        return $process;
+    }
+
+    /**
+     * Kills the processes a failed test left running, so they cannot take messages from the next test.
+     */
+    protected function killTradingProcesses(): void
+    {
+        foreach ($this->tradingProcesses as $process) {
+            if ($process->running()) {
+                $process->signal(SIGKILL);
+            }
+        }
+        $this->tradingProcesses = [];
     }
 
     /**

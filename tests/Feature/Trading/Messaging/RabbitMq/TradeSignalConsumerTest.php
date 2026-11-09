@@ -39,6 +39,7 @@ final class TradeSignalConsumerTest extends TestCase
 
     protected function tearDown(): void
     {
+        $this->killTradingProcesses();
         DB::select('SELECT pg_advisory_unlock_all()');
         DB::unprepared(<<<'SQL'
             DROP TRIGGER IF EXISTS trading_test_trade_signal_insert ON trading_trade_signals;
