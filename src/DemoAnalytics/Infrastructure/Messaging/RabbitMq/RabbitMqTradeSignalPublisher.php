@@ -23,10 +23,6 @@ final readonly class RabbitMqTradeSignalPublisher implements TradeSignalPublishe
 
     private const float CONFIRMATION_TIMEOUT_SECONDS = 5.0;
 
-    private const string CONFIRMED = 'confirmed';
-
-    private const string UNCONFIRMED = 'did not confirm';
-
     public function __construct(private AMQPConnectionConfig $connectionConfig) {}
 
     public function publish(string $messageId, string $body): void
@@ -37,8 +33,8 @@ final readonly class RabbitMqTradeSignalPublisher implements TradeSignalPublishe
             throw new TradeSignalNotPublishedException($exception->getMessage(), previous: $exception);
         }
 
-        if ($outcome !== self::CONFIRMED) {
-            throw new TradeSignalNotPublishedException(sprintf('RabbitMQ %s the trade signal.', $outcome));
+        if ($outcome !== PublicationResult::Confirmed) {
+            throw new TradeSignalNotPublishedException(sprintf('RabbitMQ %s the trade signal.', $outcome->value));
         }
     }
 
@@ -47,7 +43,7 @@ final readonly class RabbitMqTradeSignalPublisher implements TradeSignalPublishe
      *
      * @infection-ignore-all
      */
-    private function publishOnNewConnection(string $messageId, string $body): string
+    private function publishOnNewConnection(string $messageId, string $body): PublicationResult
     {
         $connection = AMQPConnectionFactory::create($this->connectionConfig);
         try {
@@ -57,15 +53,12 @@ final readonly class RabbitMqTradeSignalPublisher implements TradeSignalPublishe
         }
     }
 
-    /**
-     * Returns "confirmed", or how RabbitMQ failed to accept the message.
-     */
-    private function publishOn(AMQPChannel $channel, string $messageId, string $body): string
+    private function publishOn(AMQPChannel $channel, string $messageId, string $body): PublicationResult
     {
-        $outcome = self::UNCONFIRMED;
+        $outcome = PublicationResult::Unconfirmed;
         $channel->confirm_select();
         $channel->set_ack_handler(function () use (&$outcome): void {
-            $outcome = $outcome === self::UNCONFIRMED ? self::CONFIRMED : $outcome;
+            $outcome = $outcome === PublicationResult::Unconfirmed ? PublicationResult::Confirmed : $outcome;
         });
         $this->publishMandatory($channel, $outcome, new AMQPMessage($body, [
             'content_type' => 'application/json',
@@ -86,13 +79,13 @@ final readonly class RabbitMqTradeSignalPublisher implements TradeSignalPublishe
      *
      * @infection-ignore-all
      */
-    private function publishMandatory(AMQPChannel $channel, string &$outcome, AMQPMessage $message): void
+    private function publishMandatory(AMQPChannel $channel, PublicationResult &$outcome, AMQPMessage $message): void
     {
         $channel->set_return_listener(function () use (&$outcome): void {
-            $outcome = 'could not route';
+            $outcome = PublicationResult::Returned;
         });
         $channel->set_nack_handler(function () use (&$outcome): void {
-            $outcome = 'refused';
+            $outcome = PublicationResult::Refused;
         });
         $channel->basic_publish($message, self::EXCHANGE, '', true);
     }
