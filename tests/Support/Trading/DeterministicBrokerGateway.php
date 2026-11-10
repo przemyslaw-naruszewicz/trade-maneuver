@@ -21,6 +21,11 @@ final class DeterministicBrokerGateway implements BrokerGatewayInterface
 
     private int $lookupsToTimeOut = 0;
 
+    private int $lookups = 0;
+
+    /** @var (callable(): void)|null */
+    private $duringNextLookup = null;
+
     public function listAvailable(string $symbol, string $mic, string $quoteCurrency): void
     {
         $this->listings[self::keyOf($symbol, $mic)] = InstrumentListing::available(Currency::of($quoteCurrency));
@@ -36,8 +41,29 @@ final class DeterministicBrokerGateway implements BrokerGatewayInterface
         $this->lookupsToTimeOut = $count;
     }
 
+    /**
+     * Runs the callback inside the next lookup, for example a concurrent evaluation of the same trade signal.
+     *
+     * @param  callable(): void  $callback
+     */
+    public function duringNextLookup(callable $callback): void
+    {
+        $this->duringNextLookup = $callback;
+    }
+
+    public function lookups(): int
+    {
+        return $this->lookups;
+    }
+
     public function lookUpInstrument(Instrument $instrument): ?InstrumentListing
     {
+        $this->lookups++;
+        $callback = $this->duringNextLookup;
+        $this->duringNextLookup = null;
+        if ($callback !== null) {
+            $callback();
+        }
         if ($this->lookupsToTimeOut > 0) {
             $this->lookupsToTimeOut--;
 
