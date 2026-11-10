@@ -81,6 +81,21 @@ final class EvaluateTradeSignalTest extends TestCase
         $this->assertSame(0, DB::table('failed_jobs')->count());
     }
 
+    public function test_running_the_evaluation_job_twice_produces_one_signal_outcome(): void
+    {
+        $id = $this->acceptAShortTradeSignal();
+        // The queue delivers the evaluation job a second time, as at-least-once delivery allows.
+        DB::statement('INSERT INTO jobs (queue, payload, attempts, reserved_at, available_at, created_at) SELECT queue, payload, attempts, reserved_at, available_at, created_at FROM jobs');
+
+        $this->runTheQueueWorkerOnce();
+        $this->runTheQueueWorkerOnce();
+
+        $this->assertOneSignalDeclinedOutcome($id);
+        $this->assertSame(1, DB::table('trading_audit_records')->where('entity_id', $id)->where('action', 'declined')->count());
+        $this->assertSame(0, DB::table('failed_jobs')->count(), 'The second evaluation was expected to finish without a failure.');
+        $this->assertStringContainsString('PublishSignalOutcomeJob', DB::table('jobs')->sole()->payload, 'Only the publication of the one signal outcome was expected to stay queued.');
+    }
+
     private function acceptAShortTradeSignal(): string
     {
         $id = TradeSignalMessageBuilder::idFor('sale');
