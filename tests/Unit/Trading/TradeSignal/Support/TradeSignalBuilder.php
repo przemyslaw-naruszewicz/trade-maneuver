@@ -35,8 +35,11 @@ final class TradeSignalBuilder
 
     public const string VALID_UNTIL = '2026-11-10T16:00:00Z';
 
-    public static function content(Direction $direction = Direction::Long, string $validUntil = self::VALID_UNTIL): TradeSignalContent
-    {
+    public static function content(
+        Direction $direction = Direction::Long,
+        string $validUntil = self::VALID_UNTIL,
+        string $referencePriceCurrency = 'EUR',
+    ): TradeSignalContent {
         return new TradeSignalContent(
             UtcTimestamp::fromString('2026-11-07T09:00:00Z'),
             new InvestmentConfigurationRef('demo-investment'),
@@ -45,17 +48,20 @@ final class TradeSignalBuilder
             Confidence::of('0.85'),
             Horizon::of(5, '2026-11-20'),
             ExpectedMove::of('1.5', '4.0'),
-            ReferencePrice::of('12.50', 'EUR', '2026-11-07T08:59:00Z'),
+            ReferencePrice::of('12.50', $referencePriceCurrency, '2026-11-07T08:59:00Z'),
             UtcTimestamp::fromString($validUntil),
         );
     }
 
-    public static function received(Direction $direction = Direction::Long, string $validUntil = self::VALID_UNTIL): TradeSignal
-    {
+    public static function received(
+        Direction $direction = Direction::Long,
+        string $validUntil = self::VALID_UNTIL,
+        string $referencePriceCurrency = 'EUR',
+    ): TradeSignal {
         return TradeSignal::receive(
             new TradeSignalId(self::ID),
             new AnalyticsApplicationId('demo-analytics'),
-            self::content($direction, $validUntil),
+            self::content($direction, $validUntil, $referencePriceCurrency),
             new DateTimeImmutable(self::RECEIVED_AT),
         );
     }
