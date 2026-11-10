@@ -92,8 +92,9 @@ final class TradeSignal
     }
 
     /**
-     * The evaluation checks that need no broker. A short trade signal ends with `SignalDeclined` and the reason
-     * `UnsupportedDirection`; any other stays awaiting the next checks.
+     * The evaluation checks that need no broker, in this order: a trade signal whose validity has ended by the time of
+     * evaluation ends with `SignalDeclined` and the reason `SignalExpired`, and a short one with the reason
+     * `UnsupportedDirection`. A trade signal that passes both awaits the next checks.
      *
      * @throws InvalidTradeSignalStateException when the trade signal already has a signal outcome
      */
@@ -104,7 +105,9 @@ final class TradeSignal
             throw new InvalidTradeSignalStateException('Only a trade signal that awaits evaluation can be evaluated.');
         }
 
-        if ($content->direction === Direction::Short) {
+        if ($evaluatedAt >= $content->validUntil->dateTime()) {
+            $this->decline(DeclineReason::SignalExpired, $outcomeId, $evaluatedAt);
+        } elseif ($content->direction === Direction::Short) {
             $this->decline(DeclineReason::UnsupportedDirection, $outcomeId, $evaluatedAt);
         }
     }
