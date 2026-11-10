@@ -180,11 +180,13 @@ Its catalogue is configuration in `src/Trading/Infrastructure/Resources/config.p
 | `DEMO_G` | USD | Available |
 | `DEMO_H` | EUR | Unavailable |
 
-After the expiry and direction checks, evaluation looks up the instrument and checks, in this order, that the simulated broker knows it and it is available, that the reference price is in its quote currency, and that its quote currency is the investment configuration's. A failed lookup is a recoverable failure: the evaluation job runs again 30 seconds later and continues with the first step not yet passed. Reproduce each result with the [demo analytics application](#demo-analytics-application):
+After the expiry and direction checks, evaluation looks up the instrument and checks, in this order, that the simulated broker knows it and it is available, that the reference price is in its quote currency, and that its quote currency is the investment configuration's. A failed lookup is a recoverable failure: the evaluation job runs again 30 seconds later and continues with the first step not yet passed. A trade signal that passes these checks leads to one order awaiting approval. Its limit price is the reference price plus the limit price tolerance, rounded down to 0.01 EUR, and its quantity is the largest whole number of units whose cost at that price does not exceed the order amount. When the order amount cannot buy one unit, the trade signal ends with `SignalDeclined` and the reason `OrderAmountTooSmall`. Reproduce each result with the [demo analytics application](#demo-analytics-application):
 
 ```sh
-# No signal outcome: DEMO_A passes evaluation and awaits order creation, which a later task adds.
+# No signal outcome: DEMO_A passes evaluation and leads to an order awaiting approval.
 docker compose exec app php artisan demo-analytics:publish-trade-signal --symbol=DEMO_A
+# SignalDeclined with the reason OrderAmountTooSmall: at 200.00 EUR and 1.50 %, the limit price 203.00 EUR exceeds the order amount.
+docker compose exec app php artisan demo-analytics:publish-trade-signal --symbol=DEMO_A --reference-price=200.00
 # SignalDeclined with the reason UnsupportedCurrency: DEMO_G is quoted in USD, the investment configuration in EUR.
 docker compose exec app php artisan demo-analytics:publish-trade-signal --symbol=DEMO_G --currency=USD
 # SignalDeclined with the reason InstrumentUnavailable: DEMO_H is unavailable.
@@ -206,7 +208,7 @@ The pipeline runs Composer validation and `composer audit --locked`, PHP CS Fixe
 
 GitHub Actions runs `make ci` for pull requests, pushes to `main`, and manual dispatch. Pull requests run all checks with Infection on changed lines; pushes to `main` and manual runs include the full Infection run. Docker build layers and Composer downloads are cached between runs. Local `make ci` includes the full Infection run by default. Use `CI_WITH_MUTATION=diff make ci` for the pull-request checks, after `git fetch` so that `origin/main` is current, and `CI_WITH_MUTATION=0 make ci` to skip Infection. `CI_SKIP_BUILD=1` reuses an already built PHP image, as the workflow does after its cached build step. Composer downloads are kept in `storage/framework/cache/composer`.
 
-PHPUnit runs the RabbitMQ integration tests against the `trade-maneuver-testing` vhost. PHPUnit and Infection reports are written to `storage/quality/` and uploaded as workflow artifacts for seven days. Behat runs two suites: `application` checks service health, and `trading` covers trade signal intake and evaluation through the application commands and the database job queue against the test database. Deptrac enforces the layer rules in `deptrac.yaml` for the Trading context and the application code under the root namespace; [the architecture](docs/architecture.md#laravel-integration) describes them. Run it separately with `docker compose exec app composer analyse:architecture`.
+PHPUnit runs the RabbitMQ integration tests against the `trade-maneuver-testing` vhost. PHPUnit and Infection reports are written to `storage/quality/` and uploaded as workflow artifacts for seven days. Behat runs two suites: `application` checks service health, and `trading` covers trade signal intake, evaluation, and order creation through the application commands and the database job queue against the test database. Deptrac enforces the layer rules in `deptrac.yaml` for the Trading context and the application code under the root namespace; [the architecture](docs/architecture.md#laravel-integration) describes them. Run it separately with `docker compose exec app composer analyse:architecture`.
 
 ## PostgreSQL
 

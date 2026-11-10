@@ -30,8 +30,8 @@ Deptrac allows the `Brick\Money` and `Brick\Math` namespaces in `Domain` as a se
 | Order amount | The currency's default fraction digits (`DefaultContext`): 2 for EUR | None; more decimal places are rejected | Implemented (TM-003) |
 | Limit price tolerance | 2 decimal places of a percentage, from 0 % to 5 % inclusive | None; more decimal places are rejected | Implemented (TM-003) |
 | Comparisons and currency checks | Exact | None | Implemented (TM-003) |
-| Limit price from reference price and tolerance, for a buy | The quote currency's fraction digits | `RoundingMode::Down`, so the limit price does not exceed the tolerance and stays at or above the reference price | Proposed for TM-007 |
-| Order quantity from order amount and limit price | Whole units | `RoundingMode::Down` on the exact quotient, so the cost never exceeds the order amount | Proposed for TM-007 |
+| Limit price from reference price and tolerance, for a buy | The quote currency's fraction digits | `RoundingMode::Down`, so the limit price does not exceed the tolerance and stays at or above the reference price | Implemented (TM-009) |
+| Order quantity from order amount and limit price | Whole units | `RoundingMode::Down` on the exact quotient, so the cost never exceeds the order amount | Implemented (TM-009) |
 | Allocation and currency conversion | Not used | Not used | An investment configuration has one currency and does not convert |
 
 Intermediate results keep full precision: `BigDecimal` multiplication is exact, and division names its scale and rounding mode at the call site. Rounding happens only at the boundaries in the table.
@@ -54,4 +54,4 @@ Intermediate results keep full precision: `BigDecimal` multiplication is exact, 
 - Brick throws its own exceptions. Domain value objects translate them into domain exceptions with clear messages; a Brick exception that escapes means a missing check.
 - `numeric(19, 2)` fits currencies with two fraction digits. A currency with another scale needs a migration and a review of this record.
 - Brick 0.x releases may break the API. Upgrades need the test suite, and a move to `brick/math` 1.0 waits for a compatible `brick/money` release.
-- The limit price and quantity rules above are proposals; the task that implements them confirms or revises them through this record.
+- The limit price and quantity rules above are proposals; the task that implements them confirms or revises them through this record. TM-009 implemented them unchanged, with the limit price stored as `numeric(19, 2)`.
