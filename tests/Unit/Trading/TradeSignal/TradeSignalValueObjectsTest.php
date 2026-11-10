@@ -77,7 +77,7 @@ final class TradeSignalValueObjectsTest extends TestCase
     public static function invalidMics(): iterable
     {
         yield 'lower case' => ['demo'];
-        yield 'three characters' => ['DEM'];
+        yield 'three characters' => ['DM0'];
         yield 'five characters' => ['DEMOX'];
         yield 'punctuation' => ['DE-O'];
         yield 'trailing newline' => ["DEMO\n"];
