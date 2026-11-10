@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Providers\AppServiceProvider;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Testing\PendingCommand;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -36,7 +37,7 @@ final class DestructiveDatabaseCommandsTest extends TestCase
     {
         $this->bootWithDatabase('trade_maneuver');
 
-        $this->artisan($command, ['--pretend' => true])
+        $this->pretend($command)
             ->expectsOutputToContain('This command is prohibited from running in this environment.')
             ->assertFailed();
     }
@@ -46,9 +47,17 @@ final class DestructiveDatabaseCommandsTest extends TestCase
     {
         $this->bootWithDatabase('trade_maneuver_testing');
 
-        $this->artisan($command, ['--pretend' => true])
+        $this->pretend($command)
             ->doesntExpectOutputToContain('This command is prohibited from running in this environment.')
             ->assertSuccessful();
+    }
+
+    private function pretend(string $command): PendingCommand
+    {
+        $pendingCommand = $this->artisan($command, ['--pretend' => true]);
+        $this->assertInstanceOf(PendingCommand::class, $pendingCommand);
+
+        return $pendingCommand;
     }
 
     private function bootWithDatabase(string $database): void
