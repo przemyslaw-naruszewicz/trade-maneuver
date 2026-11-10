@@ -27,6 +27,7 @@ Feature: Trade signal evaluation: expiry and direction
 
   Scenario: A long trade signal inside its validity has no signal outcome after these checks
     Given the time is "2026-11-09T10:00:00Z"
+    And the broker lists the instrument "DEMO_A" as available, quoted in "EUR"
     When "demo-analytics" delivers the trade signal "purchase" with "validUntil" set to "2026-11-09T10:00:00.000001Z"
     And Trade Maneuver evaluates the trade signal "purchase"
-    Then the trade signal "purchase" has no signal outcome and awaits the instrument checks
+    Then the trade signal "purchase" has no signal outcome and awaits order creation

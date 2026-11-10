@@ -17,15 +17,18 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Facade;
 use PHPUnit\Framework\Assert;
+use Tests\Support\Trading\DeterministicBrokerGateway;
 use Tests\Support\Trading\TradeSignalMessageBuilder;
 use TradeManeuver\Trading\Application\InvestmentConfiguration\Command\CreateInvestmentConfiguration\CreateInvestmentConfigurationCommand;
 use TradeManeuver\Trading\Application\InvestmentConfiguration\Command\CreateInvestmentConfiguration\CreateInvestmentConfigurationCommandHandler;
+use TradeManeuver\Trading\Application\Port\BrokerGatewayInterface;
 use TradeManeuver\Trading\Application\TradeSignal\Command\ReceiveTradeSignal\ReceiveTradeSignalCommand;
 use TradeManeuver\Trading\Application\TradeSignal\Command\ReceiveTradeSignal\ReceiveTradeSignalCommandHandler;
 use TradeManeuver\Trading\Application\TradeSignal\Command\ReceiveTradeSignal\TradeSignalIntakeResult;
 
 /**
  * Drives the Trading application boundary through its application commands, against the PostgreSQL test database.
+ * Only the broker gateway is substituted, by a deterministic fake that knows the instruments a scenario lists.
  */
 final class TradeSignalIntakeContext implements Context
 {
@@ -41,6 +44,8 @@ final class TradeSignalIntakeContext implements Context
 
     private ?TradeSignalIntakeResult $lastResult = null;
 
+    private DeterministicBrokerGateway $brokerGateway;
+
     #[BeforeScenario]
     public function bootApplication(): void
     {
@@ -53,6 +58,8 @@ final class TradeSignalIntakeContext implements Context
             Artisan::call('migrate', ['--force' => true]);
             self::$migrated = true;
         }
+        $this->brokerGateway = new DeterministicBrokerGateway;
+        $this->application->instance(BrokerGatewayInterface::class, $this->brokerGateway);
         DB::statement('TRUNCATE trading_inbox_entries, trading_trade_signals, trading_outbox_messages, trading_audit_records, jobs, failed_jobs, trading_investment_configurations');
     }
 
@@ -94,6 +101,18 @@ final class TradeSignalIntakeContext implements Context
     public function theTimeIs(string $time): void
     {
         CarbonImmutable::setTestNow(CarbonImmutable::parse($time));
+    }
+
+    #[Given('the broker lists the instrument :symbol as available, quoted in :currency')]
+    public function theBrokerListsTheInstrumentAsAvailable(string $symbol, string $currency): void
+    {
+        $this->brokerGateway->listAvailable($symbol, 'DEMO', $currency);
+    }
+
+    #[Given('the broker lists the instrument :symbol as unavailable, quoted in :currency')]
+    public function theBrokerListsTheInstrumentAsUnavailable(string $symbol, string $currency): void
+    {
+        $this->brokerGateway->listUnavailable($symbol, 'DEMO', $currency);
     }
 
     #[When(':analyticsApplication delivers the trade signal :alias')]
@@ -195,7 +214,7 @@ final class TradeSignalIntakeContext implements Context
         Assert::assertSame(TradeSignalIntakeResult::Accepted, $this->lastResult);
     }
 
-    #[Then('the trade signal :alias has no signal outcome and awaits the instrument checks')]
+    #[Then('the trade signal :alias has no signal outcome and awaits order creation')]
     public function theTradeSignalHasNoSignalOutcomeAfterTheChecks(string $alias): void
     {
         Assert::assertSame(0, DB::table('jobs')->count(), 'The evaluation of the trade signal was expected to have run.');
