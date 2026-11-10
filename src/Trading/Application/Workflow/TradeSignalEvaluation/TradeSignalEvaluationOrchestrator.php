@@ -116,11 +116,11 @@ final readonly class TradeSignalEvaluationOrchestrator
     {
         $this->tradeSignals->save($tradeSignal);
         foreach ($tradeSignal->releaseEvents() as $event) {
-            match (true) {
-                $event instanceof TradeSignalDeclined => $this->recordDecline($event),
-                $event instanceof TradeSignalRejected => $this->recordRejection($event),
-                default => null,
-            };
+            if ($event instanceof TradeSignalDeclined) {
+                $this->recordDecline($event);
+            } elseif ($event instanceof TradeSignalRejected) {
+                $this->recordRejection($event);
+            }
         }
 
         if ($tradeSignal->awaitsEvaluation()) {

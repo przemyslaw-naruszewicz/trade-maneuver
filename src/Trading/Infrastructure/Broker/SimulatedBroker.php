@@ -17,7 +17,7 @@ use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\InstrumentListing;
  */
 final readonly class SimulatedBroker implements BrokerGatewayInterface
 {
-    /** @var array<string, InstrumentListing> listings by symbol and exchange */
+    /** @var array<string, array<string, InstrumentListing>> listings by symbol, then exchange */
     private array $listings;
 
     /**
@@ -33,15 +33,14 @@ final readonly class SimulatedBroker implements BrokerGatewayInterface
             if (! is_bool($available)) {
                 throw new InvalidArgumentException('Each entry in trading.simulated_broker.instruments needs a boolean "available".');
             }
-            $key = self::keyOf(self::stringOf($entry, 'symbol'), self::stringOf($entry, 'exchange'));
-            $listings[$key] = $available ? InstrumentListing::available($quoteCurrency) : InstrumentListing::unavailable($quoteCurrency);
+            $listings[self::stringOf($entry, 'symbol')][self::stringOf($entry, 'exchange')] = $available ? InstrumentListing::available($quoteCurrency) : InstrumentListing::unavailable($quoteCurrency);
         }
         $this->listings = $listings;
     }
 
     public function lookUpInstrument(Instrument $instrument): ?InstrumentListing
     {
-        return $this->listings[self::keyOf($instrument->symbol(), $instrument->mic()->code())] ?? null;
+        return $this->listings[$instrument->symbol()][$instrument->mic()->code()] ?? null;
     }
 
     /**
@@ -55,10 +54,5 @@ final readonly class SimulatedBroker implements BrokerGatewayInterface
         }
 
         return $value;
-    }
-
-    private static function keyOf(string $symbol, string $exchange): string
-    {
-        return $symbol.'@'.$exchange;
     }
 }
