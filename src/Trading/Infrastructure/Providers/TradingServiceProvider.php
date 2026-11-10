@@ -12,14 +12,17 @@ use PhpAmqpLib\Connection\AMQPConnectionConfig;
 use Psr\Clock\ClockInterface;
 use TradeManeuver\Trading\Application\Port\AnalyticsApplicationRegistryInterface;
 use TradeManeuver\Trading\Application\Port\AuditTrailInterface;
+use TradeManeuver\Trading\Application\Port\BrokerGatewayInterface;
 use TradeManeuver\Trading\Application\Port\InboxInterface;
 use TradeManeuver\Trading\Application\Port\IntegrationEventPublisherInterface;
 use TradeManeuver\Trading\Application\Port\TradeSignalEvaluationQueueInterface;
 use TradeManeuver\Trading\Application\Port\TransactionManagerInterface;
+use TradeManeuver\Trading\Application\Workflow\TradeSignalEvaluation\TradeSignalEvaluationStoreInterface;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Repository\InvestmentConfigurationRepositoryInterface;
 use TradeManeuver\Trading\Domain\TradeSignal\Repository\TradeSignalRepositoryInterface;
 use TradeManeuver\Trading\Infrastructure\AnalyticsApplication\ConfiguredAnalyticsApplicationRegistry;
 use TradeManeuver\Trading\Infrastructure\Audit\PostgresAuditTrail;
+use TradeManeuver\Trading\Infrastructure\Broker\SimulatedBroker;
 use TradeManeuver\Trading\Infrastructure\InvestmentConfiguration\InvestmentConfigurationRepository;
 use TradeManeuver\Trading\Infrastructure\Messaging\Inbox\PostgresInbox;
 use TradeManeuver\Trading\Infrastructure\Messaging\Jobs\QueuedTradeSignalEvaluation;
@@ -28,6 +31,7 @@ use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\SignalOutcomePublisher
 use TradeManeuver\Trading\Infrastructure\Messaging\RabbitMq\RabbitMqSignalOutcomePublisher;
 use TradeManeuver\Trading\Infrastructure\Persistence\LaravelTransactionManager;
 use TradeManeuver\Trading\Infrastructure\TradeSignal\TradeSignalRepository;
+use TradeManeuver\Trading\Infrastructure\Workflow\TradeSignalEvaluationStore;
 use TradeManeuver\Trading\Ui\ConsoleCommands\CreateInvestmentConfigurationCommand;
 use TradeManeuver\Trading\Ui\Messaging\ConsumeTradeSignalsCommand;
 
@@ -67,6 +71,17 @@ final class TradingServiceProvider extends ServiceProvider
             ),
         );
         $this->app->bind(TradeSignalEvaluationQueueInterface::class, QueuedTradeSignalEvaluation::class);
+        $this->app->bind(
+            TradeSignalEvaluationStoreInterface::class,
+            fn ($app): TradeSignalEvaluationStore => new TradeSignalEvaluationStore($app->make(ConnectionInterface::class)),
+        );
+        // The simulated broker is the only broker outside tests, so nothing chooses between adapters.
+        $this->app->bind(
+            BrokerGatewayInterface::class,
+            fn ($app): SimulatedBroker => new SimulatedBroker(
+                (array) $app->make('config')->get('trading.simulated_broker.instruments', []),
+            ),
+        );
         $this->app->bind(AMQPConnectionConfig::class, function ($app): AMQPConnectionConfig {
             $config = $app->make('config');
             $connection = new AMQPConnectionConfig;

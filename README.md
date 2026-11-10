@@ -148,7 +148,7 @@ The demo analytics application is a simulated stand-in for an analytics applicat
 
    The command prints each signal outcome from `tm.signal-outcomes.demo-analytics` with the trade signal `id`, the outcome, and its details, and then acknowledges it. It says so when the queue is empty.
 
-Until the simulated broker exists, a valid `long` trade signal inside its validity is accepted and evaluated, and has no signal outcome yet. These trade signals already end with a signal outcome:
+These trade signals end with a signal outcome before evaluation reaches the broker:
 
 ```sh
 # SignalRejected: the investment configuration does not exist.
@@ -165,6 +165,34 @@ docker compose stop queue
 docker compose exec app php artisan demo-analytics:publish-trade-signal --valid-until="$(docker compose exec -T app php -r "echo gmdate('Y-m-d\TH:i:s\Z', time() + 5);")"
 sleep 10
 docker compose start queue
+docker compose exec app php artisan demo-analytics:read-signal-outcomes
+```
+
+## Simulated broker
+
+The simulated broker is the only broker. It runs as an adapter inside the application, behind the broker gateway port, and has no connection to a real market, real funds, or a real brokerage account. It holds no market prices and uses no market data. So far it only looks up instruments; later tasks add orders.
+
+Its catalogue is configuration in `src/Trading/Infrastructure/Resources/config.php` and holds only fictional instruments on the fictional exchange `DEMO`. A symbol outside the catalogue is unknown to it.
+
+| Symbol | Quote currency | Availability |
+| --- | --- | --- |
+| `DEMO_A` | EUR | Available |
+| `DEMO_G` | USD | Available |
+| `DEMO_H` | EUR | Unavailable |
+
+After the expiry and direction checks, evaluation looks up the instrument and checks, in this order, that the simulated broker knows it and it is available, that the reference price is in its quote currency, and that its quote currency is the investment configuration's. A failed lookup is a recoverable failure: the evaluation job runs again 30 seconds later and continues with the first step not yet passed. Reproduce each result with the [demo analytics application](#demo-analytics-application):
+
+```sh
+# No signal outcome: DEMO_A passes evaluation and awaits order creation, which a later task adds.
+docker compose exec app php artisan demo-analytics:publish-trade-signal --symbol=DEMO_A
+# SignalDeclined with the reason UnsupportedCurrency: DEMO_G is quoted in USD, the investment configuration in EUR.
+docker compose exec app php artisan demo-analytics:publish-trade-signal --symbol=DEMO_G --currency=USD
+# SignalDeclined with the reason InstrumentUnavailable: DEMO_H is unavailable.
+docker compose exec app php artisan demo-analytics:publish-trade-signal --symbol=DEMO_H
+# SignalDeclined with the reason InstrumentUnavailable: DEMO_X is unknown to the simulated broker.
+docker compose exec app php artisan demo-analytics:publish-trade-signal --symbol=DEMO_X
+# SignalRejected on referencePrice.currency: DEMO_A is quoted in EUR, not USD.
+docker compose exec app php artisan demo-analytics:publish-trade-signal --symbol=DEMO_A --currency=USD
 docker compose exec app php artisan demo-analytics:read-signal-outcomes
 ```
 

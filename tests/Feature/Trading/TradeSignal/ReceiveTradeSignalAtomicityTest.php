@@ -40,7 +40,7 @@ final class ReceiveTradeSignalAtomicityTest extends TestCase
         DB::unprepared(<<<'SQL'
             DROP TRIGGER IF EXISTS trading_test_fail_outbox_write ON trading_outbox_messages;
             DROP FUNCTION IF EXISTS trading_test_fail_outbox_write();
-            TRUNCATE trading_inbox_entries, trading_trade_signals, trading_outbox_messages, trading_audit_records, jobs, failed_jobs;
+            TRUNCATE trading_inbox_entries, trading_trade_signals, trading_trade_signal_evaluation_steps, trading_outbox_messages, trading_audit_records, jobs, failed_jobs;
             SQL);
 
         parent::tearDown();

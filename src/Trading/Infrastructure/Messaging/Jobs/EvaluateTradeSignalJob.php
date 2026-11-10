@@ -12,13 +12,16 @@ use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\TradeSignalId;
 /**
  * Evaluates one accepted trade signal. The job is queued on the `database` connection in the intake transaction, so
  * it commits or rolls back with the trade signal. A job that a crashed worker had reserved becomes available again
- * after the queue's `retry_after`; the crashed attempt counts, so the job allows several attempts.
+ * after the queue's `retry_after`; the crashed attempt counts, so the job allows several attempts. A recoverable
+ * failure, such as a broker that does not answer the instrument lookup, releases the job for a retry after the backoff.
  */
 final class EvaluateTradeSignalJob implements ShouldQueue
 {
     use Queueable;
 
     public int $tries = 10;
+
+    public int $backoff = 30;
 
     public function __construct(public readonly string $tradeSignalId)
     {

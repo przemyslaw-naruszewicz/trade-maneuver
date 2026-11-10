@@ -9,14 +9,21 @@ use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use LogicException;
 use Tests\Support\Trading\TradeSignalMessageBuilder;
 use Tests\Support\Trading\TradingProcesses;
 use Tests\TestCase;
+use Tests\Unit\Trading\TradeSignal\Support\TradeSignalBuilder;
 use TradeManeuver\Trading\Application\InvestmentConfiguration\Command\CreateInvestmentConfiguration\CreateInvestmentConfigurationCommand;
 use TradeManeuver\Trading\Application\InvestmentConfiguration\Command\CreateInvestmentConfiguration\CreateInvestmentConfigurationCommandHandler;
 use TradeManeuver\Trading\Application\TradeSignal\Command\ReceiveTradeSignal\ReceiveTradeSignalCommand;
 use TradeManeuver\Trading\Application\TradeSignal\Command\ReceiveTradeSignal\ReceiveTradeSignalCommandHandler;
 use TradeManeuver\Trading\Application\Workflow\TradeSignalEvaluation\TradeSignalEvaluationOrchestrator;
+use TradeManeuver\Trading\Domain\TradeSignal\Enum\Direction;
+use TradeManeuver\Trading\Domain\TradeSignal\Repository\TradeSignalRepositoryInterface;
+use TradeManeuver\Trading\Domain\TradeSignal\TradeSignal;
+use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\SignalOutcomeId;
+use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\TradeSignalId;
 use TradeManeuver\Trading\Infrastructure\Messaging\Jobs\EvaluateTradeSignalJob;
 
 /**
@@ -52,7 +59,7 @@ final class EvaluateTradeSignalTest extends TestCase
         while (DB::transactionLevel() > 0) {
             DB::rollBack();
         }
-        DB::unprepared('TRUNCATE trading_inbox_entries, trading_trade_signals, trading_outbox_messages, trading_audit_records, trading_investment_configurations, jobs, failed_jobs');
+        DB::unprepared('TRUNCATE trading_inbox_entries, trading_trade_signals, trading_trade_signal_evaluation_steps, trading_outbox_messages, trading_audit_records, trading_investment_configurations, jobs, failed_jobs');
 
         parent::tearDown();
     }
@@ -152,6 +159,43 @@ final class EvaluateTradeSignalTest extends TestCase
         $this->assertSame(1, DB::table('trading_outbox_messages')->count());
         $this->assertSame(0, DB::table('trading_audit_records')->where('action', 'declined')->count());
         $log->shouldHaveReceived('info')->once()->with('A trade signal already has a signal outcome, so it is not evaluated again.', ['signalId' => $id]);
+    }
+
+    public function test_an_evaluation_step_that_records_an_event_other_than_a_signal_outcome_is_refused_and_rolled_back(): void
+    {
+        // The repository hands out a short trade signal that still holds its TradeSignalReceived event.
+        $this->app->instance(TradeSignalRepositoryInterface::class, new class implements TradeSignalRepositoryInterface
+        {
+            public function nextOutcomeIdentity(): SignalOutcomeId
+            {
+                return new SignalOutcomeId(TradeSignalBuilder::OUTCOME_ID);
+            }
+
+            public function add(TradeSignal $tradeSignal): void {}
+
+            public function get(TradeSignalId $id): TradeSignal
+            {
+                return TradeSignalBuilder::received(Direction::Short);
+            }
+
+            public function getLocked(TradeSignalId $id): TradeSignal
+            {
+                return TradeSignalBuilder::received(Direction::Short);
+            }
+
+            public function save(TradeSignal $tradeSignal): void {}
+        });
+
+        try {
+            $this->app->make(TradeSignalEvaluationOrchestrator::class)->evaluate(new TradeSignalId(TradeSignalBuilder::ID));
+            $this->fail('The evaluation was expected to refuse the TradeSignalReceived event.');
+        } catch (LogicException $exception) {
+            $this->assertStringContainsString('TradeSignalReceived', $exception->getMessage());
+        }
+
+        $this->assertSame(0, DB::transactionLevel());
+        $this->assertDatabaseEmpty('trading_outbox_messages');
+        $this->assertSame(0, DB::table('trading_audit_records')->where('action', 'declined')->count());
     }
 
     public function test_a_failed_outbox_write_rolls_back_the_decline_and_its_audit_record(): void

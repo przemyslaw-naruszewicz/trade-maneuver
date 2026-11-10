@@ -86,6 +86,14 @@ final class InvestmentConfiguration
     }
 
     /**
+     * The one currency in which the investment configuration trades.
+     */
+    public function currency(): InvestmentConfigurationCurrency
+    {
+        return $this->currency;
+    }
+
+    /**
      * Whether the analytics application may address trade signals to this investment configuration.
      */
     public function authorizes(AnalyticsApplicationId $analyticsApplication): bool

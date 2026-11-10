@@ -45,7 +45,7 @@ final class TradeSignalConsumerTest extends TestCase
             DROP TRIGGER IF EXISTS trading_test_trade_signal_insert ON trading_trade_signals;
             DROP FUNCTION IF EXISTS trading_test_hold_trade_signal_insert();
             DROP FUNCTION IF EXISTS trading_test_fail_trade_signal_insert();
-            TRUNCATE trading_inbox_entries, trading_trade_signals, trading_outbox_messages, trading_audit_records, jobs, failed_jobs;
+            TRUNCATE trading_inbox_entries, trading_trade_signals, trading_trade_signal_evaluation_steps, trading_outbox_messages, trading_audit_records, jobs, failed_jobs;
             SQL);
         $this->tradeManeuver->purge(RabbitMqTestClient::INTAKE_QUEUE);
         $this->tradeManeuver->purge(RabbitMqTestClient::DEAD_LETTER_QUEUE);
