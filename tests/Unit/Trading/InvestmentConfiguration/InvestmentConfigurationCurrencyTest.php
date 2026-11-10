@@ -23,7 +23,7 @@ final class InvestmentConfigurationCurrencyTest extends TestCase
     {
         yield 'another known currency' => ['USD'];
         yield 'lowercase eur' => ['eur'];
-        yield 'an unknown code' => ['XYZ'];
+        yield 'an unknown code' => ['DEMO'];
         yield 'empty' => [''];
     }
 

@@ -71,9 +71,9 @@ final class OrderAmountTest extends TestCase
     public function test_an_amount_in_an_unknown_currency_is_rejected(): void
     {
         $this->expectException(InvalidOrderAmountException::class);
-        $this->expectExceptionMessage('The currency "XYZ" is unknown.');
+        $this->expectExceptionMessage('The currency "DEMO" is unknown.');
 
-        OrderAmount::of('200.00', 'XYZ');
+        OrderAmount::of('200.00', 'DEMO');
     }
 
     public function test_an_amount_is_kept_exactly_at_the_currency_scale(): void
