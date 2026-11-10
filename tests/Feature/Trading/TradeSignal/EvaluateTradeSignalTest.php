@@ -52,7 +52,7 @@ final class EvaluateTradeSignalTest extends TestCase
         while (DB::transactionLevel() > 0) {
             DB::rollBack();
         }
-        DB::unprepared('TRUNCATE trading_inbox_entries, trading_trade_signals, trading_outbox_messages, trading_audit_records, trading_investment_configurations, jobs, failed_jobs');
+        DB::unprepared('TRUNCATE trading_inbox_entries, trading_trade_signals, trading_trade_signal_evaluation_steps, trading_outbox_messages, trading_audit_records, trading_investment_configurations, jobs, failed_jobs');
 
         parent::tearDown();
     }

@@ -24,4 +24,13 @@ return [
         'user' => (string) env('RABBITMQ_USER', 'trade-maneuver'),
         'password' => (string) env('RABBITMQ_PASSWORD', ''),
     ],
+    // The catalogue of the simulated broker: fictional instruments on the fictional exchange DEMO, which has the MIC
+    // format but is not a registered MIC. A symbol outside it is unknown to the simulated broker.
+    'simulated_broker' => [
+        'instruments' => [
+            ['symbol' => 'DEMO_A', 'exchange' => 'DEMO', 'quote_currency' => 'EUR', 'available' => true],
+            ['symbol' => 'DEMO_G', 'exchange' => 'DEMO', 'quote_currency' => 'USD', 'available' => true],
+            ['symbol' => 'DEMO_H', 'exchange' => 'DEMO', 'quote_currency' => 'EUR', 'available' => false],
+        ],
+    ],
 ];

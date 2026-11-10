@@ -46,7 +46,7 @@ final class ReceiveTradeSignalConcurrencyTest extends TestCase
         DB::unprepared(<<<'SQL'
             DROP TRIGGER IF EXISTS trading_test_hold_trade_signal_insert ON trading_trade_signals;
             DROP FUNCTION IF EXISTS trading_test_hold_trade_signal_insert();
-            TRUNCATE trading_inbox_entries, trading_trade_signals, trading_outbox_messages, trading_audit_records, jobs, failed_jobs;
+            TRUNCATE trading_inbox_entries, trading_trade_signals, trading_trade_signal_evaluation_steps, trading_outbox_messages, trading_audit_records, jobs, failed_jobs;
             SQL);
 
         parent::tearDown();

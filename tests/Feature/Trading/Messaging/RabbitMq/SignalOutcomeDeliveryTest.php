@@ -36,7 +36,7 @@ final class SignalOutcomeDeliveryTest extends TestCase
         $this->killTradingProcesses();
         $this->producer->purge(RabbitMqTestClient::outcomeQueueOf('demo-analytics'));
         $this->producer->close();
-        DB::unprepared('TRUNCATE trading_inbox_entries, trading_trade_signals, trading_outbox_messages, trading_audit_records, jobs, failed_jobs');
+        DB::unprepared('TRUNCATE trading_inbox_entries, trading_trade_signals, trading_trade_signal_evaluation_steps, trading_outbox_messages, trading_audit_records, jobs, failed_jobs');
 
         parent::tearDown();
     }

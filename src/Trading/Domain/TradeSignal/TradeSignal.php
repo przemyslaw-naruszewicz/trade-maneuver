@@ -6,6 +6,8 @@ namespace TradeManeuver\Trading\Domain\TradeSignal;
 
 use DateTimeImmutable;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\AnalyticsApplicationId;
+use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\InvestmentConfigurationCurrency;
+use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\InvestmentConfigurationRef;
 use TradeManeuver\Trading\Domain\TradeSignal\Dto\TradeSignalStateDto;
 use TradeManeuver\Trading\Domain\TradeSignal\Enum\DeclineReason;
 use TradeManeuver\Trading\Domain\TradeSignal\Enum\Direction;
@@ -14,6 +16,8 @@ use TradeManeuver\Trading\Domain\TradeSignal\Event\TradeSignalReceived;
 use TradeManeuver\Trading\Domain\TradeSignal\Event\TradeSignalRejected;
 use TradeManeuver\Trading\Domain\TradeSignal\Exception\InvalidTradeSignalStateException;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ContractViolations;
+use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Instrument;
+use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\InstrumentListing;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\SignalOutcome;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\SignalOutcomeId;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\TradeSignalContent;
@@ -94,22 +98,59 @@ final class TradeSignal
     /**
      * The evaluation checks that need no broker, in this order: a trade signal whose validity has ended by the time of
      * evaluation ends with `SignalDeclined` and the reason `SignalExpired`, and a short one with the reason
-     * `UnsupportedDirection`. A trade signal that passes both awaits the next checks.
+     * `UnsupportedDirection`. A trade signal that passes both awaits the instrument checks.
      *
      * @throws InvalidTradeSignalStateException when the trade signal already has a signal outcome
      */
     public function evaluateValidityAndDirection(SignalOutcomeId $outcomeId, DateTimeImmutable $evaluatedAt): void
     {
-        $content = $this->content;
-        if ($content === null || $this->outcome !== null) {
-            throw new InvalidTradeSignalStateException('Only a trade signal that awaits evaluation can be evaluated.');
-        }
+        $content = $this->contentAwaitingEvaluation();
 
         if ($evaluatedAt >= $content->validUntil->dateTime()) {
             $this->decline(DeclineReason::SignalExpired, $outcomeId, $evaluatedAt);
         } elseif ($content->direction === Direction::Short) {
             $this->decline(DeclineReason::UnsupportedDirection, $outcomeId, $evaluatedAt);
         }
+    }
+
+    /**
+     * The checks of the instrument as the broker lists it, given as null when the broker does not know it. An unknown
+     * or unavailable instrument ends the trade signal with `SignalDeclined` and the reason `InstrumentUnavailable`. A
+     * trade signal that passes them awaits order creation.
+     *
+     * @throws InvalidTradeSignalStateException when the trade signal already has a signal outcome
+     */
+    public function checkInstrument(
+        ?InstrumentListing $listing,
+        InvestmentConfigurationCurrency $investmentConfigurationCurrency,
+        SignalOutcomeId $outcomeId,
+        DateTimeImmutable $checkedAt,
+    ): void {
+        $this->contentAwaitingEvaluation();
+
+        if ($listing === null || ! $listing->isAvailable()) {
+            $this->decline(DeclineReason::InstrumentUnavailable, $outcomeId, $checkedAt);
+        }
+    }
+
+    /**
+     * The instrument that the broker checks.
+     *
+     * @throws InvalidTradeSignalStateException when the trade signal has no valid content
+     */
+    public function instrument(): Instrument
+    {
+        return $this->validContent()->instrument;
+    }
+
+    /**
+     * The investment configuration that the trade signal addresses.
+     *
+     * @throws InvalidTradeSignalStateException when the trade signal has no valid content
+     */
+    public function investmentConfigurationRef(): InvestmentConfigurationRef
+    {
+        return $this->validContent()->investmentConfigurationRef;
     }
 
     public function awaitsEvaluation(): bool
@@ -123,6 +164,30 @@ final class TradeSignal
     public function outcome(): ?SignalOutcome
     {
         return $this->outcome;
+    }
+
+    /**
+     * @throws InvalidTradeSignalStateException
+     */
+    private function contentAwaitingEvaluation(): TradeSignalContent
+    {
+        if ($this->outcome !== null) {
+            throw new InvalidTradeSignalStateException('Only a trade signal that awaits evaluation can be evaluated.');
+        }
+
+        return $this->validContent();
+    }
+
+    /**
+     * @throws InvalidTradeSignalStateException
+     */
+    private function validContent(): TradeSignalContent
+    {
+        if ($this->content === null) {
+            throw new InvalidTradeSignalStateException('A rejected trade signal without valid content has no instrument.');
+        }
+
+        return $this->content;
     }
 
     private function decline(DeclineReason $reason, SignalOutcomeId $outcomeId, DateTimeImmutable $declinedAt): void
