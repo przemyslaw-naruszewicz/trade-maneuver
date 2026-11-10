@@ -30,6 +30,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $outcome
  * @property string|null $outcome_occurred_at
  * @property list<array{field: string, message: string}>|null $outcome_violations
+ * @property string|null $outcome_reason
  */
 final class TradeSignalModel extends Model
 {

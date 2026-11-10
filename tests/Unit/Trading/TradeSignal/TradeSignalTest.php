@@ -5,20 +5,28 @@ declare(strict_types=1);
 namespace Tests\Unit\Trading\TradeSignal;
 
 use DateTimeImmutable;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Tests\Unit\Trading\TradeSignal\Support\TradeSignalBuilder;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\AnalyticsApplicationId;
 use TradeManeuver\Trading\Domain\TradeSignal\Dto\TradeSignalStateDto;
+use TradeManeuver\Trading\Domain\TradeSignal\Enum\DeclineReason;
+use TradeManeuver\Trading\Domain\TradeSignal\Enum\Direction;
+use TradeManeuver\Trading\Domain\TradeSignal\Enum\SignalOutcomeType;
+use TradeManeuver\Trading\Domain\TradeSignal\Event\TradeSignalDeclined;
 use TradeManeuver\Trading\Domain\TradeSignal\Event\TradeSignalRejected;
 use TradeManeuver\Trading\Domain\TradeSignal\Exception\InvalidTradeSignalStateException;
 use TradeManeuver\Trading\Domain\TradeSignal\Exception\InvalidTradeSignalValueException;
 use TradeManeuver\Trading\Domain\TradeSignal\TradeSignal;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ContractViolation;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ContractViolations;
+use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\SignalOutcomeId;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\TradeSignalId;
 
 final class TradeSignalTest extends TestCase
 {
+    private const string EVALUATED_AT = '2026-11-09T10:00:00.500000Z';
+
     public function test_a_rejection_ends_the_trade_signal_with_a_signal_rejected_outcome_listing_the_violations(): void
     {
         $tradeSignal = TradeSignalBuilder::rejected();
@@ -32,6 +40,8 @@ final class TradeSignalTest extends TestCase
         $this->assertSame('demo-analytics', $event->source->toString());
         $this->assertSame(TradeSignalBuilder::OUTCOME_ID, $event->outcome->id->toString());
         $this->assertEquals(TradeSignalBuilder::violations(), $event->outcome->violations);
+        $this->assertEquals(TradeSignalBuilder::violations(), $event->violations);
+        $this->assertNull($event->outcome->reason);
         $this->assertSame(TradeSignalBuilder::RECEIVED_AT, $event->outcome->occurredAt->format('Y-m-d\TH:i:s.u\Z'));
         $this->assertSame($event->outcome, $tradeSignal->outcome());
         $this->assertFalse($tradeSignal->awaitsEvaluation());
@@ -94,5 +104,98 @@ final class TradeSignalTest extends TestCase
             new TradeSignalId(TradeSignalBuilder::ID),
             new TradeSignalStateDto(new AnalyticsApplicationId('demo-analytics'), new DateTimeImmutable(TradeSignalBuilder::RECEIVED_AT), null, null),
         );
+    }
+
+    public function test_a_short_trade_signal_is_declined_with_the_reason_unsupported_direction(): void
+    {
+        $tradeSignal = TradeSignalBuilder::received(Direction::Short);
+        $tradeSignal->releaseEvents();
+
+        $tradeSignal->evaluateValidityAndDirection(new SignalOutcomeId(TradeSignalBuilder::OUTCOME_ID), new DateTimeImmutable(self::EVALUATED_AT));
+
+        $this->assertDeclinedWith(DeclineReason::UnsupportedDirection, $tradeSignal);
+    }
+
+    /**
+     * @return iterable<string, array{Direction, string}>
+     */
+    public static function expiredTradeSignals(): iterable
+    {
+        yield 'long, now after validUntil' => [Direction::Long, '2026-11-09T10:00:00.499999Z'];
+        yield 'long, now equal to validUntil' => [Direction::Long, self::EVALUATED_AT];
+        yield 'short, checked for expiry first' => [Direction::Short, self::EVALUATED_AT];
+    }
+
+    #[DataProvider('expiredTradeSignals')]
+    public function test_a_trade_signal_whose_validity_has_ended_is_declined_with_the_reason_signal_expired(Direction $direction, string $validUntil): void
+    {
+        $tradeSignal = TradeSignalBuilder::received($direction, $validUntil);
+        $tradeSignal->releaseEvents();
+
+        $tradeSignal->evaluateValidityAndDirection(new SignalOutcomeId(TradeSignalBuilder::OUTCOME_ID), new DateTimeImmutable(self::EVALUATED_AT));
+
+        $this->assertDeclinedWith(DeclineReason::SignalExpired, $tradeSignal);
+    }
+
+    public function test_a_long_trade_signal_before_its_validity_ends_passes_and_awaits_the_next_checks(): void
+    {
+        $tradeSignal = TradeSignalBuilder::received(Direction::Long, '2026-11-09T10:00:00.500001Z');
+        $tradeSignal->releaseEvents();
+
+        $tradeSignal->evaluateValidityAndDirection(new SignalOutcomeId(TradeSignalBuilder::OUTCOME_ID), new DateTimeImmutable(self::EVALUATED_AT));
+
+        $this->assertNull($tradeSignal->outcome());
+        $this->assertTrue($tradeSignal->awaitsEvaluation());
+        $this->assertSame([], $tradeSignal->releaseEvents());
+    }
+
+    /**
+     * @return iterable<string, array{TradeSignal}>
+     */
+    public static function decidedTradeSignals(): iterable
+    {
+        $declined = TradeSignalBuilder::received(Direction::Short);
+        $declined->evaluateValidityAndDirection(new SignalOutcomeId(TradeSignalBuilder::OUTCOME_ID), new DateTimeImmutable(self::EVALUATED_AT));
+
+        yield 'declined' => [$declined];
+        yield 'rejected' => [TradeSignalBuilder::rejected()];
+    }
+
+    #[DataProvider('decidedTradeSignals')]
+    public function test_a_trade_signal_with_a_signal_outcome_cannot_be_evaluated_again(TradeSignal $decided): void
+    {
+        $outcome = $decided->outcome();
+        $decided->releaseEvents();
+
+        try {
+            $decided->evaluateValidityAndDirection(new SignalOutcomeId('019a5a6e-0000-7000-8000-0000000000b2'), new DateTimeImmutable(self::EVALUATED_AT));
+            $this->fail('Evaluating a trade signal with a signal outcome was expected to be refused.');
+        } catch (InvalidTradeSignalStateException $exception) {
+            $this->assertSame('Only a trade signal that awaits evaluation can be evaluated.', $exception->getMessage());
+        }
+        $this->assertSame($outcome, $decided->outcome());
+        $this->assertSame([], $decided->releaseEvents());
+    }
+
+    private function assertDeclinedWith(DeclineReason $reason, TradeSignal $tradeSignal): void
+    {
+        $outcome = $tradeSignal->outcome();
+        $this->assertNotNull($outcome, 'The trade signal was expected to be declined.');
+        $this->assertSame(SignalOutcomeType::SignalDeclined, $outcome->type);
+        $this->assertSame($reason, $outcome->reason);
+        $this->assertSame(TradeSignalBuilder::OUTCOME_ID, $outcome->id->toString());
+        $this->assertSame(self::EVALUATED_AT, $outcome->occurredAt->format('Y-m-d\TH:i:s.u\Z'));
+        $this->assertFalse($tradeSignal->awaitsEvaluation());
+
+        $events = $tradeSignal->releaseEvents();
+        $this->assertCount(1, $events);
+        $event = $events[0];
+        $this->assertInstanceOf(TradeSignalDeclined::class, $event);
+        $this->assertSame(TradeSignalBuilder::ID, $event->id->toString());
+        $this->assertSame('demo-analytics', $event->source->toString());
+        $this->assertSame($outcome, $event->outcome);
+        $this->assertSame($reason, $event->reason);
+        $this->assertNull($outcome->violations);
+        $this->assertSame([], $tradeSignal->releaseEvents());
     }
 }

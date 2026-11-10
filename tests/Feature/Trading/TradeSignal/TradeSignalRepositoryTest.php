@@ -20,6 +20,7 @@ use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Horizon;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Instrument;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Mic;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ReferencePrice;
+use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\SignalOutcomeId;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\TradeSignalContent;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\TradeSignalId;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\UtcTimestamp;
@@ -94,6 +95,55 @@ final class TradeSignalRepositoryTest extends TestCase
         $row = DB::table('trading_trade_signals')->sole();
         $this->assertSame('SignalRejected', $row->outcome);
         $this->assertNull($row->issued_at);
+    }
+
+    public function test_a_declined_trade_signal_is_saved_with_its_reason_and_round_trips_with_its_content(): void
+    {
+        $repository = $this->app->make(TradeSignalRepositoryInterface::class);
+        $repository->add(TradeSignalBuilder::received(Direction::Short));
+        $declined = $repository->getLocked(new TradeSignalId(TradeSignalBuilder::ID));
+        $declined->evaluateValidityAndDirection(new SignalOutcomeId(TradeSignalBuilder::OUTCOME_ID), new \DateTimeImmutable('2026-11-09T10:00:00.5Z'));
+
+        $repository->save($declined);
+        $reloaded = $repository->get($declined->id());
+
+        $this->assertEquals($declined->state(), $reloaded->state());
+        $this->assertSame([], $reloaded->releaseEvents());
+        $row = DB::table('trading_trade_signals')->sole();
+        $this->assertSame('SignalDeclined', $row->outcome);
+        $this->assertSame('UnsupportedDirection', $row->outcome_reason);
+        $this->assertSame(TradeSignalBuilder::OUTCOME_ID, $row->outcome_id);
+        $this->assertSame('2026-11-09 10:00:00.5+00', $row->outcome_occurred_at);
+        $this->assertNull($row->outcome_violations);
+        $this->assertSame('short', $row->direction);
+    }
+
+    public function test_saving_a_trade_signal_without_an_outcome_keeps_it_awaiting_evaluation(): void
+    {
+        $repository = $this->app->make(TradeSignalRepositoryInterface::class);
+        $received = TradeSignalBuilder::received();
+        $repository->add($received);
+
+        $repository->save($repository->getLocked($received->id()));
+
+        $this->assertEquals($received->state(), $repository->get($received->id())->state());
+        $this->assertNull(DB::table('trading_trade_signals')->sole()->outcome_reason);
+    }
+
+    public function test_saving_or_locking_an_unknown_trade_signal_fails(): void
+    {
+        $repository = $this->app->make(TradeSignalRepositoryInterface::class);
+        $unknown = new TradeSignalId(TradeSignalBuilder::ID);
+
+        try {
+            $repository->save(TradeSignalBuilder::received());
+            $this->fail('Saving an unknown trade signal was expected to fail.');
+        } catch (TradeSignalDoesNotExistException $exception) {
+            $this->assertEquals(TradeSignalDoesNotExistException::withId($unknown), $exception);
+        }
+        $this->expectExceptionObject(TradeSignalDoesNotExistException::withId($unknown));
+
+        $repository->getLocked($unknown);
     }
 
     public function test_a_stored_outcome_of_an_unknown_type_is_refused(): void
