@@ -60,7 +60,7 @@ final class TradeSignalIntakeContext implements Context
         }
         $this->brokerGateway = new DeterministicBrokerGateway;
         $this->application->instance(BrokerGatewayInterface::class, $this->brokerGateway);
-        DB::statement('TRUNCATE trading_inbox_entries, trading_trade_signals, trading_trade_signal_evaluation_steps, trading_outbox_messages, trading_audit_records, jobs, failed_jobs, trading_investment_configurations');
+        DB::statement('TRUNCATE trading_inbox_entries, trading_trade_signals, trading_trade_signal_evaluation_steps, trading_orders, trading_outbox_messages, trading_audit_records, jobs, failed_jobs, trading_investment_configurations');
     }
 
     #[AfterScenario]

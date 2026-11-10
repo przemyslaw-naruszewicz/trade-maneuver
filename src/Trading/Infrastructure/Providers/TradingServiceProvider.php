@@ -19,6 +19,7 @@ use TradeManeuver\Trading\Application\Port\TradeSignalEvaluationQueueInterface;
 use TradeManeuver\Trading\Application\Port\TransactionManagerInterface;
 use TradeManeuver\Trading\Application\Workflow\TradeSignalEvaluation\TradeSignalEvaluationStoreInterface;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Repository\InvestmentConfigurationRepositoryInterface;
+use TradeManeuver\Trading\Domain\Order\Repository\OrderRepositoryInterface;
 use TradeManeuver\Trading\Domain\TradeSignal\Repository\TradeSignalRepositoryInterface;
 use TradeManeuver\Trading\Infrastructure\AnalyticsApplication\ConfiguredAnalyticsApplicationRegistry;
 use TradeManeuver\Trading\Infrastructure\Audit\PostgresAuditTrail;
@@ -29,6 +30,7 @@ use TradeManeuver\Trading\Infrastructure\Messaging\Jobs\QueuedTradeSignalEvaluat
 use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\OutboxIntegrationEventPublisher;
 use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\SignalOutcomePublisherInterface;
 use TradeManeuver\Trading\Infrastructure\Messaging\RabbitMq\RabbitMqSignalOutcomePublisher;
+use TradeManeuver\Trading\Infrastructure\Order\OrderRepository;
 use TradeManeuver\Trading\Infrastructure\Persistence\LaravelTransactionManager;
 use TradeManeuver\Trading\Infrastructure\TradeSignal\TradeSignalRepository;
 use TradeManeuver\Trading\Infrastructure\Workflow\TradeSignalEvaluationStore;
@@ -43,6 +45,7 @@ final class TradingServiceProvider extends ServiceProvider
 
         $this->app->bind(InvestmentConfigurationRepositoryInterface::class, InvestmentConfigurationRepository::class);
         $this->app->bind(TradeSignalRepositoryInterface::class, TradeSignalRepository::class);
+        $this->app->bind(OrderRepositoryInterface::class, OrderRepository::class);
         $this->app->bind(ClockInterface::class, fn (): FactoryImmutable => FactoryImmutable::getDefaultInstance());
         $this->app->bind(
             AnalyticsApplicationRegistryInterface::class,
