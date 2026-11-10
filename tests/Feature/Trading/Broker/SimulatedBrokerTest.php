@@ -39,7 +39,11 @@ final class SimulatedBrokerTest extends BrokerGatewayContractTestCase
 
     public function test_outside_the_test_bindings_the_container_resolves_the_broker_gateway_to_the_simulated_broker(): void
     {
-        $this->assertInstanceOf(SimulatedBroker::class, $this->app->make(BrokerGatewayInterface::class));
+        // Larastan infers the type from the binding, which is what this test checks at runtime.
+        /** @var BrokerGatewayInterface $gateway */
+        $gateway = $this->app->make(BrokerGatewayInterface::class);
+
+        $this->assertInstanceOf(SimulatedBroker::class, $gateway);
     }
 
     /**
