@@ -39,6 +39,7 @@ final class TradeSignalBuilder
         Direction $direction = Direction::Long,
         string $validUntil = self::VALID_UNTIL,
         string $referencePriceCurrency = 'EUR',
+        string $referencePrice = '12.50',
     ): TradeSignalContent {
         return new TradeSignalContent(
             UtcTimestamp::fromString('2026-11-07T09:00:00Z'),
@@ -48,7 +49,7 @@ final class TradeSignalBuilder
             Confidence::of('0.85'),
             Horizon::of(5, '2026-11-20'),
             ExpectedMove::of('1.5', '4.0'),
-            ReferencePrice::of('12.50', $referencePriceCurrency, '2026-11-07T08:59:00Z'),
+            ReferencePrice::of($referencePrice, $referencePriceCurrency, '2026-11-07T08:59:00Z'),
             UtcTimestamp::fromString($validUntil),
         );
     }
@@ -57,11 +58,12 @@ final class TradeSignalBuilder
         Direction $direction = Direction::Long,
         string $validUntil = self::VALID_UNTIL,
         string $referencePriceCurrency = 'EUR',
+        string $referencePrice = '12.50',
     ): TradeSignal {
         return TradeSignal::receive(
             new TradeSignalId(self::ID),
             new AnalyticsApplicationId('demo-analytics'),
-            self::content($direction, $validUntil, $referencePriceCurrency),
+            self::content($direction, $validUntil, $referencePriceCurrency, $referencePrice),
             new DateTimeImmutable(self::RECEIVED_AT),
         );
     }

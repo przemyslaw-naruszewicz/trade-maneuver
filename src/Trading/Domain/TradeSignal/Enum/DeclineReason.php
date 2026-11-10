@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace TradeManeuver\Trading\Domain\TradeSignal\Enum;
 
 /**
- * The reason codes of a signal decline reached so far; order creation and the operator add the others.
+ * The reason codes of a signal decline reached so far; the operator adds the others.
  */
 enum DeclineReason: string
 {
@@ -13,4 +13,5 @@ enum DeclineReason: string
     case UnsupportedDirection = 'UnsupportedDirection';
     case InstrumentUnavailable = 'InstrumentUnavailable';
     case UnsupportedCurrency = 'UnsupportedCurrency';
+    case OrderAmountTooSmall = 'OrderAmountTooSmall';
 }

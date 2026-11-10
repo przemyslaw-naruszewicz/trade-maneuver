@@ -7,7 +7,13 @@ namespace TradeManeuver\Trading\Domain\TradeSignal;
 use DateTimeImmutable;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\AnalyticsApplicationId;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\InvestmentConfigurationCurrency;
+use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\InvestmentConfigurationId;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\InvestmentConfigurationRef;
+use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\OrderSettings;
+use TradeManeuver\Trading\Domain\Order\Order;
+use TradeManeuver\Trading\Domain\Order\ValueObject\LimitPrice;
+use TradeManeuver\Trading\Domain\Order\ValueObject\OrderId;
+use TradeManeuver\Trading\Domain\Order\ValueObject\OrderQuantity;
 use TradeManeuver\Trading\Domain\TradeSignal\Dto\TradeSignalStateDto;
 use TradeManeuver\Trading\Domain\TradeSignal\Enum\DeclineReason;
 use TradeManeuver\Trading\Domain\TradeSignal\Enum\Direction;
@@ -142,6 +148,20 @@ final class TradeSignal
         } elseif (! $listing->quoteCurrency()->isEqualTo($investmentConfigurationCurrency->currency())) {
             $this->decline(DeclineReason::UnsupportedCurrency, $outcomeId, $checkedAt);
         }
+    }
+
+    public function createOrder(
+        OrderId $orderId,
+        InvestmentConfigurationId $investmentConfigurationId,
+        OrderSettings $settings,
+        SignalOutcomeId $outcomeId,
+        DateTimeImmutable $createdAt,
+    ): ?Order {
+        $content = $this->contentAwaitingEvaluation();
+        $limitPrice = LimitPrice::proposedFor($content->referencePrice, $settings->limitPriceTolerance);
+        $units = $limitPrice->unitsAffordableWith($settings->orderAmount);
+
+        return Order::createAwaitingApproval($orderId, $this->id, $investmentConfigurationId, $content->instrument, $limitPrice, OrderQuantity::of(max(1, $units)), $settings, $createdAt);
     }
 
     /**
