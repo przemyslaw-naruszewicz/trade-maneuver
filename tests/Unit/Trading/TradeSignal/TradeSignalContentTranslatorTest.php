@@ -95,7 +95,7 @@ final class TradeSignalContentTranslatorTest extends TestCase
         yield 'missing reference price currency' => [static fn ($m) => $m->without('referencePrice.currency'), [['referencePrice.currency', $required]]];
         yield 'missing reference price time' => [static fn ($m) => $m->without('referencePrice.asOf'), [['referencePrice.asOf', $required]]];
         yield 'zero reference price' => [static fn ($m) => $m->with('referencePrice.amount', '0'), [['referencePrice.amount', 'The reference price amount must be a decimal string greater than zero, such as 12.50.']]];
-        yield 'unknown currency' => [static fn ($m) => $m->with('referencePrice.currency', 'XYZ'), [['referencePrice.currency', 'The reference price currency must be an ISO 4217 code, such as EUR.']]];
+        yield 'unknown currency' => [static fn ($m) => $m->with('referencePrice.currency', 'DEMO'), [['referencePrice.currency', 'The reference price currency must be an ISO 4217 code, such as EUR.']]];
         yield 'reference price time not in UTC' => [static fn ($m) => $m->with('referencePrice.asOf', '2026-11-07'), [['referencePrice.asOf', $time]]];
         yield 'missing signal validity' => [static fn ($m) => $m->without('validUntil'), [['validUntil', $required]]];
         yield 'invalid signal validity' => [static fn ($m) => $m->with('validUntil', 'tomorrow'), [['validUntil', $time]]];

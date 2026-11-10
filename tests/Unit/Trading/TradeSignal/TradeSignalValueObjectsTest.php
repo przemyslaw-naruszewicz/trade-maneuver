@@ -77,7 +77,7 @@ final class TradeSignalValueObjectsTest extends TestCase
     public static function invalidMics(): iterable
     {
         yield 'lower case' => ['demo'];
-        yield 'three characters' => ['DEM'];
+        yield 'three characters' => ['DM0'];
         yield 'five characters' => ['DEMOX'];
         yield 'punctuation' => ['DE-O'];
         yield 'trailing newline' => ["DEMO\n"];
@@ -274,7 +274,7 @@ final class TradeSignalValueObjectsTest extends TestCase
         yield 'zero amount' => ['0.00', 'EUR', '2026-11-07T08:59:00Z', $amount, 'amount'];
         yield 'negative amount' => ['-12.50', 'EUR', '2026-11-07T08:59:00Z', $amount, 'amount'];
         yield 'amount with an exponent' => ['1.25e1', 'EUR', '2026-11-07T08:59:00Z', $amount, 'amount'];
-        yield 'unknown currency' => ['12.50', 'XYZ', '2026-11-07T08:59:00Z', $currency, 'currency'];
+        yield 'unknown currency' => ['12.50', 'DEMO', '2026-11-07T08:59:00Z', $currency, 'currency'];
         yield 'lower-case currency' => ['12.50', 'eur', '2026-11-07T08:59:00Z', $currency, 'currency'];
         yield 'time in another zone' => ['12.50', 'EUR', '2026-11-07T09:59:00+01:00', 'The time must be an ISO 8601 date and time in UTC, such as 2026-11-07T09:30:00Z.', 'asOf'];
     }
