@@ -49,6 +49,11 @@ final class OrderAwaitingApprovalReadModel extends Model
     /**
      * The orders whose signal validity ends soonest come first.
      *
+     * Eloquent forwards a static call to a method it cannot reach to a new instance, so a narrower visibility is an
+     * equivalent mutant.
+     *
+     * @infection-ignore-all
+     *
      * @return Builder<self>
      */
     public static function soonestValidUntilFirst(): Builder

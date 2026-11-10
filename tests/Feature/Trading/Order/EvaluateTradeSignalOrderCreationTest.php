@@ -17,6 +17,7 @@ use TradeManeuver\Trading\Application\Port\BrokerGatewayInterface;
 use TradeManeuver\Trading\Application\TradeSignal\Command\ReceiveTradeSignal\ReceiveTradeSignalCommand;
 use TradeManeuver\Trading\Application\TradeSignal\Command\ReceiveTradeSignal\ReceiveTradeSignalCommandHandler;
 use TradeManeuver\Trading\Application\Workflow\TradeSignalEvaluation\TradeSignalEvaluationOrchestrator;
+use TradeManeuver\Trading\Domain\InvestmentConfiguration\Repository\Exception\InvestmentConfigurationDoesNotExistException;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\TradeSignalId;
 
 /**
@@ -92,7 +93,8 @@ final class EvaluateTradeSignalOrderCreationTest extends TestCase
             'limitPriceTolerance' => '2.00',
             'currency' => 'EUR',
             'brokerageAccount' => 'DEMO-ACCOUNT-1',
-        ], json_decode((string) $audit->values, true, 512, JSON_THROW_ON_ERROR));
+        ], $values = json_decode((string) $audit->values, true, 512, JSON_THROW_ON_ERROR));
+        $this->assertSame('98', $values['quantity'], 'The audit trail keeps the quantity as a string.');
         $this->assertSame(['instrument_checks', 'order_creation', 'validity_and_direction'], DB::table('trading_trade_signal_evaluation_steps')->orderBy('step')->pluck('step')->all());
         $this->assertNull(DB::table('trading_trade_signals')->sole()->outcome);
         $this->assertDatabaseEmpty('trading_outbox_messages');
@@ -141,6 +143,22 @@ final class EvaluateTradeSignalOrderCreationTest extends TestCase
         $this->evaluate($id);
 
         $this->assertSame(1, DB::table('trading_outbox_messages')->count(), 'A rerun was expected to record no second signal outcome.');
+    }
+
+    public function test_an_evaluation_without_the_investment_configuration_fails_and_creates_no_order(): void
+    {
+        $id = $this->acceptATradeSignal('10.00');
+        DB::table('trading_investment_configurations')->delete();
+
+        try {
+            $this->evaluate($id);
+            $this->fail('The evaluation was expected to fail.');
+        } catch (InvestmentConfigurationDoesNotExistException $exception) {
+            $this->assertStringContainsString('demo-investment', $exception->getMessage());
+        }
+
+        $this->assertDatabaseEmpty('trading_orders');
+        $this->assertNull(DB::table('trading_trade_signals')->sole()->outcome);
     }
 
     private function acceptATradeSignal(string $referencePrice): string
