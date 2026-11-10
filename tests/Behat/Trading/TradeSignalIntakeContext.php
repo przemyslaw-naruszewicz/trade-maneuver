@@ -25,6 +25,7 @@ use TradeManeuver\Trading\Application\Port\BrokerGatewayInterface;
 use TradeManeuver\Trading\Application\TradeSignal\Command\ReceiveTradeSignal\ReceiveTradeSignalCommand;
 use TradeManeuver\Trading\Application\TradeSignal\Command\ReceiveTradeSignal\ReceiveTradeSignalCommandHandler;
 use TradeManeuver\Trading\Application\TradeSignal\Command\ReceiveTradeSignal\TradeSignalIntakeResult;
+use TradeManeuver\Trading\Infrastructure\Order\ReadModel\OrderAwaitingApprovalReadModel;
 
 /**
  * Drives the Trading application boundary through its application commands, against the PostgreSQL test database.
@@ -82,16 +83,13 @@ final class TradeSignalIntakeContext implements Context
     #[Given('the investment configuration :reference authorizes the analytics application :analyticsApplication')]
     public function theInvestmentConfigurationAuthorizes(string $reference, string $analyticsApplication): void
     {
-        $this->application->make(CreateInvestmentConfigurationCommandHandler::class)->handle(new CreateInvestmentConfigurationCommand(
-            'behat',
-            $reference,
-            'EUR',
-            'DEMO-ACCOUNT-1',
-            '200.00',
-            'EUR',
-            '1.50',
-            [$analyticsApplication],
-        ));
+        $this->createInvestmentConfiguration($reference, '200.00', '1.50', $analyticsApplication);
+    }
+
+    #[Given('the investment configuration :reference with the order amount :orderAmount EUR and the limit price tolerance :tolerance % authorizes the analytics application :analyticsApplication')]
+    public function theInvestmentConfigurationWithSettingsAuthorizes(string $reference, string $orderAmount, string $tolerance, string $analyticsApplication): void
+    {
+        $this->createInvestmentConfiguration($reference, $orderAmount, $tolerance, $analyticsApplication);
     }
 
     /**
@@ -223,10 +221,67 @@ final class TradeSignalIntakeContext implements Context
         Assert::assertSame([], $this->outcomesOf($alias));
     }
 
+    /**
+     * Reads the order through the awaiting-approval read model, with the trade signal the message builder sends.
+     */
+    #[Then('the trade signal :alias leads to one order awaiting approval with the limit price :limitPrice EUR and the quantity :quantity')]
+    public function theTradeSignalLeadsToOneOrderAwaitingApproval(string $alias, string $limitPrice, int $quantity): void
+    {
+        $orders = OrderAwaitingApprovalReadModel::query()->where('trade_signal_id', TradeSignalMessageBuilder::idFor($alias))->get();
+        Assert::assertCount(1, $orders, 'Expected exactly one order awaiting approval for the trade signal.');
+        $order = $orders[0];
+        Assert::assertSame('awaiting_approval', $order->status);
+        Assert::assertSame('none', $order->execution_progress);
+        Assert::assertSame($limitPrice, $order->limit_price);
+        Assert::assertSame('EUR', $order->currency);
+        Assert::assertSame($quantity, $order->quantity);
+        Assert::assertSame('DEMO_A', $order->instrument_symbol);
+        Assert::assertSame('DEMO', $order->instrument_mic);
+        Assert::assertSame('long', $order->direction);
+        Assert::assertSame('0.85', $order->confidence);
+        Assert::assertSame(5, $order->horizon_sessions);
+        Assert::assertSame('1.5', $order->expected_move_min);
+        Assert::assertSame('4.0', $order->expected_move_max);
+        Assert::assertSame('EUR', $order->reference_price_currency);
+        Assert::assertSame('2026-11-07 08:59:00+00', $order->reference_price_as_of);
+        Assert::assertSame('demo-analytics', $order->analytics_application);
+        Assert::assertSame([], $this->outcomesOf($alias), 'An order awaiting approval is not a signal outcome.');
+        $direction = DB::table('trading_orders')->where('id', $order->id)->value('direction');
+        Assert::assertSame('buy', $direction);
+    }
+
+    #[Then('the creation of the order of the trade signal :alias is audited with the order amount :orderAmount EUR, the limit price tolerance :tolerance %, and the brokerage account :brokerageAccount')]
+    public function theCreationOfTheOrderIsAudited(string $alias, string $orderAmount, string $tolerance, string $brokerageAccount): void
+    {
+        $orderId = DB::table('trading_orders')->where('trade_signal_id', TradeSignalMessageBuilder::idFor($alias))->value('id');
+        Assert::assertNotNull($orderId, 'Expected an order for the trade signal.');
+        $audit = DB::table('trading_audit_records')->where('entity_type', 'order')->where('entity_id', $orderId)->where('action', 'created')->sole();
+        $values = json_decode((string) $audit->values, true, 512, JSON_THROW_ON_ERROR);
+        Assert::assertSame($orderAmount, $values['orderAmount']);
+        Assert::assertSame($tolerance, $values['limitPriceTolerance']);
+        Assert::assertSame('EUR', $values['currency']);
+        Assert::assertSame($brokerageAccount, $values['brokerageAccount']);
+        Assert::assertSame(TradeSignalMessageBuilder::idFor($alias), $values['tradeSignalId']);
+    }
+
     #[Then('no signal outcome is recorded')]
     public function noSignalOutcomeIsRecorded(): void
     {
         Assert::assertSame(0, DB::table('trading_outbox_messages')->count());
+    }
+
+    private function createInvestmentConfiguration(string $reference, string $orderAmount, string $tolerance, string $analyticsApplication): void
+    {
+        $this->application->make(CreateInvestmentConfigurationCommandHandler::class)->handle(new CreateInvestmentConfigurationCommand(
+            'behat',
+            $reference,
+            'EUR',
+            'DEMO-ACCOUNT-1',
+            $orderAmount,
+            'EUR',
+            $tolerance,
+            [$analyticsApplication],
+        ));
     }
 
     private function messageFor(string $alias, string $analyticsApplication): TradeSignalMessageBuilder
