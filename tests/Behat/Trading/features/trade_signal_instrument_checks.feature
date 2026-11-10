@@ -18,3 +18,9 @@ Feature: Trade signal evaluation: instrument checks
     When "demo-analytics" delivers the trade signal "purchase" with "instrument.symbol" set to "DEMO_X"
     And Trade Maneuver evaluates the trade signal "purchase"
     Then the trade signal "purchase" ends with one SignalDeclined outcome with the reason "InstrumentUnavailable"
+
+  Scenario: A trade signal for an instrument quoted in another currency than the investment configuration's is declined with UnsupportedCurrency
+    Given the broker lists the instrument "DEMO_G" as available, quoted in "USD"
+    When "demo-analytics" delivers the trade signal "purchase" with "instrument.symbol" set to "DEMO_G" and "referencePrice.currency" set to "USD"
+    And Trade Maneuver evaluates the trade signal "purchase"
+    Then the trade signal "purchase" ends with one SignalDeclined outcome with the reason "UnsupportedCurrency"
