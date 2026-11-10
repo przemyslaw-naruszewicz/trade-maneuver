@@ -12,3 +12,9 @@ Feature: Trade signal evaluation: expiry and direction
     When "demo-analytics" delivers the trade signal "sale" with "direction" set to "short"
     And Trade Maneuver evaluates the trade signal "sale"
     Then the trade signal "sale" ends with one SignalDeclined outcome with the reason "UnsupportedDirection"
+
+  Scenario: A trade signal whose validity has ended is declined with SignalExpired
+    Given the time is "2026-11-09T10:00:00Z"
+    When "demo-analytics" delivers the trade signal "purchase" with "validUntil" set to "2026-11-09T09:30:00Z"
+    And Trade Maneuver evaluates the trade signal "purchase"
+    Then the trade signal "purchase" ends with one SignalDeclined outcome with the reason "SignalExpired"
