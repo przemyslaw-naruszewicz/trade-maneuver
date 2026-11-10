@@ -40,7 +40,7 @@ final class DemoAnalyticsFlowTest extends TestCase
     protected function tearDown(): void
     {
         $this->killTradingProcesses();
-        DB::unprepared('TRUNCATE trading_investment_configurations, trading_inbox_entries, trading_trade_signals, trading_trade_signal_evaluation_steps, trading_outbox_messages, trading_audit_records, jobs, failed_jobs');
+        DB::unprepared('TRUNCATE trading_investment_configurations, trading_inbox_entries, trading_trade_signals, trading_trade_signal_evaluation_steps, trading_orders, trading_outbox_messages, trading_audit_records, jobs, failed_jobs');
         $this->tradeManeuver->purge(RabbitMqTestClient::INTAKE_QUEUE);
         $this->tradeManeuver->close();
         $this->purgeOutcomeQueue();

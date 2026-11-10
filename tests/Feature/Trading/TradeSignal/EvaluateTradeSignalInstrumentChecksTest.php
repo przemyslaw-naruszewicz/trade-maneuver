@@ -8,6 +8,7 @@ use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Mockery;
 use Tests\Support\Trading\DeterministicBrokerGateway;
 use Tests\Support\Trading\TradeSignalMessageBuilder;
 use Tests\TestCase;
@@ -50,7 +51,7 @@ final class EvaluateTradeSignalInstrumentChecksTest extends TestCase
 
     protected function tearDown(): void
     {
-        DB::unprepared('TRUNCATE trading_inbox_entries, trading_trade_signals, trading_trade_signal_evaluation_steps, trading_outbox_messages, trading_audit_records, trading_investment_configurations, jobs, failed_jobs');
+        DB::unprepared('TRUNCATE trading_inbox_entries, trading_trade_signals, trading_trade_signal_evaluation_steps, trading_orders, trading_outbox_messages, trading_audit_records, trading_investment_configurations, jobs, failed_jobs');
 
         parent::tearDown();
     }
@@ -79,7 +80,7 @@ final class EvaluateTradeSignalInstrumentChecksTest extends TestCase
         $this->assertNull(DB::table('trading_trade_signals')->sole()->outcome, 'DEMO_A passes the instrument checks.');
         $this->assertDatabaseEmpty('trading_outbox_messages');
         $this->assertSame(
-            ['instrument_checks', 'validity_and_direction'],
+            ['instrument_checks', 'order_creation', 'validity_and_direction'],
             DB::table('trading_trade_signal_evaluation_steps')->where('trade_signal_id', $id)->orderBy('step')->pluck('step')->all(),
         );
     }
@@ -129,10 +130,12 @@ final class EvaluateTradeSignalInstrumentChecksTest extends TestCase
         $this->evaluate($id);
 
         $this->assertSame(1, $this->brokerGateway->lookups());
-        $this->assertSame(2, DB::table('trading_trade_signal_evaluation_steps')->count());
+        $this->assertSame(3, DB::table('trading_trade_signal_evaluation_steps')->count());
+        $this->assertSame(1, DB::table('trading_orders')->where('trade_signal_id', $id)->count(), 'The rerun was expected to create no second order.');
         $this->assertNull(DB::table('trading_trade_signals')->sole()->outcome);
         $this->assertDatabaseEmpty('trading_outbox_messages');
-        $log->shouldHaveReceived('info')->once()->with('A trade signal passed the instrument checks and awaits order creation.', ['signalId' => $id]);
+        $log->shouldHaveReceived('info')->with('A trade signal passed the instrument checks and awaits order creation.', ['signalId' => $id])->once();
+        $log->shouldHaveReceived('info')->with('An order awaiting approval is created.', Mockery::on(fn (array $context): bool => $context['signalId'] === $id))->once();
     }
 
     public function test_a_concurrent_evaluation_that_declines_first_leaves_one_signal_outcome(): void
@@ -160,8 +163,10 @@ final class EvaluateTradeSignalInstrumentChecksTest extends TestCase
 
         $this->evaluate($id);
 
-        $this->assertSame(2, DB::table('trading_trade_signal_evaluation_steps')->count());
-        $log->shouldHaveReceived('info')->once()->with('A trade signal passed the instrument checks and awaits order creation.', ['signalId' => $id]);
+        $this->assertSame(3, DB::table('trading_trade_signal_evaluation_steps')->count());
+        $this->assertSame(1, DB::table('trading_orders')->where('trade_signal_id', $id)->count(), 'The concurrent evaluation was expected to create one order.');
+        $log->shouldHaveReceived('info')->with('A trade signal passed the instrument checks and awaits order creation.', ['signalId' => $id])->once();
+        $log->shouldHaveReceived('info')->with('An order awaiting approval is created.', Mockery::on(fn (array $context): bool => $context['signalId'] === $id))->once();
     }
 
     public function test_a_rejection_at_evaluation_commits_the_signal_outcome_with_its_audit_record_and_is_logged(): void

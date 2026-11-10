@@ -15,6 +15,7 @@ use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\InvestmentC
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\InvestmentConfigurationRef;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\LimitPriceTolerance;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\OrderAmount;
+use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\OrderSettings;
 
 final class InvestmentConfiguration
 {
@@ -91,6 +92,14 @@ final class InvestmentConfiguration
     public function currency(): InvestmentConfigurationCurrency
     {
         return $this->currency;
+    }
+
+    /**
+     * The settings an order uses, which the order keeps as a snapshot.
+     */
+    public function orderSettings(): OrderSettings
+    {
+        return new OrderSettings($this->orderAmount, $this->limitPriceTolerance, $this->currency, $this->brokerageAccount);
     }
 
     /**

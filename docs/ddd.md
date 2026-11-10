@@ -2,7 +2,7 @@
 
 Use Vaughn Vernon's interpretation of DDD as the primary reference for modeling and implementation reviews. Where the two differ, this project follows Vernon rather than Eric Evans's original presentation. Shared DDD terms retain their established meaning.
 
-Use DDD Crew's collaborative modeling tools to discover and test the model against business scenarios. Framework independence, CQRS, Eloquent integration, and the `state()` contract are project choices, not universal requirements of DDD. These rules describe the target model; the Trading context implements two aggregates so far, the investment configuration and the trade signal.
+Use DDD Crew's collaborative modeling tools to discover and test the model against business scenarios. Framework independence, CQRS, Eloquent integration, and the `state()` contract are project choices, not universal requirements of DDD. These rules describe the target model; the Trading context implements three aggregates so far, the investment configuration, the trade signal, and the order.
 
 ## Relationship to other documents
 

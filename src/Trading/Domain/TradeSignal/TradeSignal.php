@@ -7,7 +7,13 @@ namespace TradeManeuver\Trading\Domain\TradeSignal;
 use DateTimeImmutable;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\AnalyticsApplicationId;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\InvestmentConfigurationCurrency;
+use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\InvestmentConfigurationId;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\InvestmentConfigurationRef;
+use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\OrderSettings;
+use TradeManeuver\Trading\Domain\Order\Order;
+use TradeManeuver\Trading\Domain\Order\ValueObject\LimitPrice;
+use TradeManeuver\Trading\Domain\Order\ValueObject\OrderId;
+use TradeManeuver\Trading\Domain\Order\ValueObject\OrderQuantity;
 use TradeManeuver\Trading\Domain\TradeSignal\Dto\TradeSignalStateDto;
 use TradeManeuver\Trading\Domain\TradeSignal\Enum\DeclineReason;
 use TradeManeuver\Trading\Domain\TradeSignal\Enum\Direction;
@@ -142,6 +148,43 @@ final class TradeSignal
         } elseif (! $listing->quoteCurrency()->isEqualTo($investmentConfigurationCurrency->currency())) {
             $this->decline(DeclineReason::UnsupportedCurrency, $outcomeId, $checkedAt);
         }
+    }
+
+    /**
+     * Creates the order that a trade signal which passed evaluation leads to, priced and sized from the investment
+     * configuration's order settings. When the order amount cannot buy one unit at the limit price, there is no order:
+     * the trade signal ends with `SignalDeclined` and the reason `OrderAmountTooSmall`.
+     *
+     * @return Order|null the order awaiting approval, or null when the trade signal is declined
+     *
+     * @throws InvalidTradeSignalStateException when the trade signal already has a signal outcome
+     */
+    public function createOrder(
+        OrderId $orderId,
+        InvestmentConfigurationId $investmentConfigurationId,
+        OrderSettings $settings,
+        SignalOutcomeId $outcomeId,
+        DateTimeImmutable $createdAt,
+    ): ?Order {
+        $content = $this->contentAwaitingEvaluation();
+        $limitPrice = LimitPrice::proposedFor($content->referencePrice, $settings->limitPriceTolerance);
+        $units = $limitPrice->unitsAffordableWith($settings->orderAmount);
+        if ($units === 0) {
+            $this->decline(DeclineReason::OrderAmountTooSmall, $outcomeId, $createdAt);
+
+            return null;
+        }
+
+        return Order::createAwaitingApproval(
+            $orderId,
+            $this->id,
+            $investmentConfigurationId,
+            $content->instrument,
+            $limitPrice,
+            OrderQuantity::of($units),
+            $settings,
+            $createdAt,
+        );
     }
 
     /**

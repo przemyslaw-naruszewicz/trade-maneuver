@@ -39,7 +39,7 @@ final class CreateInvestmentConfigurationAtomicityTest extends TestCase
         DB::unprepared(<<<'SQL'
             DROP TRIGGER IF EXISTS trading_test_fail_audit_write ON trading_audit_records;
             DROP FUNCTION IF EXISTS trading_test_fail_audit_write();
-            TRUNCATE trading_investment_configurations, trading_audit_records;
+            TRUNCATE trading_orders, trading_investment_configurations, trading_audit_records;
             SQL);
 
         parent::tearDown();

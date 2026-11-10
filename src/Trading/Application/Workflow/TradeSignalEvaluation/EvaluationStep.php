@@ -11,4 +11,5 @@ enum EvaluationStep: string
 {
     case ValidityAndDirection = 'validity_and_direction';
     case InstrumentChecks = 'instrument_checks';
+    case OrderCreation = 'order_creation';
 }
