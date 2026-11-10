@@ -7,6 +7,7 @@ namespace Tests\Unit\Trading\Order;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\LimitPriceTolerance;
+use TradeManeuver\Trading\Domain\Order\Exception\InvalidOrderValueException;
 use TradeManeuver\Trading\Domain\Order\ValueObject\LimitPrice;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ReferencePrice;
 
@@ -38,5 +39,18 @@ final class LimitPriceTest extends TestCase
 
         $this->assertSame($expectedLimitPrice, $limitPrice->amount());
         $this->assertSame('EUR', $limitPrice->currencyCode());
+    }
+
+    public function test_a_reference_price_below_the_minor_unit_gives_no_limit_price(): void
+    {
+        $this->expectException(InvalidOrderValueException::class);
+        $this->expectExceptionMessage('The limit price must be greater than zero, not 0.00 EUR.');
+
+        LimitPrice::proposedFor(ReferencePrice::of('0.004', 'EUR', '2026-11-07T08:59:00Z'), LimitPriceTolerance::fromPercentage('5.00'));
+    }
+
+    public function test_a_stored_limit_price_of_one_cent_is_the_smallest(): void
+    {
+        $this->assertSame('0.01', LimitPrice::of('0.01', 'EUR')->amount());
     }
 }

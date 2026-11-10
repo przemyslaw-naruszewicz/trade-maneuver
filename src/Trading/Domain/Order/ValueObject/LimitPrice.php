@@ -18,7 +18,19 @@ use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ReferencePrice;
  */
 final readonly class LimitPrice
 {
-    private function __construct(private Money $money) {}
+    /**
+     * @throws InvalidOrderValueException
+     */
+    private function __construct(private Money $money)
+    {
+        if (! $money->isPositive()) {
+            throw new InvalidOrderValueException(sprintf(
+                'The limit price must be greater than zero, not %s %s.',
+                $money->getAmount()->toString(),
+                $money->getCurrency()->getCurrencyCode(),
+            ));
+        }
+    }
 
     /**
      * The reference price raised by the tolerance and rounded down to the currency's minor unit, so that the limit
