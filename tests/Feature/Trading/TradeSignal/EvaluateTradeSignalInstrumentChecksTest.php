@@ -81,6 +81,27 @@ final class EvaluateTradeSignalInstrumentChecksTest extends TestCase
         );
     }
 
+    public function test_a_rerun_after_signal_validity_ends_continues_with_the_instrument_checks_and_does_not_decline_with_signal_expired(): void
+    {
+        $this->travelTo('2026-11-09 10:00:00Z');
+        $this->brokerGateway->listUnavailable('DEMO_H', 'DEMO', 'EUR');
+        $this->brokerGateway->timeOutNextLookups(1);
+        $id = $this->acceptATradeSignal('purchase', 'DEMO_H', '2026-11-09T10:00:10Z');
+        $this->runTheQueueWorkerOnce();
+        $this->assertSame(['validity_and_direction'], DB::table('trading_trade_signal_evaluation_steps')->pluck('step')->all());
+
+        $this->travelTo('2026-11-09 10:01:00Z');
+        $this->runTheQueueWorkerOnce();
+
+        $outcomes = DB::table('trading_outbox_messages')->whereRaw("payload->>'signalId' = ?", [$id])->get();
+        $this->assertCount(1, $outcomes, 'Expected exactly one signal outcome in the outbox.');
+        $payload = json_decode((string) $outcomes->firstOrFail()->payload, true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame('SignalDeclined', $payload['outcome']);
+        $this->assertSame('InstrumentUnavailable', $payload['reason']);
+        $this->assertSame('2026-11-09T10:01:00.000000Z', $payload['time']);
+        $this->assertSame(['validity_and_direction'], DB::table('trading_trade_signal_evaluation_steps')->pluck('step')->all(), 'A declined trade signal passes no further step.');
+    }
+
     private function acceptATradeSignal(string $alias, string $symbol, string $validUntil): string
     {
         $id = TradeSignalMessageBuilder::idFor($alias);
