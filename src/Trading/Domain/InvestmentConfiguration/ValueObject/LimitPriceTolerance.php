@@ -47,6 +47,14 @@ final readonly class LimitPriceTolerance
     }
 
     /**
+     * The price raised by the tolerance, exactly: a buy order's limit price before rounding.
+     */
+    public function addedTo(BigDecimal $price): BigDecimal
+    {
+        return $price->multipliedBy(BigDecimal::one()->plus($this->percentage->withPointMovedLeft(2)));
+    }
+
+    /**
      * The percentage at its fixed scale, for persistence and serialization.
      */
     public function toString(): string

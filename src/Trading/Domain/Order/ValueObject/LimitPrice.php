@@ -11,15 +11,27 @@ use Brick\Money\Money;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\LimitPriceTolerance;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ReferencePrice;
 
+/**
+ * The worst price at which a buy order may be executed, at its currency's minor unit.
+ */
 final readonly class LimitPrice
 {
     private function __construct(private Money $money) {}
 
+    /**
+     * The reference price raised by the tolerance and rounded down to the currency's minor unit, so that the limit
+     * price never exceeds the tolerance (ADR-0005).
+     */
     public static function proposedFor(ReferencePrice $referencePrice, LimitPriceTolerance $tolerance): self
     {
-        return new self(Money::of(BigDecimal::of($referencePrice->amount()), Currency::of($referencePrice->currencyCode()), roundingMode: RoundingMode::Down));
+        $unrounded = $tolerance->addedTo(BigDecimal::of($referencePrice->amount()));
+
+        return new self(Money::of($unrounded, Currency::of($referencePrice->currencyCode()), roundingMode: RoundingMode::Down));
     }
 
+    /**
+     * The amount at the currency's scale, for persistence and serialization.
+     */
     public function amount(): string
     {
         return $this->money->getAmount()->toString();
