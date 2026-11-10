@@ -18,7 +18,8 @@ use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\TradeSignalId;
 /**
  * Evaluates an accepted trade signal after its intake commits, one step per transaction. The first step checks signal
  * validity and direction, which need no broker; a trade signal that passes it waits for the instrument checks. A
- * signal outcome commits with its audit record and its outbox entry.
+ * signal outcome commits with its audit record and its outbox entry. The trade signal stays locked during a step, so
+ * a job that runs twice, even concurrently, reaches one signal outcome.
  */
 final readonly class TradeSignalEvaluationOrchestrator
 {
@@ -43,6 +44,13 @@ final readonly class TradeSignalEvaluationOrchestrator
     private function checkValidityAndDirection(TradeSignalId $id): void
     {
         $tradeSignal = $this->tradeSignals->getLocked($id);
+        if (! $tradeSignal->awaitsEvaluation()) {
+            // The job ran before, or the trade signal was rejected at intake.
+            $this->logger->info('A trade signal already has a signal outcome, so it is not evaluated again.', ['signalId' => $id->toString()]);
+
+            return;
+        }
+
         $tradeSignal->evaluateValidityAndDirection($this->tradeSignals->nextOutcomeIdentity(), $this->clock->now());
         $this->tradeSignals->save($tradeSignal);
 

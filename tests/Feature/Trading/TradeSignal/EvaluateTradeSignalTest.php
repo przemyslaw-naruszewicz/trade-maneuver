@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Trading\TradeSignal;
 
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Tests\Support\Trading\TradeSignalMessageBuilder;
 use Tests\Support\Trading\TradingProcesses;
 use Tests\TestCase;
@@ -14,6 +16,8 @@ use TradeManeuver\Trading\Application\InvestmentConfiguration\Command\CreateInve
 use TradeManeuver\Trading\Application\InvestmentConfiguration\Command\CreateInvestmentConfiguration\CreateInvestmentConfigurationCommandHandler;
 use TradeManeuver\Trading\Application\TradeSignal\Command\ReceiveTradeSignal\ReceiveTradeSignalCommand;
 use TradeManeuver\Trading\Application\TradeSignal\Command\ReceiveTradeSignal\ReceiveTradeSignalCommandHandler;
+use TradeManeuver\Trading\Application\Workflow\TradeSignalEvaluation\TradeSignalEvaluationOrchestrator;
+use TradeManeuver\Trading\Infrastructure\Messaging\Jobs\EvaluateTradeSignalJob;
 
 /**
  * The evaluation of an accepted trade signal through Laravel's PostgreSQL job queue, against the test database. The
@@ -96,6 +100,112 @@ final class EvaluateTradeSignalTest extends TestCase
         $this->assertStringContainsString('PublishSignalOutcomeJob', DB::table('jobs')->sole()->payload, 'Only the publication of the one signal outcome was expected to stay queued.');
     }
 
+    public function test_a_decline_commits_the_signal_outcome_with_its_audit_record_and_is_logged(): void
+    {
+        $this->travelTo('2026-11-09 10:00:00.25Z');
+        $id = $this->acceptAShortTradeSignal();
+        $this->travel(1)->seconds();
+        $log = Log::spy();
+
+        $this->runTheQueueWorkerOnce();
+
+        $tradeSignal = DB::table('trading_trade_signals')->sole();
+        $this->assertSame('SignalDeclined', $tradeSignal->outcome);
+        $this->assertSame('UnsupportedDirection', $tradeSignal->outcome_reason);
+        $this->assertSame('2026-11-09 10:00:01.25+00', $tradeSignal->outcome_occurred_at);
+        $outboxMessage = DB::table('trading_outbox_messages')->sole();
+        $this->assertSame($tradeSignal->outcome_id, $outboxMessage->message_id);
+        $this->assertSame('demo-analytics', $outboxMessage->recipient);
+        $this->assertEquals([
+            'id' => $tradeSignal->outcome_id,
+            'source' => 'trade-maneuver',
+            'type' => 'tm.signal-outcome.v1',
+            'time' => '2026-11-09T10:00:01.250000Z',
+            'signalId' => $id,
+            'outcome' => 'SignalDeclined',
+            'reason' => 'UnsupportedDirection',
+        ], json_decode((string) $outboxMessage->payload, true));
+        $audit = DB::table('trading_audit_records')->where('action', 'declined')->sole();
+        $this->assertSame('trade-maneuver', $audit->actor);
+        $this->assertSame('trade_signal', $audit->entity_type);
+        $this->assertSame($id, $audit->entity_id);
+        $this->assertSame('2026-11-09 10:00:01.25+00', $audit->occurred_at);
+        $this->assertEquals(['outcomeId' => $tradeSignal->outcome_id, 'reason' => 'UnsupportedDirection'], json_decode((string) $audit->values, true));
+        $log->shouldHaveReceived('info')->once()->with('A trade signal is declined.', [
+            'signalId' => $id,
+            'outcomeId' => $tradeSignal->outcome_id,
+            'reason' => 'UnsupportedDirection',
+        ]);
+    }
+
+    public function test_the_evaluation_of_a_trade_signal_that_has_a_signal_outcome_is_logged_and_changes_nothing(): void
+    {
+        $id = TradeSignalMessageBuilder::idFor('purchase');
+        $body = TradeSignalMessageBuilder::aTradeSignal($id)->with('confidence', '1.5')->body();
+        $this->app->make(ReceiveTradeSignalCommandHandler::class)->handle(new ReceiveTradeSignalCommand($body, 'demo-analytics'));
+        $rejected = DB::table('trading_trade_signals')->sole();
+        $log = Log::spy();
+
+        (new EvaluateTradeSignalJob($id))->handle($this->app->make(TradeSignalEvaluationOrchestrator::class));
+
+        $this->assertEquals($rejected, DB::table('trading_trade_signals')->sole());
+        $this->assertSame(1, DB::table('trading_outbox_messages')->count());
+        $this->assertSame(0, DB::table('trading_audit_records')->where('action', 'declined')->count());
+        $log->shouldHaveReceived('info')->once()->with('A trade signal already has a signal outcome, so it is not evaluated again.', ['signalId' => $id]);
+    }
+
+    public function test_a_failed_outbox_write_rolls_back_the_decline_and_its_audit_record(): void
+    {
+        $id = $this->acceptAShortTradeSignal();
+        DB::unprepared(<<<'SQL'
+            CREATE OR REPLACE FUNCTION trading_test_fail_outbox_write() RETURNS trigger LANGUAGE plpgsql AS $$
+            BEGIN
+                RAISE EXCEPTION 'outbox write failed for the test with % declines recorded', (SELECT count(*) FROM trading_audit_records WHERE action = 'declined');
+            END
+            $$;
+            CREATE TRIGGER trading_test_fail_outbox_write BEFORE INSERT ON trading_outbox_messages FOR EACH ROW EXECUTE FUNCTION trading_test_fail_outbox_write();
+            SQL);
+
+        try {
+            (new EvaluateTradeSignalJob($id))->handle($this->app->make(TradeSignalEvaluationOrchestrator::class));
+            $this->fail('The outbox write was expected to fail.');
+        } catch (QueryException $exception) {
+            $this->assertStringContainsString('outbox write failed for the test with 1 declines recorded', $exception->getMessage());
+        } finally {
+            DB::unprepared('DROP TRIGGER trading_test_fail_outbox_write ON trading_outbox_messages; DROP FUNCTION trading_test_fail_outbox_write();');
+        }
+
+        $this->assertSame(0, DB::transactionLevel());
+        $this->assertNull(DB::table('trading_trade_signals')->sole()->outcome);
+        $this->assertSame(0, DB::table('trading_audit_records')->where('action', 'declined')->count());
+        $this->assertDatabaseEmpty('trading_outbox_messages');
+    }
+
+    public function test_the_evaluation_job_is_queued_in_the_intake_transaction(): void
+    {
+        DB::unprepared(<<<'SQL'
+            CREATE OR REPLACE FUNCTION trading_test_fail_job_write() RETURNS trigger LANGUAGE plpgsql AS $$
+            BEGIN
+                RAISE EXCEPTION 'job write failed for the test with % trade signals written', (SELECT count(*) FROM trading_trade_signals);
+            END
+            $$;
+            CREATE TRIGGER trading_test_fail_job_write BEFORE INSERT ON jobs FOR EACH ROW EXECUTE FUNCTION trading_test_fail_job_write();
+            SQL);
+
+        try {
+            $this->acceptAShortTradeSignal();
+            $this->fail('The job write was expected to fail.');
+        } catch (QueryException $exception) {
+            $this->assertStringContainsString('job write failed for the test with 1 trade signals written', $exception->getMessage());
+        } finally {
+            DB::unprepared('DROP TRIGGER trading_test_fail_job_write ON jobs; DROP FUNCTION trading_test_fail_job_write();');
+        }
+
+        $this->assertSame(0, DB::transactionLevel());
+        $this->assertDatabaseEmpty('trading_trade_signals');
+        $this->assertDatabaseEmpty('trading_inbox_entries');
+    }
+
     private function acceptAShortTradeSignal(): string
     {
         $id = TradeSignalMessageBuilder::idFor('sale');
@@ -122,7 +232,7 @@ final class EvaluateTradeSignalTest extends TestCase
     {
         $entries = DB::table('trading_outbox_messages')->whereRaw("payload->>'signalId' = ?", [$id])->get();
         $this->assertCount(1, $entries, 'Expected exactly one signal outcome in the outbox.');
-        $payload = json_decode((string) $entries[0]->payload, true, 512, JSON_THROW_ON_ERROR);
+        $payload = json_decode((string) $entries->firstOrFail()->payload, true, 512, JSON_THROW_ON_ERROR);
         $this->assertSame('SignalDeclined', $payload['outcome']);
         $this->assertSame('UnsupportedDirection', $payload['reason']);
     }
