@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Trading\TradeSignal;
 
 use DateTimeImmutable;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Tests\Unit\Trading\TradeSignal\Support\TradeSignalBuilder;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\AnalyticsApplicationId;
@@ -113,6 +114,34 @@ final class TradeSignalTest extends TestCase
         $tradeSignal->evaluateValidityAndDirection(new SignalOutcomeId(TradeSignalBuilder::OUTCOME_ID), new DateTimeImmutable(self::EVALUATED_AT));
 
         $this->assertDeclinedWith(DeclineReason::UnsupportedDirection, $tradeSignal);
+    }
+
+    /**
+     * @return iterable<string, array{TradeSignal}>
+     */
+    public static function decidedTradeSignals(): iterable
+    {
+        $declined = TradeSignalBuilder::received(Direction::Short);
+        $declined->evaluateValidityAndDirection(new SignalOutcomeId(TradeSignalBuilder::OUTCOME_ID), new DateTimeImmutable(self::EVALUATED_AT));
+
+        yield 'declined' => [$declined];
+        yield 'rejected' => [TradeSignalBuilder::rejected()];
+    }
+
+    #[DataProvider('decidedTradeSignals')]
+    public function test_a_trade_signal_with_a_signal_outcome_cannot_be_evaluated_again(TradeSignal $decided): void
+    {
+        $outcome = $decided->outcome();
+        $decided->releaseEvents();
+
+        try {
+            $decided->evaluateValidityAndDirection(new SignalOutcomeId('019a5a6e-0000-7000-8000-0000000000b2'), new DateTimeImmutable(self::EVALUATED_AT));
+            $this->fail('Evaluating a trade signal with a signal outcome was expected to be refused.');
+        } catch (InvalidTradeSignalStateException $exception) {
+            $this->assertSame('Only a trade signal that awaits evaluation can be evaluated.', $exception->getMessage());
+        }
+        $this->assertSame($outcome, $decided->outcome());
+        $this->assertSame([], $decided->releaseEvents());
     }
 
     private function assertDeclinedWith(DeclineReason $reason, TradeSignal $tradeSignal): void
