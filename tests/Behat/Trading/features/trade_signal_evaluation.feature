@@ -24,3 +24,9 @@ Feature: Trade signal evaluation: expiry and direction
     When "demo-analytics" delivers the trade signal "sale" with "validUntil" set to "2026-11-09T09:30:00Z" and "direction" set to "short"
     And Trade Maneuver evaluates the trade signal "sale"
     Then the trade signal "sale" ends with one SignalDeclined outcome with the reason "SignalExpired"
+
+  Scenario: A long trade signal inside its validity has no signal outcome after these checks
+    Given the time is "2026-11-09T10:00:00Z"
+    When "demo-analytics" delivers the trade signal "purchase" with "validUntil" set to "2026-11-09T10:00:00.000001Z"
+    And Trade Maneuver evaluates the trade signal "purchase"
+    Then the trade signal "purchase" has no signal outcome and awaits the instrument checks

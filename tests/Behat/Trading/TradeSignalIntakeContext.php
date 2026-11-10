@@ -195,6 +195,15 @@ final class TradeSignalIntakeContext implements Context
         Assert::assertSame(TradeSignalIntakeResult::Accepted, $this->lastResult);
     }
 
+    #[Then('the trade signal :alias has no signal outcome and awaits the instrument checks')]
+    public function theTradeSignalHasNoSignalOutcomeAfterTheChecks(string $alias): void
+    {
+        Assert::assertSame(0, DB::table('jobs')->count(), 'The evaluation of the trade signal was expected to have run.');
+        $tradeSignal = DB::table('trading_trade_signals')->where('id', TradeSignalMessageBuilder::idFor($alias))->sole();
+        Assert::assertNull($tradeSignal->outcome);
+        Assert::assertSame([], $this->outcomesOf($alias));
+    }
+
     #[Then('no signal outcome is recorded')]
     public function noSignalOutcomeIsRecorded(): void
     {
