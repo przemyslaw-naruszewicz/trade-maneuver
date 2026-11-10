@@ -15,6 +15,7 @@ use TradeManeuver\Trading\Domain\TradeSignal\Event\TradeSignalDeclined;
 use TradeManeuver\Trading\Domain\TradeSignal\Event\TradeSignalReceived;
 use TradeManeuver\Trading\Domain\TradeSignal\Event\TradeSignalRejected;
 use TradeManeuver\Trading\Domain\TradeSignal\Exception\InvalidTradeSignalStateException;
+use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ContractViolation;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ContractViolations;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Instrument;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\InstrumentListing;
@@ -115,9 +116,11 @@ final class TradeSignal
 
     /**
      * The checks of the instrument as the broker lists it, given as null when the broker does not know it. An unknown
-     * or unavailable instrument ends the trade signal with `SignalDeclined` and the reason `InstrumentUnavailable`, and
-     * one quoted in a currency other than the investment configuration's with the reason `UnsupportedCurrency`. A trade
-     * signal that passes them awaits order creation.
+     * or unavailable instrument ends the trade signal with `SignalDeclined` and the reason `InstrumentUnavailable`. A
+     * reference price in a currency other than the instrument's quote currency then ends it with `SignalRejected`, a
+     * contract violation that only the broker's listing reveals. Last, an instrument quoted in a currency other than
+     * the investment configuration's ends it with `SignalDeclined` and the reason `UnsupportedCurrency`. A trade signal
+     * that passes them awaits order creation.
      *
      * @throws InvalidTradeSignalStateException when the trade signal already has a signal outcome
      */
@@ -127,10 +130,15 @@ final class TradeSignal
         SignalOutcomeId $outcomeId,
         DateTimeImmutable $checkedAt,
     ): void {
-        $this->contentAwaitingEvaluation();
+        $content = $this->contentAwaitingEvaluation();
 
         if ($listing === null || ! $listing->isAvailable()) {
             $this->decline(DeclineReason::InstrumentUnavailable, $outcomeId, $checkedAt);
+        } elseif ($content->referencePrice->currencyCode() !== $listing->quoteCurrency()->getCurrencyCode()) {
+            $this->rejectAtEvaluation(ContractViolations::of(new ContractViolation(
+                'referencePrice.currency',
+                sprintf('The reference price currency must be the instrument\'s quote currency %s.', $listing->quoteCurrency()->getCurrencyCode()),
+            )), $outcomeId, $checkedAt);
         } elseif (! $listing->quoteCurrency()->isEqualTo($investmentConfigurationCurrency->currency())) {
             $this->decline(DeclineReason::UnsupportedCurrency, $outcomeId, $checkedAt);
         }
@@ -191,6 +199,12 @@ final class TradeSignal
         }
 
         return $this->content;
+    }
+
+    private function rejectAtEvaluation(ContractViolations $violations, SignalOutcomeId $outcomeId, DateTimeImmutable $rejectedAt): void
+    {
+        $this->outcome = SignalOutcome::rejection($outcomeId, $violations, $rejectedAt);
+        $this->recordedEvents[] = new TradeSignalRejected($this->id, $this->source, $this->outcome, $violations);
     }
 
     private function decline(DeclineReason $reason, SignalOutcomeId $outcomeId, DateTimeImmutable $declinedAt): void
