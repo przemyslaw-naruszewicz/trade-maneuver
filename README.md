@@ -212,7 +212,7 @@ PHPUnit runs the RabbitMQ integration tests against the `trade-maneuver-testing`
 
 The application connects to host `postgres` on port `5432`. An IDE or another client on the host connects to `127.0.0.1:54320`. The default database and user are `trade_maneuver`, and the local password is `local_trade_maneuver_password` (configured in `.env`).
 
-Tests use a separate database, `trade_maneuver_testing`, created when PostgreSQL is initialized and by `bin/setup`. `phpunit.xml` enforces its name and the `pgsql` driver. `EloquentPostgresTest` verifies that a model can be created, read, updated and deleted against a real PostgreSQL database. `RefreshDatabase` runs migrations in the test database and isolates test data with transactions.
+Tests use a separate database, `trade_maneuver_testing`, created when PostgreSQL is initialized and by `bin/setup`. `phpunit.xml` enforces its name and the `pgsql` driver. `EloquentPostgresTest` verifies that a model can be created, read, updated and deleted against a real PostgreSQL database. `RefreshDatabase` runs migrations in the test database and isolates test data with transactions. `AppServiceProvider` refuses `migrate:fresh`, `migrate:refresh`, `migrate:reset`, `migrate:rollback`, and `db:wipe` on any other database, so they cannot clear the development database. To start the development database again from an empty state, recreate its volume with `docker compose down -v`, which also clears RabbitMQ, and run `make setup`.
 
 PostgreSQL data stays in the volume after `make down`. Changing the credentials in `.env` does not update the users of an existing cluster, because the PostgreSQL image only initializes an empty volume.
 
