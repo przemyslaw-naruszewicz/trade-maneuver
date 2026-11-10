@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace TradeManeuver\Trading\Domain\TradeSignal\ValueObject;
 
 use DateTimeImmutable;
+use TradeManeuver\Trading\Domain\TradeSignal\Enum\DeclineReason;
 use TradeManeuver\Trading\Domain\TradeSignal\Enum\SignalOutcomeType;
 
 /**
@@ -17,6 +18,7 @@ final readonly class SignalOutcome
         public SignalOutcomeType $type,
         public DateTimeImmutable $occurredAt,
         public ContractViolations $violations,
+        public ?DeclineReason $reason = null,
     ) {}
 
     public static function rejection(SignalOutcomeId $id, ContractViolations $violations, DateTimeImmutable $occurredAt): self

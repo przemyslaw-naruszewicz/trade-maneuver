@@ -88,6 +88,8 @@ final class TradeSignal
         return new TradeSignalStateDto($this->source, $this->receivedAt, $this->content, $this->outcome);
     }
 
+    public function evaluateValidityAndDirection(SignalOutcomeId $outcomeId, DateTimeImmutable $evaluatedAt): void {}
+
     public function awaitsEvaluation(): bool
     {
         return $this->outcome === null;

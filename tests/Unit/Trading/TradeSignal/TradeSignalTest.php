@@ -9,16 +9,23 @@ use PHPUnit\Framework\TestCase;
 use Tests\Unit\Trading\TradeSignal\Support\TradeSignalBuilder;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\AnalyticsApplicationId;
 use TradeManeuver\Trading\Domain\TradeSignal\Dto\TradeSignalStateDto;
+use TradeManeuver\Trading\Domain\TradeSignal\Enum\DeclineReason;
+use TradeManeuver\Trading\Domain\TradeSignal\Enum\Direction;
+use TradeManeuver\Trading\Domain\TradeSignal\Enum\SignalOutcomeType;
+use TradeManeuver\Trading\Domain\TradeSignal\Event\TradeSignalDeclined;
 use TradeManeuver\Trading\Domain\TradeSignal\Event\TradeSignalRejected;
 use TradeManeuver\Trading\Domain\TradeSignal\Exception\InvalidTradeSignalStateException;
 use TradeManeuver\Trading\Domain\TradeSignal\Exception\InvalidTradeSignalValueException;
 use TradeManeuver\Trading\Domain\TradeSignal\TradeSignal;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ContractViolation;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ContractViolations;
+use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\SignalOutcomeId;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\TradeSignalId;
 
 final class TradeSignalTest extends TestCase
 {
+    private const string EVALUATED_AT = '2026-11-09T10:00:00.500000Z';
+
     public function test_a_rejection_ends_the_trade_signal_with_a_signal_rejected_outcome_listing_the_violations(): void
     {
         $tradeSignal = TradeSignalBuilder::rejected();
@@ -94,5 +101,35 @@ final class TradeSignalTest extends TestCase
             new TradeSignalId(TradeSignalBuilder::ID),
             new TradeSignalStateDto(new AnalyticsApplicationId('demo-analytics'), new DateTimeImmutable(TradeSignalBuilder::RECEIVED_AT), null, null),
         );
+    }
+
+    public function test_a_short_trade_signal_is_declined_with_the_reason_unsupported_direction(): void
+    {
+        $tradeSignal = TradeSignalBuilder::received(Direction::Short);
+        $tradeSignal->releaseEvents();
+
+        $tradeSignal->evaluateValidityAndDirection(new SignalOutcomeId(TradeSignalBuilder::OUTCOME_ID), new DateTimeImmutable(self::EVALUATED_AT));
+
+        $this->assertDeclinedWith(DeclineReason::UnsupportedDirection, $tradeSignal);
+    }
+
+    private function assertDeclinedWith(DeclineReason $reason, TradeSignal $tradeSignal): void
+    {
+        $outcome = $tradeSignal->outcome();
+        $this->assertNotNull($outcome, 'The trade signal was expected to be declined.');
+        $this->assertSame(SignalOutcomeType::SignalDeclined, $outcome->type);
+        $this->assertSame($reason, $outcome->reason);
+        $this->assertSame(TradeSignalBuilder::OUTCOME_ID, $outcome->id->toString());
+        $this->assertSame(self::EVALUATED_AT, $outcome->occurredAt->format('Y-m-d\TH:i:s.u\Z'));
+        $this->assertFalse($tradeSignal->awaitsEvaluation());
+
+        $events = $tradeSignal->releaseEvents();
+        $this->assertCount(1, $events);
+        $event = $events[0];
+        $this->assertInstanceOf(TradeSignalDeclined::class, $event);
+        $this->assertSame(TradeSignalBuilder::ID, $event->id->toString());
+        $this->assertSame('demo-analytics', $event->source->toString());
+        $this->assertSame($outcome, $event->outcome);
+        $this->assertSame([], $tradeSignal->releaseEvents());
     }
 }

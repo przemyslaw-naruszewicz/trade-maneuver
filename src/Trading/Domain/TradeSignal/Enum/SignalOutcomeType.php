@@ -10,4 +10,5 @@ namespace TradeManeuver\Trading\Domain\TradeSignal\Enum;
 enum SignalOutcomeType: string
 {
     case SignalRejected = 'SignalRejected';
+    case SignalDeclined = 'SignalDeclined';
 }
