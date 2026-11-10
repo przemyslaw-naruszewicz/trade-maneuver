@@ -10,10 +10,15 @@ use Tests\Unit\Trading\InvestmentConfiguration\Support\InvestmentConfigurationBu
 use Tests\Unit\Trading\Order\Support\OrderBuilder;
 use Tests\Unit\Trading\TradeSignal\Support\TradeSignalBuilder;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\InvestmentConfigurationId;
+use TradeManeuver\Trading\Domain\Order\Enum\ExecutionProgress;
+use TradeManeuver\Trading\Domain\Order\Enum\OrderDirection;
+use TradeManeuver\Trading\Domain\Order\Enum\OrderStatus;
+use TradeManeuver\Trading\Domain\Order\Event\OrderCreated;
 use TradeManeuver\Trading\Domain\Order\ValueObject\OrderId;
 use TradeManeuver\Trading\Domain\TradeSignal\Enum\DeclineReason;
 use TradeManeuver\Trading\Domain\TradeSignal\Enum\SignalOutcomeType;
 use TradeManeuver\Trading\Domain\TradeSignal\Event\TradeSignalDeclined;
+use TradeManeuver\Trading\Domain\TradeSignal\Exception\InvalidTradeSignalStateException;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\SignalOutcomeId;
 
 final class OrderCreationTest extends TestCase
@@ -45,5 +50,75 @@ final class OrderCreationTest extends TestCase
         $this->assertInstanceOf(TradeSignalDeclined::class, $events[0]);
         $this->assertSame(DeclineReason::OrderAmountTooSmall, $events[0]->reason);
         $this->assertSame($outcome, $events[0]->outcome);
+    }
+
+    public function test_a_trade_signal_that_passed_evaluation_leads_to_a_buy_order_awaiting_approval_with_a_snapshot_of_the_settings(): void
+    {
+        $order = OrderBuilder::awaitingApproval();
+
+        $this->assertSame(OrderBuilder::ID, $order->id()->toString());
+        $state = $order->state();
+        $this->assertSame(TradeSignalBuilder::ID, $state->tradeSignalId->toString());
+        $this->assertSame(InvestmentConfigurationBuilder::ID, $state->investmentConfigurationId->toString());
+        $this->assertSame(OrderStatus::AwaitingApproval, $state->status);
+        $this->assertSame(ExecutionProgress::None, $state->executionProgress);
+        $this->assertSame(OrderDirection::Buy, $state->direction);
+        $this->assertSame('DEMO_A', $state->instrument->symbol());
+        $this->assertSame('DEMO', $state->instrument->mic()->code());
+        $this->assertSame('10.20', $state->limitPrice->amount());
+        $this->assertSame('EUR', $state->limitPrice->currencyCode());
+        $this->assertSame(98, $state->quantity->units());
+        $this->assertEquals(OrderBuilder::settings(), $state->settings);
+        $this->assertSame(OrderBuilder::CREATED_AT, $state->createdAt->format('Y-m-d\TH:i:s.u\Z'));
+
+        $events = $order->releaseEvents();
+        $this->assertCount(1, $events);
+        $event = $events[0];
+        $this->assertInstanceOf(OrderCreated::class, $event);
+        $this->assertSame(OrderBuilder::ID, $event->id->toString());
+        $this->assertSame($state->tradeSignalId, $event->tradeSignalId);
+        $this->assertSame($state->investmentConfigurationId, $event->investmentConfigurationId);
+        $this->assertSame(OrderStatus::AwaitingApproval, $event->status);
+        $this->assertSame(OrderDirection::Buy, $event->direction);
+        $this->assertSame($state->instrument, $event->instrument);
+        $this->assertSame($state->limitPrice, $event->limitPrice);
+        $this->assertSame($state->quantity, $event->quantity);
+        $this->assertSame($state->settings, $event->settings);
+        $this->assertSame($state->createdAt, $event->createdAt);
+        $this->assertSame([], $order->releaseEvents());
+    }
+
+    public function test_creating_the_order_leaves_the_trade_signal_without_a_signal_outcome(): void
+    {
+        $tradeSignal = TradeSignalBuilder::received(referencePrice: '1000.00');
+        $tradeSignal->releaseEvents();
+
+        $order = $tradeSignal->createOrder(
+            new OrderId(OrderBuilder::ID),
+            new InvestmentConfigurationId(InvestmentConfigurationBuilder::ID),
+            OrderBuilder::settings('1000.00', '0'),
+            new SignalOutcomeId(TradeSignalBuilder::OUTCOME_ID),
+            new DateTimeImmutable(OrderBuilder::CREATED_AT),
+        );
+
+        $this->assertNotNull($order);
+        $this->assertSame(1, $order->state()->quantity->units());
+        $this->assertTrue($tradeSignal->awaitsEvaluation());
+        $this->assertSame([], $tradeSignal->releaseEvents());
+    }
+
+    public function test_a_trade_signal_with_a_signal_outcome_leads_to_no_order(): void
+    {
+        $tradeSignal = TradeSignalBuilder::rejected();
+
+        $this->expectException(InvalidTradeSignalStateException::class);
+
+        $tradeSignal->createOrder(
+            new OrderId(OrderBuilder::ID),
+            new InvestmentConfigurationId(InvestmentConfigurationBuilder::ID),
+            OrderBuilder::settings(),
+            new SignalOutcomeId(TradeSignalBuilder::OUTCOME_ID),
+            new DateTimeImmutable(OrderBuilder::CREATED_AT),
+        );
     }
 }

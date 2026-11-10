@@ -150,6 +150,15 @@ final class TradeSignal
         }
     }
 
+    /**
+     * Creates the order that a trade signal which passed evaluation leads to, priced and sized from the investment
+     * configuration's order settings. When the order amount cannot buy one unit at the limit price, there is no order:
+     * the trade signal ends with `SignalDeclined` and the reason `OrderAmountTooSmall`.
+     *
+     * @return Order|null the order awaiting approval, or null when the trade signal is declined
+     *
+     * @throws InvalidTradeSignalStateException when the trade signal already has a signal outcome
+     */
     public function createOrder(
         OrderId $orderId,
         InvestmentConfigurationId $investmentConfigurationId,
@@ -160,8 +169,22 @@ final class TradeSignal
         $content = $this->contentAwaitingEvaluation();
         $limitPrice = LimitPrice::proposedFor($content->referencePrice, $settings->limitPriceTolerance);
         $units = $limitPrice->unitsAffordableWith($settings->orderAmount);
+        if ($units === 0) {
+            $this->decline(DeclineReason::OrderAmountTooSmall, $outcomeId, $createdAt);
 
-        return Order::createAwaitingApproval($orderId, $this->id, $investmentConfigurationId, $content->instrument, $limitPrice, OrderQuantity::of(max(1, $units)), $settings, $createdAt);
+            return null;
+        }
+
+        return Order::createAwaitingApproval(
+            $orderId,
+            $this->id,
+            $investmentConfigurationId,
+            $content->instrument,
+            $limitPrice,
+            OrderQuantity::of($units),
+            $settings,
+            $createdAt,
+        );
     }
 
     /**
