@@ -212,7 +212,7 @@ final class TradeSignalIntakeContext implements Context
         Assert::assertSame(TradeSignalIntakeResult::Accepted, $this->lastResult);
     }
 
-    #[Then('the trade signal :alias has no signal outcome and awaits order creation')]
+    #[Then('the trade signal :alias has no signal outcome after these checks')]
     public function theTradeSignalHasNoSignalOutcomeAfterTheChecks(string $alias): void
     {
         Assert::assertSame(0, DB::table('jobs')->count(), 'The evaluation of the trade signal was expected to have run.');
@@ -229,7 +229,7 @@ final class TradeSignalIntakeContext implements Context
     {
         $orders = OrderAwaitingApprovalReadModel::query()->where('trade_signal_id', TradeSignalMessageBuilder::idFor($alias))->get();
         Assert::assertCount(1, $orders, 'Expected exactly one order awaiting approval for the trade signal.');
-        $order = $orders[0];
+        $order = $orders->firstOrFail();
         Assert::assertSame('awaiting_approval', $order->status);
         Assert::assertSame('none', $order->execution_progress);
         Assert::assertSame($limitPrice, $order->limit_price);

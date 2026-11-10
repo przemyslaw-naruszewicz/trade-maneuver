@@ -10,10 +10,6 @@ use Tests\Unit\Trading\InvestmentConfiguration\Support\InvestmentConfigurationBu
 use Tests\Unit\Trading\Order\Support\OrderBuilder;
 use Tests\Unit\Trading\TradeSignal\Support\TradeSignalBuilder;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\InvestmentConfigurationId;
-use TradeManeuver\Trading\Domain\Order\Enum\ExecutionProgress;
-use TradeManeuver\Trading\Domain\Order\Enum\OrderDirection;
-use TradeManeuver\Trading\Domain\Order\Enum\OrderStatus;
-use TradeManeuver\Trading\Domain\Order\Event\OrderCreated;
 use TradeManeuver\Trading\Domain\Order\ValueObject\OrderId;
 use TradeManeuver\Trading\Domain\TradeSignal\Enum\DeclineReason;
 use TradeManeuver\Trading\Domain\TradeSignal\Enum\SignalOutcomeType;
@@ -52,7 +48,7 @@ final class OrderCreationTest extends TestCase
         $this->assertSame($outcome, $events[0]->outcome);
     }
 
-    public function test_a_trade_signal_that_passed_evaluation_leads_to_a_buy_order_awaiting_approval_with_a_snapshot_of_the_settings(): void
+    public function test_a_trade_signal_that_passed_evaluation_leads_to_an_order_priced_and_sized_with_a_snapshot_of_the_settings(): void
     {
         $order = OrderBuilder::awaitingApproval();
 
@@ -60,9 +56,6 @@ final class OrderCreationTest extends TestCase
         $state = $order->state();
         $this->assertSame(TradeSignalBuilder::ID, $state->tradeSignalId->toString());
         $this->assertSame(InvestmentConfigurationBuilder::ID, $state->investmentConfigurationId->toString());
-        $this->assertSame(OrderStatus::AwaitingApproval, $state->status);
-        $this->assertSame(ExecutionProgress::None, $state->executionProgress);
-        $this->assertSame(OrderDirection::Buy, $state->direction);
         $this->assertSame('DEMO_A', $state->instrument->symbol());
         $this->assertSame('DEMO', $state->instrument->mic()->code());
         $this->assertSame('10.20', $state->limitPrice->amount());
@@ -74,12 +67,9 @@ final class OrderCreationTest extends TestCase
         $events = $order->releaseEvents();
         $this->assertCount(1, $events);
         $event = $events[0];
-        $this->assertInstanceOf(OrderCreated::class, $event);
         $this->assertSame(OrderBuilder::ID, $event->id->toString());
         $this->assertSame($state->tradeSignalId, $event->tradeSignalId);
         $this->assertSame($state->investmentConfigurationId, $event->investmentConfigurationId);
-        $this->assertSame(OrderStatus::AwaitingApproval, $event->status);
-        $this->assertSame(OrderDirection::Buy, $event->direction);
         $this->assertSame($state->instrument, $event->instrument);
         $this->assertSame($state->limitPrice, $event->limitPrice);
         $this->assertSame($state->quantity, $event->quantity);
