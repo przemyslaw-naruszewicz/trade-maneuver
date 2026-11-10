@@ -16,6 +16,18 @@ use TradeManeuver\Trading\Infrastructure\Broker\SimulatedBroker;
  */
 final class SimulatedBrokerTest extends BrokerGatewayContractTestCase
 {
+    public function test_the_shipped_catalogue_holds_only_demo_symbols_on_the_exchange_demo(): void
+    {
+        $catalogue = config('trading.simulated_broker.instruments');
+
+        $this->assertIsArray($catalogue);
+        $this->assertNotEmpty($catalogue);
+        foreach ($catalogue as $entry) {
+            $this->assertStringStartsWith('DEMO_', $entry['symbol']);
+            $this->assertSame('DEMO', $entry['exchange']);
+        }
+    }
+
     public function test_the_shipped_catalogue_lists_demo_g_as_available_and_quoted_in_usd(): void
     {
         $listing = $this->gateway()->lookUpInstrument(new Instrument('DEMO_G', new Mic('DEMO')));
