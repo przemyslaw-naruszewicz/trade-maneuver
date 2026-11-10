@@ -264,6 +264,13 @@ final class TradeSignalIntakeContext implements Context
         Assert::assertSame(TradeSignalMessageBuilder::idFor($alias), $values['tradeSignalId']);
     }
 
+    #[Then('no order is created for the trade signal :alias')]
+    public function noOrderIsCreated(string $alias): void
+    {
+        Assert::assertSame(0, DB::table('trading_orders')->where('trade_signal_id', TradeSignalMessageBuilder::idFor($alias))->count());
+        Assert::assertSame(0, OrderAwaitingApprovalReadModel::query()->count());
+    }
+
     #[Then('no signal outcome is recorded')]
     public function noSignalOutcomeIsRecorded(): void
     {
