@@ -32,10 +32,34 @@ deptrac:
                 must_not:
                     - type: layer
                       value: TradingCompositionRoot
-        - name: TradingUi
+                    - type: layer
+                      value: TradingReadModel
+                    - type: layer
+                      value: TradingQueryAdapter
+        # ADR-0004: read-only Eloquent read models, which only Livewire components and query adapters may use.
+        - name: TradingReadModel
           collectors:
               - type: directory
-                value: '^%projectDirectory%/src/Trading/Ui/'
+                value: '^%projectDirectory%/src/Trading/Infrastructure/[^/]+/ReadModel/'
+        # Query adapters, {Aggregate}Query in Infrastructure/{Aggregate}, which implement {Aggregate}QueryInterface.
+        - name: TradingQueryAdapter
+          collectors:
+              - type: classLike
+                value: '^TradeManeuver\\Trading\\Infrastructure\\[^\\]+\\[^\\]+Query$'
+        - name: TradingUi
+          collectors:
+              - type: bool
+                must:
+                    - type: directory
+                      value: '^%projectDirectory%/src/Trading/Ui/'
+                must_not:
+                    - type: layer
+                      value: TradingLivewire
+        # Livewire components, the one part of Ui that may read through read models.
+        - name: TradingLivewire
+          collectors:
+              - type: directory
+                value: '^%projectDirectory%/src/Trading/Ui/Livewire/'
         # Composition-root registration may reference concrete adapters and Ui classes.
         - name: TradingCompositionRoot
           collectors:
@@ -119,9 +143,27 @@ deptrac:
             - PsrClock
             - PsrLog
             - ThirdParty
+        TradingReadModel:
+            - ThirdParty
+        TradingQueryAdapter:
+            - TradingApplication
+            - TradingDomain
+            - TradingReadModel
+            - MoneyLibrary
+            - PsrClock
+            - PsrLog
+            - ThirdParty
         TradingUi:
             - TradingApplication
             - TradingDomain
+            - MoneyLibrary
+            - PsrClock
+            - PsrLog
+            - ThirdParty
+        TradingLivewire:
+            - TradingApplication
+            - TradingDomain
+            - TradingReadModel
             - MoneyLibrary
             - PsrClock
             - PsrLog
@@ -130,7 +172,9 @@ deptrac:
             - TradingApplication
             - TradingDomain
             - TradingInfrastructure
+            - TradingQueryAdapter
             - TradingUi
+            - TradingLivewire
             - MoneyLibrary
             - PsrClock
             - PsrLog
