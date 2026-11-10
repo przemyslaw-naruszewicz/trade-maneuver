@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace TradeManeuver\Trading\Application\Workflow\TradeSignalEvaluation;
 
 use DateTimeImmutable;
+use LogicException;
 use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use TradeManeuver\Trading\Application\Audit\AuditRecordDto;
@@ -120,6 +121,8 @@ final readonly class TradeSignalEvaluationOrchestrator
                 $this->recordDecline($event);
             } elseif ($event instanceof TradeSignalRejected) {
                 $this->recordRejection($event);
+            } else {
+                throw new LogicException(sprintf('An evaluation step records only signal outcomes, not %s.', $event::class));
             }
         }
 
