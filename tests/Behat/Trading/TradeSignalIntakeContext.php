@@ -10,6 +10,7 @@ use Behat\Hook\BeforeScenario;
 use Behat\Step\Given;
 use Behat\Step\Then;
 use Behat\Step\When;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Artisan;
@@ -58,6 +59,7 @@ final class TradeSignalIntakeContext implements Context
     #[AfterScenario]
     public function shutdownApplication(): void
     {
+        CarbonImmutable::setTestNow();
         $this->application->flush();
         Facade::clearResolvedInstances();
         Application::setInstance(null);
@@ -85,6 +87,15 @@ final class TradeSignalIntakeContext implements Context
         ));
     }
 
+    /**
+     * Fixes the time that the PSR-20 clock binding returns.
+     */
+    #[Given('the time is :time')]
+    public function theTimeIs(string $time): void
+    {
+        CarbonImmutable::setTestNow(CarbonImmutable::parse($time));
+    }
+
     #[When(':analyticsApplication delivers the trade signal :alias')]
     public function deliversTheTradeSignal(string $analyticsApplication, string $alias): void
     {
@@ -107,6 +118,30 @@ final class TradeSignalIntakeContext implements Context
     public function redeliversTheTradeSignal(string $analyticsApplication, string $alias): void
     {
         $this->deliver($analyticsApplication, $alias, $this->bodies[$alias]);
+    }
+
+    /**
+     * Runs one job of the PostgreSQL job queue. Each scenario delivers one trade signal, so that job is its evaluation;
+     * the publication of a signal outcome it records stays queued, so scenarios need no RabbitMQ.
+     */
+    #[When('Trade Maneuver evaluates the trade signal :alias')]
+    public function tradeManeuverEvaluatesTheTradeSignal(string $alias): void
+    {
+        Artisan::call('queue:work', ['connection' => 'database', '--once' => true, '--sleep' => 0]);
+        Assert::assertSame(0, DB::table('failed_jobs')->count(), 'The evaluation of the trade signal "'.$alias.'" was expected not to fail.');
+    }
+
+    #[Then('the trade signal :alias ends with one SignalDeclined outcome with the reason :reason')]
+    public function theTradeSignalEndsWithOneSignalDeclinedOutcome(string $alias, string $reason): void
+    {
+        $outcomes = $this->outcomesOf($alias);
+        Assert::assertCount(1, $outcomes, 'Expected exactly one signal outcome in the outbox.');
+        $payload = $outcomes[0]['payload'];
+        Assert::assertSame('tm.signal-outcome.v1', $payload['type']);
+        Assert::assertSame('trade-maneuver', $payload['source']);
+        Assert::assertSame('SignalDeclined', $payload['outcome']);
+        Assert::assertSame($reason, $payload['reason']);
+        Assert::assertArrayNotHasKey('violations', $payload);
     }
 
     #[Then('the trade signal :alias ends with one SignalRejected outcome listing a violation of :field')]
