@@ -114,6 +114,12 @@ final class TradeSignalIntakeContext implements Context
         $this->deliver($analyticsApplication, $alias, $this->messageFor($alias, $analyticsApplication)->with($field, $value)->body());
     }
 
+    #[When(':analyticsApplication delivers the trade signal :alias with :field set to :value and :otherField set to :otherValue')]
+    public function deliversTheTradeSignalWithTwoFields(string $analyticsApplication, string $alias, string $field, string $value, string $otherField, string $otherValue): void
+    {
+        $this->deliver($analyticsApplication, $alias, $this->messageFor($alias, $analyticsApplication)->with($field, $value)->with($otherField, $otherValue)->body());
+    }
+
     #[When(':analyticsApplication redelivers the trade signal :alias')]
     public function redeliversTheTradeSignal(string $analyticsApplication, string $alias): void
     {
