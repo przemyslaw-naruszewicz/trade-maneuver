@@ -140,9 +140,14 @@ The producer maps its own data to the following fields.
 Contract rules:
 
 - The simulation uses fictional symbols starting with `DEMO_` and the fictional exchange code
-  `DEMO`. This code has the MIC format and does not identify a real exchange. Intake checks only
-  the format; evaluation declines an instrument unknown to the simulated broker with
-  `InstrumentUnavailable`. It does not depend on a live MIC registry lookup.
+  `DEMO`. `DEMO` has the MIC format but is a fictional code, not a registered MIC, and does not
+  identify a real exchange. Intake checks only the format; evaluation declines an instrument that is
+  unknown to the simulated broker or unavailable there with `InstrumentUnavailable`. It does not
+  depend on a live MIC registry lookup.
+- Evaluation looks up the instrument at the simulated broker after the expiry and direction checks.
+  A reference price in a currency other than the instrument's quote currency then ends with
+  `SignalRejected` and a violation on `referencePrice.currency`, and an instrument quoted in a
+  currency other than the investment configuration's with `SignalDeclined` and `UnsupportedCurrency`.
 - Publish only signals that the producer's own rules clear for integration.
 - Represent decimal values as strings, without conversion through `float`. Amounts, prices, and
   financial calculations need exact decimal arithmetic with explicit precision and rounding rules,
