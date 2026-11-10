@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace TradeManeuver\Trading\Infrastructure\Order;
 
 use DateTimeImmutable;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Str;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\BrokerageAccount;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\InvestmentConfigurationCurrency;
@@ -16,6 +17,7 @@ use TradeManeuver\Trading\Domain\Order\Dto\OrderStateDto;
 use TradeManeuver\Trading\Domain\Order\Enum\ExecutionProgress;
 use TradeManeuver\Trading\Domain\Order\Enum\OrderDirection;
 use TradeManeuver\Trading\Domain\Order\Enum\OrderStatus;
+use TradeManeuver\Trading\Domain\Order\Exception\TradeSignalAlreadyHasAnOrderException;
 use TradeManeuver\Trading\Domain\Order\Order;
 use TradeManeuver\Trading\Domain\Order\Repository\Exception\OrderDoesNotExistException;
 use TradeManeuver\Trading\Domain\Order\Repository\OrderRepositoryInterface;
@@ -27,9 +29,14 @@ use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Mic;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\TradeSignalId;
 use TradeManeuver\Trading\Infrastructure\Order\Eloquent\OrderModel;
 
+/**
+ * The unique index on the trade signal refuses a second order for it, also when two connections insert at once.
+ */
 final class OrderRepository implements OrderRepositoryInterface
 {
     private const string TIME_FORMAT = 'Y-m-d H:i:s.uP';
+
+    private const string ONE_ORDER_PER_TRADE_SIGNAL = 'trading_orders_trade_signal_id_unique';
 
     public function nextIdentity(): OrderId
     {
@@ -57,7 +64,15 @@ final class OrderRepository implements OrderRepositoryInterface
         $model->brokerage_account = $state->settings->brokerageAccount->identifier();
         $model->created_at = $state->createdAt->format(self::TIME_FORMAT);
 
-        $model->save();
+        try {
+            $model->save();
+        } catch (UniqueConstraintViolationException $exception) {
+            if (! str_contains($exception->getMessage(), self::ONE_ORDER_PER_TRADE_SIGNAL)) {
+                throw $exception;
+            }
+
+            throw TradeSignalAlreadyHasAnOrderException::forTradeSignal($state->tradeSignalId);
+        }
     }
 
     public function get(OrderId $id): Order

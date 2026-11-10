@@ -12,7 +12,8 @@ return new class extends Migration
     {
         Schema::create('trading_orders', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->uuid('trade_signal_id');
+            // A trade signal leads to at most one order, also when two workers create it at the same time.
+            $table->uuid('trade_signal_id')->unique();
             $table->uuid('investment_configuration_id');
             $table->text('status');
             $table->text('execution_progress');
