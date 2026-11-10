@@ -35,4 +35,12 @@ final readonly class ContractViolations
     {
         return $this->violations;
     }
+
+    /**
+     * @return non-empty-list<string> each contract violation as "field: message"
+     */
+    public function descriptions(): array
+    {
+        return array_map(static fn (ContractViolation $violation): string => $violation->field.': '.$violation->message, $this->violations);
+    }
 }

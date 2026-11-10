@@ -140,7 +140,7 @@ final readonly class ReceiveTradeSignalCommandHandler
         $this->recordAudit($event->source, $receivedAt, $event->id->toString(), 'rejected', [
             ...$message->metadata(),
             'outcomeId' => $event->outcome->id->toString(),
-            'violations' => self::describe($event->violations),
+            'violations' => $event->violations->descriptions(),
         ]);
         $this->integrationEventPublisher->publish(SignalOutcomeIntegrationEvent::of($event->id, $event->outcome, $event->source));
     }
@@ -192,18 +192,5 @@ final readonly class ReceiveTradeSignalCommandHandler
             $action,
             $values,
         ));
-    }
-
-    /**
-     * @return list<string>
-     */
-    private static function describe(ContractViolations $contractViolations): array
-    {
-        $violations = [];
-        foreach ($contractViolations->all() as $violation) {
-            $violations[] = $violation->field.': '.$violation->message;
-        }
-
-        return $violations;
     }
 }

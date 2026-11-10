@@ -9,6 +9,8 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use TradeManeuver\Trading\Domain\TradeSignal\Exception\InvalidTradeSignalValueException;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Confidence;
+use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ContractViolation;
+use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ContractViolations;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ExpectedMove;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Horizon;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Instrument;
@@ -287,5 +289,18 @@ final class TradeSignalValueObjectsTest extends TestCase
             $this->assertSame($message, $exception->getMessage());
             $this->assertSame($part, $exception->part);
         }
+    }
+
+    public function test_contract_violations_are_described_as_field_and_message_in_their_order(): void
+    {
+        $violations = ContractViolations::of(
+            new ContractViolation('confidence', 'The confidence must be from 0 to 1.'),
+            new ContractViolation('source', 'The analytics application is not authorized for the investment configuration.'),
+        );
+
+        $this->assertSame([
+            'confidence: The confidence must be from 0 to 1.',
+            'source: The analytics application is not authorized for the investment configuration.',
+        ], $violations->descriptions());
     }
 }

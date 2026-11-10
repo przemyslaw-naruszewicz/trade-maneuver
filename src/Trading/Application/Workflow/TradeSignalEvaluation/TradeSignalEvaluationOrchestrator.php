@@ -144,10 +144,7 @@ final readonly class TradeSignalEvaluationOrchestrator
     private function recordRejection(TradeSignalRejected $event): void
     {
         $outcomeId = $event->outcome->id->toString();
-        $violations = [];
-        foreach ($event->violations->all() as $violation) {
-            $violations[] = $violation->field.': '.$violation->message;
-        }
+        $violations = $event->violations->descriptions();
         $this->recordAudit($event->outcome->occurredAt, $event->id, 'rejected', ['outcomeId' => $outcomeId, 'violations' => $violations]);
         $this->integrationEventPublisher->publish(SignalOutcomeIntegrationEvent::of($event->id, $event->outcome, $event->source));
         $this->logger->info('A trade signal is rejected.', ['signalId' => $event->id->toString(), 'outcomeId' => $outcomeId, 'violations' => $violations]);
