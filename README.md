@@ -54,7 +54,7 @@ If you need different ports, copy `.env.example` to `.env` before starting and c
 | `postgres` | PostgreSQL, persistent `postgres_data` volume | `127.0.0.1:54320` |
 | `rabbitmq` | RabbitMQ for trade signals and signal outcomes, persistent `rabbitmq_data` volume | internal |
 | `trade-signal-consumer` | `trading:consume-trade-signals`, which consumes trade signals from RabbitMQ | internal |
-| `queue` | Separate `queue:work` worker, which also publishes signal outcomes from the outbox to RabbitMQ | internal |
+| `queue` | Separate `queue:work` worker, which also evaluates accepted trade signals and publishes signal outcomes from the outbox to RabbitMQ | internal |
 | `scheduler` | Separate `schedule:work` process | internal |
 | `node` | Node.js, Vite with hot reload | `127.0.0.1:5173` |
 
@@ -120,7 +120,7 @@ RabbitMQ carries trade signals from analytics applications to Trade Maneuver and
 
 Connecting another analytics application takes only configuration; [the integration overview](docs/integration.md#connecting-an-analytics-application) lists the steps.
 
-The trade signal consumer acknowledges a delivery only after the intake transaction commits. It rejects a message that cannot be processed without requeue, so RabbitMQ moves it to the dead letter queue. When the database fails, it requeues the delivery and stops, and Compose restarts it. On SIGTERM it finishes the current delivery and stops; RabbitMQ requeues the deliveries it had prefetched. The intake use case queues a publication job for each signal outcome in its own transaction, on Laravel's PostgreSQL job queue, and the `queue` service runs it. The job publishes the outbox entry as a persistent message whose message id is the outcome message `id`, and marks it sent only after RabbitMQ confirms it. When RabbitMQ cannot route or does not confirm a signal outcome, the entry stays unsent, the failure is logged as an error, and the job is retried up to 10 times with a delay that doubles after each failed attempt, from 1 second to 256 seconds. When RabbitMQ drops the connection, for example after a restart, the attempt fails and the next one opens a new connection; if the queue worker stops, Compose restarts it. After the last attempt the job stays in `failed_jobs`; `docker compose exec app php artisan queue:retry all` queues it again.
+The trade signal consumer acknowledges a delivery only after the intake transaction commits. It rejects a message that cannot be processed without requeue, so RabbitMQ moves it to the dead letter queue. When the database fails, it requeues the delivery and stops, and Compose restarts it. On SIGTERM it finishes the current delivery and stops; RabbitMQ requeues the deliveries it had prefetched. For each accepted trade signal the intake transaction also queues an evaluation job on Laravel's PostgreSQL job queue. The `queue` service runs it: it declines an expired or short trade signal and records the signal outcome in the outbox in the same transaction. A job that a stopped or crashed worker had reserved runs again after `DB_QUEUE_RETRY_AFTER`, and a trade signal that already has a signal outcome is not evaluated again. The intake use case queues a publication job for each signal outcome in its own transaction, on Laravel's PostgreSQL job queue, and the `queue` service runs it. The job publishes the outbox entry as a persistent message whose message id is the outcome message `id`, and marks it sent only after RabbitMQ confirms it. When RabbitMQ cannot route or does not confirm a signal outcome, the entry stays unsent, the failure is logged as an error, and the job is retried up to 10 times with a delay that doubles after each failed attempt, from 1 second to 256 seconds. When RabbitMQ drops the connection, for example after a restart, the attempt fails and the next one opens a new connection; if the queue worker stops, Compose restarts it. After the last attempt the job stays in `failed_jobs`; `docker compose exec app php artisan queue:retry all` queues it again.
 
 To publish a trade signal and read its signal outcome, use the [demo analytics application](#demo-analytics-application).
 
@@ -148,10 +148,23 @@ The demo analytics application is a simulated stand-in for an analytics applicat
 
    The command prints each signal outcome from `tm.signal-outcomes.demo-analytics` with the trade signal `id`, the outcome, and its details, and then acknowledges it. It says so when the queue is empty.
 
-Until the simulated broker exists, a valid trade signal is accepted at intake and has no signal outcome yet. To see a signal outcome now, address an investment configuration that does not exist; the outcome is `SignalRejected`:
+Until the simulated broker exists, a valid `long` trade signal inside its validity is accepted and evaluated, and has no signal outcome yet. These trade signals already end with a signal outcome:
 
 ```sh
+# SignalRejected: the investment configuration does not exist.
 docker compose exec app php artisan demo-analytics:publish-trade-signal --investment-configuration-ref=demo-unknown-investment
+# SignalDeclined with the reason UnsupportedDirection: Trade Maneuver only buys.
+docker compose exec app php artisan demo-analytics:publish-trade-signal --direction=short
+docker compose exec app php artisan demo-analytics:read-signal-outcomes
+```
+
+The command refuses a validity that ends before the trade signal is published. To see `SignalDeclined` with the reason `SignalExpired`, stop the queue worker, publish a trade signal whose validity ends a few seconds later, and start the worker after that time:
+
+```sh
+docker compose stop queue
+docker compose exec app php artisan demo-analytics:publish-trade-signal --valid-until="$(docker compose exec -T app php -r "echo gmdate('Y-m-d\TH:i:s\Z', time() + 5);")"
+sleep 10
+docker compose start queue
 docker compose exec app php artisan demo-analytics:read-signal-outcomes
 ```
 
@@ -165,7 +178,7 @@ The pipeline runs Composer validation and `composer audit --locked`, PHP CS Fixe
 
 GitHub Actions runs `make ci` for pull requests, pushes to `main`, and manual dispatch. Pull requests run all checks with Infection on changed lines; pushes to `main` and manual runs include the full Infection run. Docker build layers and Composer downloads are cached between runs. Local `make ci` includes the full Infection run by default. Use `CI_WITH_MUTATION=diff make ci` for the pull-request checks, after `git fetch` so that `origin/main` is current, and `CI_WITH_MUTATION=0 make ci` to skip Infection. `CI_SKIP_BUILD=1` reuses an already built PHP image, as the workflow does after its cached build step. Composer downloads are kept in `storage/framework/cache/composer`.
 
-PHPUnit runs the RabbitMQ integration tests against the `trade-maneuver-testing` vhost. PHPUnit and Infection reports are written to `storage/quality/` and uploaded as workflow artifacts for seven days. Behat runs two suites: `application` checks service health, and `trading` covers trade signal intake through the application commands against the test database. Deptrac enforces the layer rules in `deptrac.yaml` for the Trading context and the application code under the root namespace; [the architecture](docs/architecture.md#laravel-integration) describes them. Run it separately with `docker compose exec app composer analyse:architecture`.
+PHPUnit runs the RabbitMQ integration tests against the `trade-maneuver-testing` vhost. PHPUnit and Infection reports are written to `storage/quality/` and uploaded as workflow artifacts for seven days. Behat runs two suites: `application` checks service health, and `trading` covers trade signal intake and evaluation through the application commands and the database job queue against the test database. Deptrac enforces the layer rules in `deptrac.yaml` for the Trading context and the application code under the root namespace; [the architecture](docs/architecture.md#laravel-integration) describes them. Run it separately with `docker compose exec app composer analyse:architecture`.
 
 ## PostgreSQL
 
