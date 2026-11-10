@@ -37,6 +37,11 @@ final class SimulatedBrokerTest extends BrokerGatewayContractTestCase
         $this->assertSame('USD', $listing->quoteCurrency()->getCurrencyCode());
     }
 
+    public function test_outside_the_test_bindings_the_container_resolves_the_broker_gateway_to_the_simulated_broker(): void
+    {
+        $this->assertInstanceOf(SimulatedBroker::class, $this->app->make(BrokerGatewayInterface::class));
+    }
+
     /**
      * @return iterable<string, array{array<mixed>, string}>
      */
