@@ -9,5 +9,6 @@ namespace TradeManeuver\Trading\Domain\TradeSignal\Enum;
  */
 enum DeclineReason: string
 {
+    case SignalExpired = 'SignalExpired';
     case UnsupportedDirection = 'UnsupportedDirection';
 }

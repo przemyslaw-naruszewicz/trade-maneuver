@@ -117,6 +117,39 @@ final class TradeSignalTest extends TestCase
     }
 
     /**
+     * @return iterable<string, array{Direction, string}>
+     */
+    public static function expiredTradeSignals(): iterable
+    {
+        yield 'long, now after validUntil' => [Direction::Long, '2026-11-09T10:00:00.499999Z'];
+        yield 'long, now equal to validUntil' => [Direction::Long, self::EVALUATED_AT];
+        yield 'short, checked for expiry first' => [Direction::Short, self::EVALUATED_AT];
+    }
+
+    #[DataProvider('expiredTradeSignals')]
+    public function test_a_trade_signal_whose_validity_has_ended_is_declined_with_the_reason_signal_expired(Direction $direction, string $validUntil): void
+    {
+        $tradeSignal = TradeSignalBuilder::received($direction, $validUntil);
+        $tradeSignal->releaseEvents();
+
+        $tradeSignal->evaluateValidityAndDirection(new SignalOutcomeId(TradeSignalBuilder::OUTCOME_ID), new DateTimeImmutable(self::EVALUATED_AT));
+
+        $this->assertDeclinedWith(DeclineReason::SignalExpired, $tradeSignal);
+    }
+
+    public function test_a_long_trade_signal_before_its_validity_ends_passes_and_awaits_the_next_checks(): void
+    {
+        $tradeSignal = TradeSignalBuilder::received(Direction::Long, '2026-11-09T10:00:00.500001Z');
+        $tradeSignal->releaseEvents();
+
+        $tradeSignal->evaluateValidityAndDirection(new SignalOutcomeId(TradeSignalBuilder::OUTCOME_ID), new DateTimeImmutable(self::EVALUATED_AT));
+
+        $this->assertNull($tradeSignal->outcome());
+        $this->assertTrue($tradeSignal->awaitsEvaluation());
+        $this->assertSame([], $tradeSignal->releaseEvents());
+    }
+
+    /**
      * @return iterable<string, array{TradeSignal}>
      */
     public static function decidedTradeSignals(): iterable
@@ -161,6 +194,7 @@ final class TradeSignalTest extends TestCase
         $this->assertSame(TradeSignalBuilder::ID, $event->id->toString());
         $this->assertSame('demo-analytics', $event->source->toString());
         $this->assertSame($outcome, $event->outcome);
+        $this->assertSame($reason, $event->reason);
         $this->assertNull($outcome->violations);
         $this->assertSame([], $tradeSignal->releaseEvents());
     }
