@@ -10,6 +10,7 @@ use Brick\Money\Currency;
 use Brick\Money\Money;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\LimitPriceTolerance;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\OrderAmount;
+use TradeManeuver\Trading\Domain\Order\Exception\InvalidOrderValueException;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ReferencePrice;
 
 /**
@@ -30,14 +31,31 @@ final readonly class LimitPrice
         return new self(Money::of($unrounded, Currency::of($referencePrice->currencyCode()), roundingMode: RoundingMode::Down));
     }
 
+    /**
+     * Rebuilds a stored limit price, which already has the currency's scale.
+     */
     public static function of(string $amount, string $currencyCode): self
     {
         return new self(Money::of($amount, $currencyCode));
     }
 
+    /**
+     * The largest whole number of units whose cost at this limit price does not exceed the order amount: the exact
+     * quotient rounded down (ADR-0005). Zero means that the order amount cannot buy one unit.
+     *
+     * @throws InvalidOrderValueException when the order amount is in another currency
+     */
     public function unitsAffordableWith(OrderAmount $orderAmount): int
     {
-        return 1;
+        if (! $orderAmount->currency()->isEqualTo($this->money->getCurrency())) {
+            throw new InvalidOrderValueException(sprintf(
+                'The order amount must be in the limit price currency %s, not %s.',
+                $this->currencyCode(),
+                $orderAmount->currency()->getCurrencyCode(),
+            ));
+        }
+
+        return BigDecimal::of($orderAmount->amount())->quotient($this->money->getAmount())->toInt();
     }
 
     /**
