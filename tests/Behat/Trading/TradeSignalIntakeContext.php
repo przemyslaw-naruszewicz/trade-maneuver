@@ -264,6 +264,15 @@ final class TradeSignalIntakeContext implements Context
         Assert::assertSame(TradeSignalMessageBuilder::idFor($alias), $values['tradeSignalId']);
     }
 
+    #[Then('the orders awaiting approval, soonest validUntil first, are those of the trade signals :first and :second')]
+    public function theOrdersAwaitingApprovalAreSortedByValidUntil(string $first, string $second): void
+    {
+        Assert::assertSame(
+            [TradeSignalMessageBuilder::idFor($first), TradeSignalMessageBuilder::idFor($second)],
+            OrderAwaitingApprovalReadModel::soonestValidUntilFirst()->pluck('trade_signal_id')->all(),
+        );
+    }
+
     #[Then('no order is created for the trade signal :alias')]
     public function noOrderIsCreated(string $alias): void
     {

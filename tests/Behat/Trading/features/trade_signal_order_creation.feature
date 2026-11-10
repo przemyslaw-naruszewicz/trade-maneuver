@@ -22,3 +22,13 @@ Feature: Order creation awaiting approval
     And Trade Maneuver evaluates the trade signal "purchase"
     Then the trade signal "purchase" ends with one SignalDeclined outcome with the reason "OrderAmountTooSmall"
     And no order is created for the trade signal "purchase"
+
+  Scenario: A second trade signal for the same instrument creates a second order
+    Given the investment configuration "demo-investment" with the order amount "1000.00" EUR and the limit price tolerance "2.00" % authorizes the analytics application "demo-analytics"
+    When "demo-analytics" delivers the trade signal "purchase" with "referencePrice.amount" set to "10.00"
+    And Trade Maneuver evaluates the trade signal "purchase"
+    And "demo-analytics" delivers the trade signal "repurchase" with "referencePrice.amount" set to "12.50" and "validUntil" set to "2026-11-10T12:00:00Z"
+    And Trade Maneuver evaluates the trade signal "repurchase"
+    Then the trade signal "purchase" leads to one order awaiting approval with the limit price "10.20" EUR and the quantity 98
+    And the trade signal "repurchase" leads to one order awaiting approval with the limit price "12.75" EUR and the quantity 78
+    And the orders awaiting approval, soonest validUntil first, are those of the trade signals "repurchase" and "purchase"
