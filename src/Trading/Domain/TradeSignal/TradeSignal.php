@@ -115,8 +115,9 @@ final class TradeSignal
 
     /**
      * The checks of the instrument as the broker lists it, given as null when the broker does not know it. An unknown
-     * or unavailable instrument ends the trade signal with `SignalDeclined` and the reason `InstrumentUnavailable`. A
-     * trade signal that passes them awaits order creation.
+     * or unavailable instrument ends the trade signal with `SignalDeclined` and the reason `InstrumentUnavailable`, and
+     * one quoted in a currency other than the investment configuration's with the reason `UnsupportedCurrency`. A trade
+     * signal that passes them awaits order creation.
      *
      * @throws InvalidTradeSignalStateException when the trade signal already has a signal outcome
      */
@@ -130,6 +131,8 @@ final class TradeSignal
 
         if ($listing === null || ! $listing->isAvailable()) {
             $this->decline(DeclineReason::InstrumentUnavailable, $outcomeId, $checkedAt);
+        } elseif (! $listing->quoteCurrency()->isEqualTo($investmentConfigurationCurrency->currency())) {
+            $this->decline(DeclineReason::UnsupportedCurrency, $outcomeId, $checkedAt);
         }
     }
 

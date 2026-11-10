@@ -12,4 +12,5 @@ enum DeclineReason: string
     case SignalExpired = 'SignalExpired';
     case UnsupportedDirection = 'UnsupportedDirection';
     case InstrumentUnavailable = 'InstrumentUnavailable';
+    case UnsupportedCurrency = 'UnsupportedCurrency';
 }
