@@ -9,6 +9,7 @@ use Brick\Math\RoundingMode;
 use Brick\Money\Currency;
 use Brick\Money\Money;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\LimitPriceTolerance;
+use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\OrderAmount;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ReferencePrice;
 
 /**
@@ -27,6 +28,16 @@ final readonly class LimitPrice
         $unrounded = $tolerance->addedTo(BigDecimal::of($referencePrice->amount()));
 
         return new self(Money::of($unrounded, Currency::of($referencePrice->currencyCode()), roundingMode: RoundingMode::Down));
+    }
+
+    public static function of(string $amount, string $currencyCode): self
+    {
+        return new self(Money::of($amount, $currencyCode));
+    }
+
+    public function unitsAffordableWith(OrderAmount $orderAmount): int
+    {
+        return 1;
     }
 
     /**
