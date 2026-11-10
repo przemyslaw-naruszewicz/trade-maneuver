@@ -24,3 +24,9 @@ Feature: Trade signal evaluation: instrument checks
     When "demo-analytics" delivers the trade signal "purchase" with "instrument.symbol" set to "DEMO_G" and "referencePrice.currency" set to "USD"
     And Trade Maneuver evaluates the trade signal "purchase"
     Then the trade signal "purchase" ends with one SignalDeclined outcome with the reason "UnsupportedCurrency"
+
+  Scenario: A reference price in another currency than the instrument's quote currency ends with SignalRejected
+    Given the broker lists the instrument "DEMO_A" as available, quoted in "EUR"
+    When "demo-analytics" delivers the trade signal "purchase" with "referencePrice.currency" set to "USD"
+    And Trade Maneuver evaluates the trade signal "purchase"
+    Then the trade signal "purchase" ends with one SignalRejected outcome listing a violation of "referencePrice.currency"
