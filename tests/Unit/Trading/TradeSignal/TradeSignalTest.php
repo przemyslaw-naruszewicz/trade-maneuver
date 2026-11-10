@@ -39,6 +39,8 @@ final class TradeSignalTest extends TestCase
         $this->assertSame('demo-analytics', $event->source->toString());
         $this->assertSame(TradeSignalBuilder::OUTCOME_ID, $event->outcome->id->toString());
         $this->assertEquals(TradeSignalBuilder::violations(), $event->outcome->violations);
+        $this->assertEquals(TradeSignalBuilder::violations(), $event->violations);
+        $this->assertNull($event->outcome->reason);
         $this->assertSame(TradeSignalBuilder::RECEIVED_AT, $event->outcome->occurredAt->format('Y-m-d\TH:i:s.u\Z'));
         $this->assertSame($event->outcome, $tradeSignal->outcome());
         $this->assertFalse($tradeSignal->awaitsEvaluation());
@@ -130,6 +132,7 @@ final class TradeSignalTest extends TestCase
         $this->assertSame(TradeSignalBuilder::ID, $event->id->toString());
         $this->assertSame('demo-analytics', $event->source->toString());
         $this->assertSame($outcome, $event->outcome);
+        $this->assertNull($outcome->violations);
         $this->assertSame([], $tradeSignal->releaseEvents());
     }
 }

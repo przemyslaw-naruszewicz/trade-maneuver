@@ -9,6 +9,7 @@ use Illuminate\Support\Str;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\AnalyticsApplicationId;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\InvestmentConfigurationRef;
 use TradeManeuver\Trading\Domain\TradeSignal\Dto\TradeSignalStateDto;
+use TradeManeuver\Trading\Domain\TradeSignal\Enum\DeclineReason;
 use TradeManeuver\Trading\Domain\TradeSignal\Enum\Direction;
 use TradeManeuver\Trading\Domain\TradeSignal\Enum\SignalOutcomeType;
 use TradeManeuver\Trading\Domain\TradeSignal\Repository\Exception\TradeSignalDoesNotExistException;
@@ -31,6 +32,7 @@ use TradeManeuver\Trading\Infrastructure\TradeSignal\Eloquent\TradeSignalModel;
 
 /**
  * The primary key on the trade signal id refuses a second trade signal with the same id, also under concurrency.
+ * Only the signal outcome of a stored trade signal changes, so saving writes just the outcome.
  */
 final class TradeSignalRepository implements TradeSignalRepositoryInterface
 {
@@ -52,16 +54,34 @@ final class TradeSignalRepository implements TradeSignalRepositoryInterface
         if ($state->content !== null) {
             $this->fillContent($model, $state->content);
         }
-        if ($state->outcome !== null) {
-            $this->fillOutcome($model, $state->outcome);
-        }
+        $this->fillOutcome($model, $state->outcome);
 
         $model->save();
     }
 
     public function get(TradeSignalId $id): TradeSignal
     {
-        $model = TradeSignalModel::query()->find($id->toString());
+        return $this->reconstitute($id, TradeSignalModel::query()->find($id->toString()));
+    }
+
+    public function getLocked(TradeSignalId $id): TradeSignal
+    {
+        return $this->reconstitute($id, TradeSignalModel::query()->lockForUpdate()->find($id->toString()));
+    }
+
+    public function save(TradeSignal $tradeSignal): void
+    {
+        $model = new TradeSignalModel;
+        $this->fillOutcome($model, $tradeSignal->state()->outcome);
+
+        $updated = TradeSignalModel::query()->whereKey($tradeSignal->id()->toString())->update($model->getAttributes());
+        if ($updated !== 1) {
+            throw TradeSignalDoesNotExistException::withId($tradeSignal->id());
+        }
+    }
+
+    private function reconstitute(TradeSignalId $id, ?TradeSignalModel $model): TradeSignal
+    {
         if ($model === null) {
             throw TradeSignalDoesNotExistException::withId($id);
         }
@@ -95,17 +115,26 @@ final class TradeSignalRepository implements TradeSignalRepositoryInterface
         $model->valid_until = $content->validUntil->dateTime()->format(self::TIME_FORMAT);
     }
 
-    private function fillOutcome(TradeSignalModel $model, SignalOutcome $outcome): void
+    private function fillOutcome(TradeSignalModel $model, ?SignalOutcome $outcome): void
+    {
+        $model->outcome_id = $outcome?->id->toString();
+        $model->outcome = $outcome?->type->value;
+        $model->outcome_occurred_at = $outcome?->occurredAt->format(self::TIME_FORMAT);
+        $model->outcome_violations = $outcome?->violations === null ? null : self::violationsOf($outcome->violations);
+        $model->outcome_reason = $outcome?->reason?->value;
+    }
+
+    /**
+     * @return list<array{field: string, message: string}>
+     */
+    private static function violationsOf(ContractViolations $contractViolations): array
     {
         $violations = [];
-        foreach ($outcome->violations->all() as $violation) {
+        foreach ($contractViolations->all() as $violation) {
             $violations[] = ['field' => $violation->field, 'message' => $violation->message];
         }
 
-        $model->outcome_id = $outcome->id->toString();
-        $model->outcome = $outcome->type->value;
-        $model->outcome_occurred_at = $outcome->occurredAt->format(self::TIME_FORMAT);
-        $model->outcome_violations = $violations;
+        return $violations;
     }
 
     private function contentOf(TradeSignalModel $model): ?TradeSignalContent
@@ -137,21 +166,24 @@ final class TradeSignalRepository implements TradeSignalRepositoryInterface
             return null;
         }
 
+        $id = new SignalOutcomeId($model->outcome_id);
+        $occurredAt = new DateTimeImmutable((string) $model->outcome_occurred_at);
+
+        // Only signal rejections and declines are stored so far; from() refuses an outcome this mapping does not know yet.
+        return match (SignalOutcomeType::from((string) $model->outcome)) {
+            SignalOutcomeType::SignalRejected => SignalOutcome::rejection($id, self::contractViolationsOf($model), $occurredAt),
+            SignalOutcomeType::SignalDeclined => SignalOutcome::decline($id, DeclineReason::from((string) $model->outcome_reason), $occurredAt),
+        };
+    }
+
+    private static function contractViolationsOf(TradeSignalModel $model): ContractViolations
+    {
         $violations = [];
         foreach ($model->outcome_violations ?? [] as $violation) {
             $violations[] = new ContractViolation($violation['field'], $violation['message']);
         }
 
-        // Only signal rejections are stored so far; from() refuses an outcome this mapping does not know yet.
-        $type = SignalOutcomeType::from((string) $model->outcome);
-
-        return match ($type) {
-            SignalOutcomeType::SignalRejected => SignalOutcome::rejection(
-                new SignalOutcomeId($model->outcome_id),
-                ContractViolations::of(...$violations),
-                new DateTimeImmutable((string) $model->outcome_occurred_at),
-            ),
-        };
+        return ContractViolations::of(...$violations);
     }
 
     private static function timestampOf(string $value): UtcTimestamp

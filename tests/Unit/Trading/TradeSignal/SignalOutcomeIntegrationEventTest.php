@@ -9,6 +9,7 @@ use PHPUnit\Framework\TestCase;
 use Tests\Unit\Trading\TradeSignal\Support\TradeSignalBuilder;
 use TradeManeuver\Trading\Application\IntegrationEvent\SignalOutcomeIntegrationEvent;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\AnalyticsApplicationId;
+use TradeManeuver\Trading\Domain\TradeSignal\Enum\DeclineReason;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\SignalOutcome;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\SignalOutcomeId;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\TradeSignalId;
@@ -37,6 +38,28 @@ final class SignalOutcomeIntegrationEventTest extends TestCase
                 ['field' => 'instrument.mic', 'message' => 'The exchange code must have the MIC format: four upper-case letters or digits.'],
                 ['field' => 'confidence', 'message' => 'The confidence must be a decimal string from 0 to 1, such as 0.85.'],
             ],
+        ], $event->payload());
+    }
+
+    public function test_a_signal_decline_becomes_the_outcome_message_schema_with_its_reason_and_no_violations(): void
+    {
+        $outcome = SignalOutcome::decline(
+            new SignalOutcomeId(TradeSignalBuilder::OUTCOME_ID),
+            DeclineReason::UnsupportedDirection,
+            new DateTimeImmutable('2026-11-09T11:00:00.5+01:00'),
+        );
+
+        $event = SignalOutcomeIntegrationEvent::of(new TradeSignalId(TradeSignalBuilder::ID), $outcome, new AnalyticsApplicationId('demo-analytics'));
+
+        $this->assertSame('demo-analytics', $event->recipient);
+        $this->assertSame([
+            'id' => TradeSignalBuilder::OUTCOME_ID,
+            'source' => 'trade-maneuver',
+            'type' => 'tm.signal-outcome.v1',
+            'time' => '2026-11-09T10:00:00.500000Z',
+            'signalId' => TradeSignalBuilder::ID,
+            'outcome' => 'SignalDeclined',
+            'reason' => 'UnsupportedDirection',
         ], $event->payload());
     }
 }

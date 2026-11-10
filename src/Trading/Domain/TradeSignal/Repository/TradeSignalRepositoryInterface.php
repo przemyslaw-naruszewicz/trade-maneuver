@@ -19,4 +19,17 @@ interface TradeSignalRepositoryInterface
      * @throws TradeSignalDoesNotExistException
      */
     public function get(TradeSignalId $id): TradeSignal;
+
+    /**
+     * Loads the trade signal and locks it until the caller's transaction ends, so concurrent evaluations of one trade
+     * signal run one after the other.
+     *
+     * @throws TradeSignalDoesNotExistException
+     */
+    public function getLocked(TradeSignalId $id): TradeSignal;
+
+    /**
+     * @throws TradeSignalDoesNotExistException
+     */
+    public function save(TradeSignal $tradeSignal): void;
 }

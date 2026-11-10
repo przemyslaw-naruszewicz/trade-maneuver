@@ -7,6 +7,9 @@ namespace TradeManeuver\Trading\Domain\TradeSignal;
 use DateTimeImmutable;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\AnalyticsApplicationId;
 use TradeManeuver\Trading\Domain\TradeSignal\Dto\TradeSignalStateDto;
+use TradeManeuver\Trading\Domain\TradeSignal\Enum\DeclineReason;
+use TradeManeuver\Trading\Domain\TradeSignal\Enum\Direction;
+use TradeManeuver\Trading\Domain\TradeSignal\Event\TradeSignalDeclined;
 use TradeManeuver\Trading\Domain\TradeSignal\Event\TradeSignalReceived;
 use TradeManeuver\Trading\Domain\TradeSignal\Event\TradeSignalRejected;
 use TradeManeuver\Trading\Domain\TradeSignal\Exception\InvalidTradeSignalStateException;
@@ -18,7 +21,7 @@ use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\TradeSignalId;
 
 final class TradeSignal
 {
-    /** @var list<TradeSignalReceived|TradeSignalRejected> */
+    /** @var list<TradeSignalReceived|TradeSignalRejected|TradeSignalDeclined> */
     private array $recordedEvents = [];
 
     /**
@@ -29,7 +32,7 @@ final class TradeSignal
         private readonly AnalyticsApplicationId $source,
         private readonly DateTimeImmutable $receivedAt,
         private readonly ?TradeSignalContent $content,
-        private readonly ?SignalOutcome $outcome,
+        private ?SignalOutcome $outcome,
     ) {
         if ($content === null && $outcome === null) {
             throw new InvalidTradeSignalStateException('A trade signal without valid content must have a signal outcome.');
@@ -63,7 +66,7 @@ final class TradeSignal
     ): self {
         $outcome = SignalOutcome::rejection($outcomeId, $violations, $rejectedAt);
         $tradeSignal = new self($id, $source, $rejectedAt, null, $outcome);
-        $tradeSignal->recordedEvents[] = new TradeSignalRejected($id, $source, $outcome);
+        $tradeSignal->recordedEvents[] = new TradeSignalRejected($id, $source, $outcome, $violations);
 
         return $tradeSignal;
     }
@@ -88,7 +91,16 @@ final class TradeSignal
         return new TradeSignalStateDto($this->source, $this->receivedAt, $this->content, $this->outcome);
     }
 
-    public function evaluateValidityAndDirection(SignalOutcomeId $outcomeId, DateTimeImmutable $evaluatedAt): void {}
+    /**
+     * The evaluation checks that need no broker. A short trade signal ends with `SignalDeclined` and the reason
+     * `UnsupportedDirection`; any other stays awaiting the next checks.
+     */
+    public function evaluateValidityAndDirection(SignalOutcomeId $outcomeId, DateTimeImmutable $evaluatedAt): void
+    {
+        if ($this->content?->direction === Direction::Short) {
+            $this->decline(DeclineReason::UnsupportedDirection, $outcomeId, $evaluatedAt);
+        }
+    }
 
     public function awaitsEvaluation(): bool
     {
@@ -103,12 +115,18 @@ final class TradeSignal
         return $this->outcome;
     }
 
+    private function decline(DeclineReason $reason, SignalOutcomeId $outcomeId, DateTimeImmutable $declinedAt): void
+    {
+        $this->outcome = SignalOutcome::decline($outcomeId, $reason, $declinedAt);
+        $this->recordedEvents[] = new TradeSignalDeclined($this->id, $this->source, $this->outcome, $reason);
+    }
+
     /**
      * Each transition records one event, so a mutant that keeps just the first event is equivalent.
      *
      * @infection-ignore-all
      *
-     * @return list<TradeSignalReceived|TradeSignalRejected>
+     * @return list<TradeSignalReceived|TradeSignalRejected|TradeSignalDeclined>
      */
     public function releaseEvents(): array
     {

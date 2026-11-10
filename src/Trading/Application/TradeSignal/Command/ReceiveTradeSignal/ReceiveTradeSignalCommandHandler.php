@@ -15,6 +15,7 @@ use TradeManeuver\Trading\Application\Port\AnalyticsApplicationRegistryInterface
 use TradeManeuver\Trading\Application\Port\AuditTrailInterface;
 use TradeManeuver\Trading\Application\Port\InboxInterface;
 use TradeManeuver\Trading\Application\Port\IntegrationEventPublisherInterface;
+use TradeManeuver\Trading\Application\Port\TradeSignalEvaluationQueueInterface;
 use TradeManeuver\Trading\Application\Port\TransactionManagerInterface;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Repository\InvestmentConfigurationRepositoryInterface;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\AnalyticsApplicationId;
@@ -24,13 +25,13 @@ use TradeManeuver\Trading\Domain\TradeSignal\Repository\TradeSignalRepositoryInt
 use TradeManeuver\Trading\Domain\TradeSignal\TradeSignal;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ContractViolation;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ContractViolations;
-use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\SignalOutcome;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\TradeSignalContent;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\TradeSignalId;
 
 /**
  * The intake of trade signals at the application boundary. Each delivery commits its inbox entry, trade signal,
- * audit records and signal outcome in one transaction, so a redelivery never repeats processing.
+ * audit records and signal outcome in one transaction, so a redelivery never repeats processing. An accepted trade
+ * signal's evaluation is queued in the same transaction.
  */
 final readonly class ReceiveTradeSignalCommandHandler
 {
@@ -45,6 +46,7 @@ final readonly class ReceiveTradeSignalCommandHandler
         private IntegrationEventPublisherInterface $integrationEventPublisher,
         private AuditTrailInterface $auditTrail,
         private AnalyticsApplicationRegistryInterface $analyticsApplicationRegistry,
+        private TradeSignalEvaluationQueueInterface $evaluationQueue,
         private ClockInterface $clock,
         private LoggerInterface $logger,
         private TransactionManagerInterface $transactionManager,
@@ -100,7 +102,10 @@ final readonly class ReceiveTradeSignalCommandHandler
         foreach ($tradeSignal->releaseEvents() as $event) {
             if ($event instanceof TradeSignalReceived) {
                 $this->recordAudit($source, $receivedAt, $id->toString(), 'received', $message->metadata());
+                $this->evaluationQueue->enqueue($id);
             } else {
+                // Intake records only receptions and rejections; recordRejection() refuses any other event.
+                /** @var TradeSignalRejected $event */
                 $this->recordRejection($event, $message, $receivedAt);
             }
         }
@@ -135,7 +140,7 @@ final readonly class ReceiveTradeSignalCommandHandler
         $this->recordAudit($event->source, $receivedAt, $event->id->toString(), 'rejected', [
             ...$message->metadata(),
             'outcomeId' => $event->outcome->id->toString(),
-            'violations' => self::describe($event->outcome),
+            'violations' => self::describe($event->violations),
         ]);
         $this->integrationEventPublisher->publish(SignalOutcomeIntegrationEvent::of($event->id, $event->outcome, $event->source));
     }
@@ -192,10 +197,10 @@ final readonly class ReceiveTradeSignalCommandHandler
     /**
      * @return list<string>
      */
-    private static function describe(SignalOutcome $outcome): array
+    private static function describe(ContractViolations $contractViolations): array
     {
         $violations = [];
-        foreach ($outcome->violations->all() as $violation) {
+        foreach ($contractViolations->all() as $violation) {
             $violations[] = $violation->field.': '.$violation->message;
         }
 
