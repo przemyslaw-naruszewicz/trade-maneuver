@@ -248,10 +248,18 @@ with the same `id`, `time`, and content. Consumers deduplicate outcome messages 
 
 RabbitMQ is the selected integration transport. Signals use the `tm.trade-signals` exchange;
 signal outcomes use `tm.signal-outcomes`, with a separate queue for each producer, routed by its identifier. The
-[README](../README.md#rabbitmq) describes the local service and its users, and
+[development reference](development.md#rabbitmq) describes the local service and its users, and
 [Connecting an analytics application](#connecting-an-analytics-application) lists the configuration a new producer needs.
 [ADR-0003](ADR/adr-0003-rabbitmq-for-integration-messaging.md) records the alternatives,
 selection rationale, delivery configuration, and operational consequences.
+
+| Element | Purpose |
+|---|---|
+| `tm.trade-signals` | Fanout exchange to which analytics applications publish trade signals |
+| `tm.trade-signals.intake` | Trade Maneuver's durable intake queue, dead-lettering to `tm.trade-signals.dead-letter` |
+| `tm.trade-signals.dead-letter` | Exchange and queue for messages that cannot be processed, kept for manual inspection |
+| `tm.signal-outcomes` | Direct exchange for signal outcomes, routed by the analytics application identifier |
+| `tm.signal-outcomes.<identifier>` | Durable outcome queue of one analytics application |
 
 ### Delivery requirements
 
@@ -271,7 +279,7 @@ selection rationale, delivery configuration, and operational consequences.
 
 The demo analytics application has no outbox and does not retry, unlike these requirements. It is a
 command run by hand: it reports a failed publication, and it can be run again. The
-[README](../README.md#demo-analytics-application) describes its local use.
+[README](../README.md#try-the-demo) describes its local use.
 
 ### Connecting an analytics application
 
@@ -290,8 +298,8 @@ to its code. For an analytics application with the identifier `<id>`:
 4. Authorization: authorize `<id>` in the investment configuration with
    `--authorized-analytics-application`.
 
-RabbitMQ creates users only on an empty data volume; the [README](../README.md#rabbitmq) describes how
-to add one to a running node.
+RabbitMQ creates users only on an empty data volume; the [development reference](development.md#rabbitmq)
+describes how to add one to a running node.
 
 ## 5. Message flow
 
