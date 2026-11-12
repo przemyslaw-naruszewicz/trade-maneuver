@@ -11,29 +11,13 @@ published to GitHub Container Registry (GHCR). The deployment workflow is not im
 | Memory | 4 GB RAM for the operating system and containers |
 | Storage | 40 GB SSD for the system, images, data, and logs |
 | CPU | Shared, dynamically allocated capacity |
-| LLM | Cloud API when needed; no local model or GPU |
 
 This setup supports development and integration tests with limited concurrency.
-LLM API costs and usage limits are separate from VPS resources.
 
 ## Services
 
-| Service | Purpose |
-|---|---|
-| `nginx` | HTTP and static files |
-| `app` | Trade Maneuver application and administrative commands |
-| `postgres` | Application data and a separate test database |
-| `queue` | Background jobs |
-| `scheduler` | Scheduled tasks |
-| RabbitMQ | Integration messages, results, and failed deliveries |
-
-The existing Compose file supports local development. The VPS needs a deployment configuration
-using published images without local builds or source-code bind mounts. The local RabbitMQ
-service and its trade signal consumer run in Compose, and the Laravel queue worker publishes
-signal outcomes to RabbitMQ; the VPS deployment of RabbitMQ is not configured yet. The trade
-signal intake use case writes its inbox and outbox entries in PostgreSQL.
-Background jobs currently use PostgreSQL.
-Signal producers run separately, each with its own database and outbox.
+The VPS runs the services listed in the [README](../README.md#services), apart from `node`. Its
+deployment configuration uses published images without local builds or source-code bind mounts.
 
 ## Deployment
 

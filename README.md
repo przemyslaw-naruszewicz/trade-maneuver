@@ -5,13 +5,9 @@
 
 Trade Maneuver will be an execution microservice: it receives trade signals from analytics applications, evaluates them against its domain rules, places orders with a simulated, fictional broker, and reports their outcomes. Integration with a real broker is out of scope. See [the integration overview](docs/integration.md) for an outline of the planned solution.
 
-Follow the [SDLC contract](SDLC.md) for task preparation, approval, review, and delivery. It distinguishes the current CI pipeline from planned automation and CD.
-
 The stack is Laravel, PHP, and PostgreSQL. Versions are defined in `composer.json`, `compose.yaml`, and `docker/php/Dockerfile`. The local environment runs in Docker Compose; the host only needs Docker with Compose v2+ and a `sh` shell. Make is optional.
 
 ## What is simulated
-
-The repository currently holds an application skeleton, so this table describes the planned flow.
 
 | Element | What it is here |
 | --- | --- |
@@ -39,7 +35,7 @@ The software is provided "as is", without warranty of any kind. To the maximum e
 # or: make setup
 ```
 
-The script creates `.env`, builds the PHP image, matches UID/GID to the owner of the project directory (including rootless Docker), installs dependencies, generates a missing `APP_KEY`, runs migrations and builds the frontend. It then starts all services and waits until they are healthy. It is safe to run again; it keeps the existing key and the data in the database.
+The script prepares everything the application needs, starts all services, and waits until they are healthy. You can run it again: it keeps the existing application key and the data in the database.
 
 The application runs at http://localhost:8080, and the Laravel health check at http://localhost:8080/up.
 
@@ -60,8 +56,6 @@ If you need different ports, copy `.env.example` to `.env` before starting and c
 
 The project directory is mounted into the containers, so editing PHP does not require rebuilding the image. After changing job code run `docker compose restart queue`; after changing the schedule run `docker compose restart scheduler`; after changing the consumer run `docker compose restart trade-signal-consumer`.
 
-Sessions, cache and the queue use PostgreSQL and the standard Laravel migrations. The worker has a 90-second timeout, and `DB_QUEUE_RETRY_AFTER=120` prevents a job from being picked up again before that timeout expires. Mail goes to the application log (`MAIL_MAILER=log`).
-
 ## Everyday work
 
 ```sh
@@ -77,60 +71,21 @@ make ci                       # complete local CI pipeline in Docker
 make ci-lint                  # validate workflows, shell scripts and Compose
 ```
 
-Without Make:
+Without Make, run Artisan and Composer through `docker compose exec app` and npm through `docker compose exec node`. [The development reference](docs/development.md) covers the environment, PostgreSQL, RabbitMQ, failure recovery, and the CI quality checks in more detail.
 
-```sh
-docker compose up -d --wait
-docker compose exec app php artisan migrate
-docker compose exec app php artisan make:model Trade -mf
-docker compose exec app php artisan tinker
-docker compose exec app composer require vendor/package
-docker compose exec node npm install
-docker compose exec app php artisan test --compact
-docker compose logs -f
-```
+## Local trade signal flow
 
-`make down` also removes the `public/hot` marker, so once Vite stops, Laravel serves the previously built assets. If you run `docker compose down` directly and then work without Vite, remove the marker yourself. The standard `composer run dev` and `composer run setup` scripts come from the Laravel skeleton; in this environment use `make up` and `make setup`, which manage the separate containers.
+The demo analytics application is a fictional stand-in for an analytics application, so the flow can run locally without a real one: its trade signals name fictional instruments on the fictional exchange `DEMO`, carry invented values, and recommend nothing. Its registry entry and producer user exist only in the local and CI configuration.
 
-## Investment configuration
+1. Create the investment configuration that authorizes it:
 
-Trade Maneuver has exactly one investment configuration, created once at deployment. Register the known analytics applications in `TRADING_ANALYTICS_APPLICATIONS` as comma-separated `<source>:<RabbitMQ user>` entries: the identifier each one sends as `source` and the RabbitMQ user it publishes as, for example `demo-analytics:demo-analytics`. The identifier is also the routing key of the analytics application's outcome queue. Then run:
+   ```sh
+   docker compose exec app php artisan trading:create-investment-configuration demo-investment \
+       --currency=EUR --brokerage-account=DEMO-ACCOUNT-1 --order-amount=200.00 \
+       --limit-price-tolerance=1.50 --authorized-analytics-application=demo-analytics
+   ```
 
-```sh
-docker compose exec app php artisan trading:create-investment-configuration demo-investment \
-    --currency=EUR --brokerage-account=DEMO-ACCOUNT-1 --order-amount=200.00 \
-    --limit-price-tolerance=1.50 --authorized-analytics-application=demo-analytics
-```
-
-The reference (`demo-investment`) is what trade signals send as `investmentConfigurationRef`. The currency is EUR. The order amount is in that currency unless `--order-amount-currency` says otherwise, and the tolerance is a percentage from 0 to 5. Repeat `--authorized-analytics-application` for each application, or leave it out to reject every trade signal. The command refuses invalid input and a second investment configuration without writing anything, and records the creation in the audit trail.
-
-## RabbitMQ
-
-RabbitMQ carries trade signals from analytics applications to Trade Maneuver and signal outcomes back to them ([ADR-0003](docs/ADR/adr-0003-rabbitmq-for-integration-messaging.md)). It publishes no host port. The container has a 512 MB memory limit, and RabbitMQ blocks publishers at an absolute threshold of 256 MiB. `docker/rabbitmq/definitions.json` holds the topology, loaded at every start, in two vhosts: `trade-maneuver` for the application and `trade-maneuver-testing` for the tests.
-
-| Element | Purpose |
-| --- | --- |
-| `tm.trade-signals` | Fanout exchange to which analytics applications publish trade signals |
-| `tm.trade-signals.intake` | Trade Maneuver's durable intake queue, dead-lettering to `tm.trade-signals.dead-letter` |
-| `tm.trade-signals.dead-letter` | Exchange and queue for messages that cannot be processed, kept for manual inspection |
-| `tm.signal-outcomes` | Direct exchange for signal outcomes, routed by the analytics application identifier |
-| `tm.signal-outcomes.<identifier>` | Durable outcome queue of one analytics application |
-
-`docker/rabbitmq/rabbitmq.conf` seeds the users with passwords from the environment: `trade-maneuver` (`RABBITMQ_PASSWORD`) and the producer users of the fictional analytics applications, `demo-analytics` (`DEMO_ANALYTICS_RABBITMQ_PASSWORD`) and `demo-research` (`DEMO_RESEARCH_RABBITMQ_PASSWORD`). `.env.example` has local defaults. A producer user may write only to `tm.trade-signals` and read only its own outcome queue, and none has a tag, so none may set another user's `user_id`. Like the PostgreSQL users, RabbitMQ users are created only when the `rabbitmq_data` volume is empty: after adding or changing a user, recreate the volume with `docker compose down -v`, which also deletes the database, or add the user with `docker compose exec rabbitmq rabbitmqctl add_user` and `set_permissions -p trade-maneuver`.
-
-Connecting another analytics application takes only configuration; [the integration overview](docs/integration.md#connecting-an-analytics-application) lists the steps.
-
-The trade signal consumer acknowledges a delivery only after the intake transaction commits. It rejects a message that cannot be processed without requeue, so RabbitMQ moves it to the dead letter queue. When the database fails, it requeues the delivery and stops, and Compose restarts it. On SIGTERM it finishes the current delivery and stops; RabbitMQ requeues the deliveries it had prefetched. For each accepted trade signal the intake transaction also queues an evaluation job on Laravel's PostgreSQL job queue. The `queue` service runs it: it declines an expired or short trade signal and records the signal outcome in the outbox in the same transaction. A job that a stopped or crashed worker had reserved runs again after `DB_QUEUE_RETRY_AFTER`, and a trade signal that already has a signal outcome is not evaluated again. The intake use case queues a publication job for each signal outcome in its own transaction, on Laravel's PostgreSQL job queue, and the `queue` service runs it. The job publishes the outbox entry as a persistent message whose message id is the outcome message `id`, and marks it sent only after RabbitMQ confirms it. When RabbitMQ cannot route or does not confirm a signal outcome, the entry stays unsent, the failure is logged as an error, and the job is retried up to 10 times with a delay that doubles after each failed attempt, from 1 second to 256 seconds. When RabbitMQ drops the connection, for example after a restart, the attempt fails and the next one opens a new connection; if the queue worker stops, Compose restarts it. After the last attempt the job stays in `failed_jobs`; `docker compose exec app php artisan queue:retry all` queues it again.
-
-To publish a trade signal and read its signal outcome, use the [demo analytics application](#demo-analytics-application).
-
-Inspect the queues with `docker compose exec rabbitmq rabbitmqctl list_queues -p trade-maneuver name messages`.
-
-## Demo analytics application
-
-The demo analytics application is a simulated stand-in for an analytics application, so the flow can run locally without a real one. Its trade signals name fictional instruments on the fictional exchange `DEMO` and carry invented values. It has no analytical model, reads no market data, and recommends nothing. Its code lives in `src/DemoAnalytics`, outside the Trading context. It connects the way any analytics application does: through RabbitMQ, as the producer user `demo-analytics`, with `tm.trade-signal.v1` messages. Its registry entry and producer user exist only in the local and CI configuration.
-
-1. Create an investment configuration that authorizes it with the command under [Investment configuration](#investment-configuration). `DEMO_ANALYTICS_INVESTMENT_CONFIGURATION_REF` names the investment configuration its trade signals address; `.env.example` sets it to `demo-investment`. An `.env` created before this variable existed lacks it, so copy the line from `.env.example` or pass `--investment-configuration-ref`.
+   The demo analytics application's trade signals address `demo-investment`, the reference set in `DEMO_ANALYTICS_INVESTMENT_CONFIGURATION_REF`.
 
 2. Publish a trade signal:
 
@@ -138,7 +93,7 @@ The demo analytics application is a simulated stand-in for an analytics applicat
    docker compose exec app php artisan demo-analytics:publish-trade-signal
    ```
 
-   The command prints `Published trade signal <id>.` By default it publishes a `long` trade signal for `DEMO_A` with confidence `0.75`, a horizon of 5 trading sessions, an expected move from 1.0 to 3.0 percent, an invented reference price of 12.50 EUR, and signal validity of three days. Options choose each value: `--symbol`, `--direction`, `--confidence`, `--horizon-sessions`, `--expected-move-min`, `--expected-move-max`, `--reference-price`, `--currency`, `--valid-until`, and `--investment-configuration-ref`; `--help` describes them. `--twice` publishes the same message twice to exercise duplicate delivery. The command refuses a symbol that does not start with `DEMO_` and any other invalid value, and then publishes nothing. It has no outbox and does not retry: when RabbitMQ does not confirm the message, it reports the error and exits with code 1, and you can run it again.
+   `--help` lists the options that set each value of the trade signal.
 
 3. Read the signal outcomes:
 
@@ -146,43 +101,15 @@ The demo analytics application is a simulated stand-in for an analytics applicat
    docker compose exec app php artisan demo-analytics:read-signal-outcomes
    ```
 
-   The command prints each signal outcome from `tm.signal-outcomes.demo-analytics` with the trade signal `id`, the outcome, and its details, and then acknowledges it. It says so when the queue is empty.
+   The command prints each signal outcome with the trade signal `id`, the outcome, and its details, and then acknowledges it.
 
-These trade signals end with a signal outcome before evaluation reaches the broker:
+Each of these trade signals ends as its comment says. [The contract rules](docs/integration.md#3-contract-tmtrade-signalv1) describe evaluation, and `src/Trading/Infrastructure/Resources/config.php` holds the simulated broker's catalogue of fictional instruments.
 
 ```sh
 # SignalRejected: the investment configuration does not exist.
 docker compose exec app php artisan demo-analytics:publish-trade-signal --investment-configuration-ref=demo-unknown-investment
 # SignalDeclined with the reason UnsupportedDirection: Trade Maneuver only buys.
 docker compose exec app php artisan demo-analytics:publish-trade-signal --direction=short
-docker compose exec app php artisan demo-analytics:read-signal-outcomes
-```
-
-The command refuses a validity that ends before the trade signal is published. To see `SignalDeclined` with the reason `SignalExpired`, stop the queue worker, publish a trade signal whose validity ends a few seconds later, and start the worker after that time:
-
-```sh
-docker compose stop queue
-docker compose exec app php artisan demo-analytics:publish-trade-signal --valid-until="$(docker compose exec -T app php -r "echo gmdate('Y-m-d\TH:i:s\Z', time() + 5);")"
-sleep 10
-docker compose start queue
-docker compose exec app php artisan demo-analytics:read-signal-outcomes
-```
-
-## Simulated broker
-
-The simulated broker is the only broker. It runs as an adapter inside the application, behind the broker gateway port, and has no connection to a real market, real funds, or a real brokerage account. It holds no market prices and uses no market data. So far it only looks up instruments; later tasks add orders.
-
-Its catalogue is configuration in `src/Trading/Infrastructure/Resources/config.php` and holds only fictional instruments on the fictional exchange `DEMO`. A symbol outside the catalogue is unknown to it.
-
-| Symbol | Quote currency | Availability |
-| --- | --- | --- |
-| `DEMO_A` | EUR | Available |
-| `DEMO_G` | USD | Available |
-| `DEMO_H` | EUR | Unavailable |
-
-After the expiry and direction checks, evaluation looks up the instrument and checks, in this order, that the simulated broker knows it and it is available, that the reference price is in its quote currency, and that its quote currency is the investment configuration's. A failed lookup is a recoverable failure: the evaluation job runs again 30 seconds later and continues with the first step not yet passed. A trade signal that passes these checks leads to one order awaiting approval. Its limit price is the reference price plus the limit price tolerance, rounded down to 0.01 EUR, and its quantity is the largest whole number of units whose cost at that price does not exceed the order amount. When the order amount cannot buy one unit, the trade signal ends with `SignalDeclined` and the reason `OrderAmountTooSmall`. Reproduce each result with the [demo analytics application](#demo-analytics-application):
-
-```sh
 # No signal outcome: DEMO_A passes evaluation and leads to an order awaiting approval.
 docker compose exec app php artisan demo-analytics:publish-trade-signal --symbol=DEMO_A
 # SignalDeclined with the reason OrderAmountTooSmall: at 200.00 EUR and 1.50 %, the limit price 203.00 EUR exceeds the order amount.
@@ -198,27 +125,23 @@ docker compose exec app php artisan demo-analytics:publish-trade-signal --symbol
 docker compose exec app php artisan demo-analytics:read-signal-outcomes
 ```
 
+The command refuses a validity that ends before the trade signal is published. To see `SignalDeclined` with the reason `SignalExpired`, stop the queue worker, publish a trade signal whose validity ends a few seconds later, and start the worker after that time:
+
+```sh
+docker compose stop queue
+docker compose exec app php artisan demo-analytics:publish-trade-signal --valid-until="$(docker compose exec -T app php -r "echo gmdate('Y-m-d\TH:i:s\Z', time() + 5);")"
+sleep 10
+docker compose start queue
+docker compose exec app php artisan demo-analytics:read-signal-outcomes
+```
+
 ## Quality checks
 
-For CI configuration changes, follow the [three-step verification process](SDLC.md#changes-to-ci-configuration). `make ci-lint` checks workflows, shell scripts, and Compose; GitHub Actions runs it before building the PHP image.
-
-Run `make ci` (or `sh bin/ci`) from the host. It builds the PHP image with PCOV, installs locked Composer dependencies, starts PostgreSQL and RabbitMQ, ensures the separate test database exists, and runs `composer ci` in a disposable PHP container with test configuration. It keeps the existing application key and database data. PCOV is disabled during normal development and enabled for mutation coverage.
-
-The pipeline runs Composer validation and `composer audit --locked`, PHP CS Fixer in check mode, PHPStan with Larastan at level 8, Deptrac, PHPUnit, Behat, and Infection. PHP CS Fixer follows PSR-12 with explicit adjustments matching the existing Pint style. PHPStan also enforces cognitive complexity limits on every path it analyses, through `tomasvotruba/cognitive-complexity`: 9 per function or method and 40 per class, set in `phpstan.neon.dist`. The `spaze/phpstan-disallowed-calls` extension rejects calls from `Domain` and `Application` to functions from installed packages, which Deptrac cannot detect. Its `disallowedMethodCalls` entry reports a call to an aggregate's `state()` outside repository implementations and tests ([ADR-0002](docs/ADR/adr-0002-aggregate-state-for-eloquent-persistence.md)). Infection uses minimum MSI 80% and covered MSI 100%. The full run checks all configured application sources (`app/` and `src/`), including uncovered code, and fails when no mutations are generated. The changed-line run checks only the lines changed since the merge base with `origin/main`. It ignores lines PHPUnit does not run and passes when the changes generate no mutations. These initial thresholds apply to the small skeleton and should be reviewed as business code is introduced.
-
-GitHub Actions runs `make ci` for pull requests, pushes to `main`, and manual dispatch. Pull requests run all checks with Infection on changed lines; pushes to `main` and manual runs include the full Infection run. Docker build layers and Composer downloads are cached between runs. Local `make ci` includes the full Infection run by default. Use `CI_WITH_MUTATION=diff make ci` for the pull-request checks, after `git fetch` so that `origin/main` is current, and `CI_WITH_MUTATION=0 make ci` to skip Infection. `CI_SKIP_BUILD=1` reuses an already built PHP image, as the workflow does after its cached build step. Composer downloads are kept in `storage/framework/cache/composer`.
-
-PHPUnit runs the RabbitMQ integration tests against the `trade-maneuver-testing` vhost. PHPUnit and Infection reports are written to `storage/quality/` and uploaded as workflow artifacts for seven days. Behat runs two suites: `application` checks service health, and `trading` covers trade signal intake, evaluation, and order creation through the application commands and the database job queue against the test database. Deptrac enforces the layer rules in `deptrac.yaml` for the Trading context and the application code under the root namespace; [the architecture](docs/architecture.md#laravel-integration) describes them. Run it separately with `docker compose exec app composer analyse:architecture`.
-
-## PostgreSQL
-
-The application connects to host `postgres` on port `5432`. An IDE or another client on the host connects to `127.0.0.1:54320`. The default database and user are `trade_maneuver`, and the local password is `local_trade_maneuver_password` (configured in `.env`).
-
-Tests use a separate database, `trade_maneuver_testing`, created when PostgreSQL is initialized and by `bin/setup`. `phpunit.xml` enforces its name and the `pgsql` driver. `EloquentPostgresTest` verifies that a model can be created, read, updated and deleted against a real PostgreSQL database. `RefreshDatabase` runs migrations in the test database and isolates test data with transactions. `AppServiceProvider` refuses `migrate:fresh`, `migrate:refresh`, `migrate:reset`, `migrate:rollback`, and `db:wipe` on any other database, so they cannot clear the development database. To start the development database again from an empty state, recreate its volume with `docker compose down -v`, which also clears RabbitMQ, and run `make setup`.
-
-PostgreSQL data stays in the volume after `make down`. Changing the credentials in `.env` does not update the users of an existing cluster, because the PostgreSQL image only initializes an empty volume.
+Before opening a pull request, run `git fetch` so that `origin/main` is current, then `CI_WITH_MUTATION=diff make ci` for the pull-request checks. `make ci` alone runs the complete pipeline, including the full Infection run. For CI configuration changes, follow the [three-step verification process](SDLC.md#changes-to-ci-configuration). [The development reference](docs/development.md#ci-quality-checks) lists the checks, their configuration, the Infection variants, and the reports.
 
 ## Backlog and contributions
+
+Follow the [SDLC contract](SDLC.md) for task preparation, approval, review, and delivery. It distinguishes the current CI pipeline from planned automation and CD.
 
 The task backlog is in `docs/tasks/`. A task with `status: approved` on `main` holds the requirements for its implementation, and a task with `status: done` records what was delivered.
 
@@ -230,28 +153,4 @@ No license has been selected for this project's original code yet, so all rights
 
 ## Third-party licenses
 
-Third-party components keep their own licenses.
-
-### Laravel: The MIT License (MIT)
-
-The following copyright and license notice applies only to code originating from Laravel. It does not license this project's original code.
-
-Copyright (c) Taylor Otwell
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
+Third-party components keep their own licenses. [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) holds Laravel's MIT notice and says where to find the licenses of the dependencies.
