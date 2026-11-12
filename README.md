@@ -71,9 +71,9 @@ make ci                       # complete local CI pipeline in Docker
 make ci-lint                  # validate workflows, shell scripts and Compose
 ```
 
-Without Make, run Artisan and Composer through `docker compose exec app` and npm through `docker compose exec node`. [The development reference](docs/development.md) covers the environment, PostgreSQL, RabbitMQ, failure recovery, and the quality checks in more detail.
+Without Make, run Artisan and Composer through `docker compose exec app` and npm through `docker compose exec node`. [The development reference](docs/development.md) covers the environment, PostgreSQL, RabbitMQ, failure recovery, and the CI quality checks in more detail.
 
-## Try the demo
+## Local trade signal flow
 
 The demo analytics application is a fictional stand-in for an analytics application, so the flow can run locally without a real one: its trade signals name fictional instruments on the fictional exchange `DEMO`, carry invented values, and recommend nothing. Its registry entry and producer user exist only in the local and CI configuration.
 
@@ -137,7 +137,7 @@ docker compose exec app php artisan demo-analytics:read-signal-outcomes
 
 ## Quality checks
 
-Before opening a pull request, run `git fetch` so that `origin/main` is current, then `CI_WITH_MUTATION=diff make ci` for the pull-request checks. `make ci` alone runs the complete pipeline, including the full Infection run. For CI configuration changes, follow the [three-step verification process](SDLC.md#changes-to-ci-configuration). [The development reference](docs/development.md#quality-checks) lists the checks, their configuration, the Infection variants, and the reports.
+Before opening a pull request, run `git fetch` so that `origin/main` is current, then `CI_WITH_MUTATION=diff make ci` for the pull-request checks. `make ci` alone runs the complete pipeline, including the full Infection run. For CI configuration changes, follow the [three-step verification process](SDLC.md#changes-to-ci-configuration). [The development reference](docs/development.md#ci-quality-checks) lists the checks, their configuration, the Infection variants, and the reports.
 
 ## Backlog and contributions
 
@@ -153,4 +153,4 @@ No license has been selected for this project's original code yet, so all rights
 
 ## Third-party licenses
 
-Third-party components keep their own licenses, and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) holds their notices, including Laravel's MIT license.
+Third-party components keep their own licenses. [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) holds Laravel's MIT notice and says where to find the licenses of the dependencies.

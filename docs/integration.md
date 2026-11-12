@@ -279,7 +279,7 @@ selection rationale, delivery configuration, and operational consequences.
 
 The demo analytics application has no outbox and does not retry, unlike these requirements. It is a
 command run by hand: it reports a failed publication, and it can be run again. The
-[README](../README.md#try-the-demo) describes its local use.
+[README](../README.md#local-trade-signal-flow) describes its local use.
 
 ### Connecting an analytics application
 

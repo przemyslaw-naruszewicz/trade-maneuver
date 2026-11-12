@@ -4,7 +4,7 @@ Third-party components keep their own licenses.
 
 ## Laravel: The MIT License (MIT)
 
-The following copyright and license notice applies only to code originating from Laravel. It does not license this project's original code.
+The following copyright and license notice applies only to code originating from Laravel, such as the application skeleton (`laravel/laravel`). It does not license this project's original code.
 
 Copyright (c) Taylor Otwell
 
@@ -25,3 +25,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
+
+## Dependencies
+
+Composer and npm dependencies are not stored in this repository. They are installed from their registries, and each one keeps the license shipped with its package. `docker compose exec app composer licenses` lists the licenses of the Composer dependencies, and `package-lock.json` records the license of each npm package.

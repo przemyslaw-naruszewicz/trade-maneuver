@@ -1,6 +1,6 @@
 # Development reference
 
-This reference covers the local Docker Compose environment beyond what the [README](../README.md) shows: environment notes, PostgreSQL, RabbitMQ, failure recovery, and the quality checks. Run the commands from the project root.
+This reference covers the local Docker Compose environment beyond what the [README](../README.md) shows: environment notes, PostgreSQL, RabbitMQ, failure recovery, and the CI quality checks. Run the commands from the project root.
 
 ## Environment notes
 
@@ -32,7 +32,7 @@ The intake transaction queues an evaluation job for each accepted trade signal, 
 - Evaluation: a job that a stopped or crashed worker had reserved runs again after `DB_QUEUE_RETRY_AFTER`, and a trade signal that already has a signal outcome is not evaluated again. A failed instrument lookup is a recoverable failure: the job runs again 30 seconds later and continues with the first step not yet passed.
 - Publication of signal outcomes: the job publishes the outbox entry as a persistent message whose message id is the outcome message `id`, and marks it sent only after RabbitMQ confirms it. When RabbitMQ cannot route or does not confirm a signal outcome, the entry stays unsent, the failure is logged as an error, and the job is retried up to 10 times with a delay that doubles after each failed attempt, from 1 second to 256 seconds. When RabbitMQ drops the connection, for example after a restart, the attempt fails and the next one opens a new connection; if the queue worker stops, Compose restarts it. After the last attempt the job stays in `failed_jobs`, and `docker compose exec app php artisan queue:retry all` queues it again.
 
-## Quality checks
+## CI quality checks
 
 Run `make ci` (or `sh bin/ci`) from the host. It builds the PHP image with PCOV, installs locked Composer dependencies, starts PostgreSQL and RabbitMQ, ensures the separate test database exists, and runs `composer ci` in a disposable PHP container with test configuration. It keeps the existing application key and database data. PCOV is disabled during normal development and enabled for mutation coverage.
 
