@@ -60,6 +60,19 @@ Feature: Idempotent trade signals
     And the duplicate delivery is traceable in the audit history
 ```
 
+## Test naming
+
+Tools enforce the form of PHPUnit test method names:
+
+- php-cs-fixer, which `composer cs:check` runs in CI, applies `php_unit_test_annotation` with `style: prefix`, so a test method starts with `test_`, and `php_unit_method_casing` with `case: snake_case`.
+- PHPUnit tests use no `#[Test]` attribute. php-cs-fixer checks only `@test` docblocks, so a method marked with the attribute but without the `test_` prefix would pass it. The `disallowedAttributes` entry for `PHPUnit\Framework\Attributes\Test` in `phpstan.neon.dist` reports the attribute.
+
+No fixer checks the content of a name:
+
+- A PHPUnit test method name, after `test_`, is a sentence that states the behavior in domain terms, for example `test_a_message_without_an_id_is_not_processable_and_audited`.
+- A Behat `Feature` names the capability, for example "Trade signal intake".
+- A `Scenario` is a declarative sentence that states the behavior, for example "A trade signal without a required field is rejected".
+
 ## Real infrastructure and failure testing
 
 - Run persistence and messaging integration tests against a separate PostgreSQL test database and the separate `trade-maneuver-testing` RabbitMQ vhost. Isolate test data and keep tests deterministic.
