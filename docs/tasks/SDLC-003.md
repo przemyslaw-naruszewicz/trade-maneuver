@@ -14,7 +14,7 @@ Each process rule is stated once, so a process change edits one or two files ins
 In scope:
 
 - [SDLC.md](../../SDLC.md), [AGENTS.md](../../AGENTS.md), [docs/agents/skills.md](../agents/skills.md), [docs/agents/independent-review.md](../agents/independent-review.md), and [docs/agents/issue-tracker.md](../agents/issue-tracker.md), changed to state the rules in Requirements.
-- [docs/testing-strategy.md](../testing-strategy.md), for the test naming convention only.
+- [docs/testing-strategy.md](../testing-strategy.md) and `.php-cs-fixer.dist.php`, for the test naming convention only.
 
 Out of scope:
 
@@ -24,7 +24,7 @@ Out of scope:
 - Repository settings and GitHub protections. The owner changes them (SDLC §8).
 - V2 review in GitHub Actions, an automatic fix loop, and CD.
 - Updating the `mattpocock-skills` plugin from 1.3.1.
-- Changes to CI, dependencies, code, or tests.
+- Changes to CI workflows, dependencies, application code, or tests. The only configuration change is the two php-cs-fixer rules for test naming.
 - Changes to `.claude/agents/independent-reviewer.md`. Its prompt of four items stays, because the reviewer finds the reviewed SHA for an incremental review on the PR itself.
 
 ## Requirements
@@ -115,16 +115,16 @@ A rare edge case is one that only a combination of conditions produces, conditio
 
 ### Test naming convention
 
-`docs/testing-strategy.md` states the current convention as the rule:
+The current convention becomes the rule. The installed php-cs-fixer (3.95), which CI already runs through `composer cs:check`, enforces the part a tool can check:
 
-- A PHPUnit test method is named `test_` plus a snake_case sentence that states the behavior in domain terms, for example `test_a_message_without_an_id_is_not_processable_and_audited`. Tests use no `#[Test]` attribute.
-- A Behat `Feature` names the capability, for example "Trade signal intake". A `Scenario` is a declarative sentence that states the behavior, for example "A trade signal without a required field is rejected".
+- `.php-cs-fixer.dist.php` enables `php_unit_method_casing` with `case: snake_case` and `php_unit_test_annotation` with `style: prefix`, and sets `setRiskyAllowed(true)` because the second rule is risky. A dry run of both rules on the current tests changes no file.
+- `docs/testing-strategy.md` names those two rules as the enforcement and states only what no fixer checks. A PHPUnit test method name, after `test_`, is a sentence that states the behavior in domain terms, for example `test_a_message_without_an_id_is_not_processable_and_audited`. A Behat `Feature` names the capability, for example "Trade signal intake". A `Scenario` is a declarative sentence that states the behavior, for example "A trade signal without a required field is rejected".
 
 ### Effect on this task's own PRs
 
 - The rules take effect when this task's implementation PR merges. Until then, this task's PRs follow the rules on `main` at their base, with two exceptions for the implementation PR, by the owner's decision:
   - It ticks this task's met AC in the commit that sets `done`. Its review accepts that task-file change, and the task-file diff may contain only `approved` to `done` and the ticked AC.
-  - Its review reads the rule-to-home table in the PR description and checks it against the diff, although a documentation review under the base rules reads nothing else from the PR description.
+  - Its review reads the rule-to-home table in the PR description and checks it against the diff, although under the base rules the review reads only named parts of the PR description, and none of them is that table.
 
 ## Decisions
 
@@ -136,7 +136,7 @@ A rare edge case is one that only a combination of conditions produces, conditio
   - A rare edge case is at most `MINOR` unless it has one of the listed impacts.
   - The visible PR description has at most about 250 words.
   - No full review is required before merge.
-  - The current test naming convention becomes the rule.
+  - The current test naming convention becomes the rule, and php-cs-fixer enforces its PHPUnit part. The review of PR #27 found that the installed fixer can check it, and the owner accepted the adaptation. Adding the two rules changes what CI checks, and approving this task approves that change.
   - Done tasks stay unticked.
   - The draft tasks get the new format in a separate PR after this task.
   - The reviewer finds the reviewed SHA in its latest report on the PR, so the reviewer prompt and the subagent definition stay unchanged.
@@ -168,9 +168,10 @@ A rare edge case is one that only a combination of conditions produces, conditio
 - [ ] Documentation check: SDLC §4 defines `BLOCKER`, `MAJOR`, and `MINOR` as in Requirements, including the rare edge case rule and its exceptions, and requires each `BLOCKER` and `MAJOR` finding to state its impact and frequency.
 - [ ] Documentation check: SDLC §4 and the `pr` adaptation limit the visible part of every PR description to about 250 words, with tables inside `<details>`, no restated task content, and "None" for empty Deviations and Risks.
 - [ ] Documentation check: SDLC §4, SDLC §5, `docs/agents/independent-review.md`, and the `code-review` and `implement` adaptations define incremental review as in Requirements: its conditions, the reviewer finding the reviewed SHA in the latest report on the PR with an unchanged four-item prompt, `git range-diff` after an update from `main`, the red-evidence rerun only for changed AC, the full review cases, the fallback to a full review, and the report marker.
-- [ ] Documentation check: `docs/testing-strategy.md` states the PHPUnit and Behat naming convention from Requirements, and no test file changes.
+- [ ] Documentation check: `docs/testing-strategy.md` names the two php-cs-fixer rules as the enforcement and states the parts of the PHPUnit and Behat naming convention that no fixer checks, as in Requirements.
+- [ ] Tool output: with the two rules in `.php-cs-fixer.dist.php`, `composer cs:check` passes and no test file changes. A temporary camelCase test method, not committed, makes `composer cs:check` fail; the PR shows that output inside `<details>`.
 - [ ] Documentation check: the implementation PR description carries a rule-to-home table. It lists every removed or moved sentence that states a rule, with its new location or the reason it binds nothing, and every removed or renamed heading anchor with the links that used it. The reviewer checks the table against the diff.
-- [ ] Manual check: the independent review of the implementation PR returns `PASS` as a documentation review, applying the two exceptions in "Effect on this task's own PRs", and the PR's task-file diff contains only `approved` to `done` and the ticked AC of this task.
+- [ ] Manual check: the independent review of the implementation PR returns `PASS` in the scope its diff sets, a full review because the diff changes `.php-cs-fixer.dist.php`, applying the two exceptions in "Effect on this task's own PRs", and the PR's task-file diff contains only `approved` to `done` and the ticked AC of this task.
 
 ## Dependencies
 
