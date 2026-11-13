@@ -1,6 +1,6 @@
 # Testing strategy
 
-Test observable business behavior against the modeling rules in [ddd.md](ddd.md) and the guarantees in [architecture.md](architecture.md), including retries, concurrency, and partial failure. This is the target strategy; the skeleton currently has PHPUnit coverage for application availability, user serialization and casts, PostgreSQL integration, and the autoloading and registration of the Trading context, plus a Behat health-check scenario. The investment configuration has domain unit tests, PostgreSQL mapping and atomicity tests, and a console command feature test. Trade signal intake has domain and application unit tests, PostgreSQL mapping, atomicity, and concurrency tests, and Behat scenarios at the Trading application boundary. Trade signal evaluation has domain unit tests, PostgreSQL tests through the database job queue, one of which kills a queue worker process during an evaluation, and Behat scenarios; they substitute only the broker gateway, with a deterministic fake. Order creation has domain unit tests, PostgreSQL mapping, atomicity, and concurrency tests, and Behat scenarios that read the created order through the read model of orders awaiting approval, which has a PostgreSQL test that it refuses writes. The broker gateway port has port tests that the simulated broker and the fake share. The RabbitMQ consumer and the publication of signal outcomes have integration tests against RabbitMQ and PostgreSQL, which run the consumer and the queue worker as separate processes where the test needs acknowledgement, redelivery, or signal handling. The demo analytics application's commands have console tests against RabbitMQ and integration tests that run them against those processes.
+Test observable business behavior against the modeling rules in [ddd.md](ddd.md) and the guarantees in [architecture.md](architecture.md), including retries, concurrency, and partial failure. These rules describe the target strategy. The tests and the done tasks show what is implemented, and items marked Planned name tools that are not in place yet.
 
 ## Test pyramid
 
@@ -14,7 +14,7 @@ Build a test pyramid with a broad base of fast PHPUnit unit tests, focused integ
 | Contract tests at integration boundaries | Tool to be selected | Compatibility between this service, the analytics application, and other providers or consumers | Planned |
 | Small E2E suite: pyramid top | Tool to be selected | Critical journeys through a deployed system, including browser interaction where applicable | Planned |
 
-PHPUnit, Behat, and Infection are installed and included in CI. The planned contract/E2E tools are not installed. Infection uses mutation testing to check whether the tests at the covered levels of the pyramid detect changes in behavior.
+The planned contract/E2E tools are not installed. Infection uses mutation testing to check whether the tests at the covered levels of the pyramid detect changes in behavior.
 
 ## Seams
 
@@ -64,10 +64,16 @@ Feature: Idempotent trade signals
 
 - Run persistence and messaging integration tests against a separate PostgreSQL test database and the separate `trade-maneuver-testing` RabbitMQ vhost. Isolate test data and keep tests deterministic.
 - Use independent database connections and controlled interleavings to verify concurrency, including changes between root and child reads. Commit setup data before workers use it, and clean up records committed by every connection. A test wrapped in one connection's transaction cannot prove concurrent-worker behavior.
-- Exercise the PostgreSQL-backed queue when testing queue and worker guarantees. The current PHPUnit configuration uses the `sync` queue driver; these scenarios require explicit test configuration using the database driver.
-- Test atomic rollback across aggregate, inbox, audit, and outbox writes. Cover crashes before publication, duplicate and out-of-order messages, lost acknowledgements, and recovery after worker failure. Verify that terminal rejections retain a deduplicated outcome after rollback and that accepted but unprocessed inbox entries remain recoverable.
+- Exercise the PostgreSQL-backed queue when testing queue and worker guarantees. These tests configure the database driver explicitly, because the `sync` driver set in `phpunit.xml` runs jobs inline and proves none of these guarantees.
 - Distinguish durable receiver acceptance from business completion. Verify idempotency and reconciliation for uncertain external outcomes rather than assuming that an acknowledgement or an outbox record proves successful processing.
-- Enforce architecture boundaries with Deptrac as a separate automated quality check.
+
+Before delivering a write use case, verify that:
+
+- Domain tests reject invalid transitions and validate invariants, reconstitution, and value objects.
+- PostgreSQL tests use independent connections and controlled operation ordering to cover inconsistent root/child reads, stale versions, child-only changes, competing inserts, pessimistic locks, and applicable deadlock/serialization retries.
+- Failure tests confirm that aggregate, inbox, audit, and outbox writes roll back together, that terminal rejections retain a deduplicated outcome after rollback, and that concurrent duplicate trade signals cause one business effect.
+- Recovery tests cover crashes between commit and publication, duplicate and out-of-order messages, receiver failure before acknowledgement, lost acknowledgements, acceptance without completion, accepted but unprocessed inbox entries, recovery after worker failure, workflow restarts, and uncertain external outcomes.
+- Deptrac, as a separate automated quality check, rejects forbidden layer and context dependencies.
 
 ## Mutation testing with Infection
 

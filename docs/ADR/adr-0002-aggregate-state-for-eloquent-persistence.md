@@ -2,7 +2,7 @@
 
 Date: 2026-10-26
 
-Status: Accepted as the target design; implementation is pending.
+Status: Accepted
 
 ## Context
 

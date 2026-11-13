@@ -46,7 +46,7 @@ Run `make ci` (or `sh bin/ci`) from the host. It builds the PHP image with PCOV,
 | Behat | `behat.php` |
 | Infection | `infection.json5` |
 
-[The architecture](architecture.md#laravel-integration) states the rules that Deptrac and the PHPStan disallowed-calls entries enforce.
+[The architecture](architecture.md#dependency-rules) states the rules that Deptrac and the PHPStan disallowed-calls entries enforce.
 
 Infection uses minimum MSI 80% and covered MSI 100%. The full run checks all configured application sources (`app/` and `src/`), including uncovered code, and fails when no mutations are generated. The changed-line run checks only the lines changed since the merge base with `origin/main`. It ignores lines PHPUnit does not run and passes when the changes generate no mutations. [The testing strategy](testing-strategy.md#mutation-testing-with-infection) says what each run proves.
 
@@ -54,4 +54,4 @@ Local `make ci` includes the full Infection run by default. Use `CI_WITH_MUTATIO
 
 GitHub Actions runs `make ci`; [SDLC §6](../SDLC.md#6-ci) states which Infection run each event gets. Docker build layers and Composer downloads are cached between workflow runs, and Composer downloads are kept in `storage/framework/cache/composer`. PHPUnit and Infection reports are written to `storage/quality/` and uploaded as workflow artifacts for seven days.
 
-`make ci-lint` checks workflows, shell scripts, and Compose; GitHub Actions runs it before building the PHP image. For CI configuration changes, follow the [three-step verification process](../SDLC.md#changes-to-ci-configuration).
+`make ci-lint` checks workflows, shell scripts, and Compose; GitHub Actions runs it before building the PHP image.
