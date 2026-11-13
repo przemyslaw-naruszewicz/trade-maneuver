@@ -52,7 +52,12 @@ Out of scope:
 
 ### CI change verification covers environment configuration
 
-- "Changes to CI configuration" in SDLC §6 applies to workflows, CI scripts, and environment configuration: `compose.yaml`, the files under `docker/`, `.dockerignore`, `Makefile`, `.env.example`, and the scripts in `bin/`. CI runs in the same containers and through the same Make targets, so a change to these files can break CI without touching a CI file.
+- "Changes to CI configuration" in SDLC §6 applies to a concrete list of files:
+  - workflows: the files under `.github/workflows/`;
+  - CI scripts: the scripts in `bin/` and the `scripts` section of `composer.json`, which `bin/ci` runs;
+  - environment configuration: `compose.yaml`, the files under `docker/`, `.dockerignore`, `Makefile`, and `.env.example`.
+- CI runs in the same containers and through the same Make targets and Composer scripts, so a change to these files can break CI without touching a workflow.
+- A PR that adds a new file of one of these kinds adds it to the list in SDLC §6. The reviewer reports a new file of these kinds that the list does not name.
 - The owner's approval of changes to CI policies keeps its current scope.
 
 ### Lighter task format
@@ -82,7 +87,7 @@ Out of scope:
 
 SDLC §4 defines the three levels:
 
-- `BLOCKER`: on a normal path the change produces a wrong amount or order, loses or corrupts data, or weakens security, or the change breaks a merge gate or an AGENTS.md guardrail.
+- `BLOCKER`: on a normal path the change produces a wrong amount or order, loses or corrupts data, or weakens security, or the change breaks a merge gate in SDLC §5.
 - `MAJOR`: a defect or a violation of a documented rule on a normal path; a rare edge case with one of the `BLOCKER` impacts; custom tooling that an installed tool could replace.
 - `MINOR`: a rare edge case without those impacts, a judgement call such as a code smell, and wording or style.
 
@@ -91,7 +96,7 @@ A rare edge case is one that only a combination of conditions produces, conditio
 ### Shorter PR descriptions
 
 - The rule applies to every PR description: implementation, planning, task-change, and change without a task.
-- The visible part, outside `<details>`, has at most about 250 words.
+- The visible part, outside `<details>`, has at most about 250 words. In a change without a task, the requirements stated in place of the task stay visible and do not count toward that limit.
 - The description links the task and does not restate its requirements, its AC text, or the diff.
 - Deviations and Risks list only real entries, otherwise "None".
 - The AC, test, and red commit table goes inside `<details>`.
@@ -108,7 +113,7 @@ A rare edge case is one that only a combination of conditions produces, conditio
 - A full review is required when the requirements changed (the task, linked shared requirements, the requirements of a change without a task, or an approved task adaptation), when an update from `main` changed AGENTS.md or a document it makes mandatory, when the PR has no earlier `PASS`, or when its last result was `FAIL`. The reviewer finds a changed governing document with `git diff --name-only <old-base> <new-base>`.
 - Incremental reviews may follow one another. No full review is required before merge.
 - An update from `main` gets an incremental review. SDLC §5 says so in its rule on updating the branch.
-- The reviewer finds the reviewed SHA itself: it reads the latest independent review report posted on the PR, whose result line gives the result and the head SHA. SDLC §4 and `docs/agents/independent-review.md` add that report to the reviewer's inputs. The reviewer prompt keeps its four items (PR number, task ID or direct-change note, base SHA, head SHA), so the implementing agent passes no hint about where the review starts.
+- The reviewer finds the reviewed SHA itself: it reads the latest independent review report posted on the PR, whose first two lines give the result and the head SHA. SDLC §4 and `docs/agents/independent-review.md` add that report to the reviewer's inputs. The reviewer prompt keeps its four items (PR number, task ID or direct-change note, base SHA, head SHA), so the implementing agent passes no hint about where the review starts.
 - The reviewer uses that report as the starting point only when its result is `PASS`, its result line follows the SDLC §4 format, the comment has not been edited, and its head SHA exists in the repository.
 - The reviewer checks the conditions itself. When a condition fails, it runs a full review and says why in the report.
 - The status-only exception stays as it is.
@@ -132,12 +137,12 @@ The current convention becomes the rule. The installed php-cs-fixer (3.95), whic
 - On 2026-11-12 the owner accepted the consolidation of the review rules, the AGENTS.md deduplication, the lighter task format, and the SDLC §2 wording change. "Exception" there means a departure from the approved scope or AC found during implementation.
 - The owner widened this task on 2026-11-13 with squash merge, severity that weighs frequency, shorter PR descriptions, incremental review, an explicit test naming convention, and AC ticked on completion. These go into one `SDLC-` task because they all change the process contract.
 - Decided by the owner on 2026-11-13:
-  - CI change verification covers environment configuration.
+  - CI change verification covers a concrete list of workflow, CI script, and environment configuration files, which a PR adding such a file extends.
   - Squash commits carry only the PR title.
   - A rare edge case is at most `MINOR` unless it has one of the listed impacts.
   - The visible PR description has at most about 250 words.
   - No full review is required before merge.
-  - The current test naming convention becomes the rule, and php-cs-fixer enforces its PHPUnit part. The review of PR #27 found that the installed fixer can check it, and the owner accepted the change. Adding the two rules changes what CI checks, and approving this task approves that change.
+  - The current test naming convention becomes the rule, and php-cs-fixer enforces its PHPUnit part. The review of PR #27 found that the installed fixer can check it, and the owner accepted the change. Adding the two rules changes what CI checks, and approving this task approves that change. Pint's Laravel preset, which AGENTS.md runs after PHP changes, already renames a camelCase test method to snake_case and leaves a `@test` annotation alone, so the two tools do not conflict and the php-cs-fixer row in `docs/development.md` ("matching the existing Pint style") stays accurate.
   - Done tasks stay unticked.
   - The draft tasks get the new format in a separate PR after this task.
   - The reviewer finds the reviewed SHA in its latest report on the PR, so the reviewer prompt and the subagent definition stay unchanged.
@@ -163,7 +168,7 @@ The current convention becomes the rule. The installed php-cs-fixer (3.95), whic
 - [ ] Documentation check: SDLC §4 holds the review policy, `docs/agents/independent-review.md` holds the reviewer's procedure, including the commands moved from `docs/agents/skills.md` and the operational rules listed in Requirements, and `docs/agents/skills.md` and `docs/agents/issue-tracker.md` state only skill-step changes with links to SDLC. The three guardrail pointers stay at the point of action.
 - [ ] Documentation check: AGENTS.md states the subagent limit, the commit exceptions, and the implementer's existing-tools checks once each, and the reviewer's obligation appears only in SDLC §4.
 - [ ] Documentation check: SDLC §2 has the new sentence on owner approval and no "exception" paragraph, the V2 review paragraph is in §8, and SDLC §6 links `docs/development.md#ci-quality-checks` for the checks and README for the pull-request check command.
-- [ ] Documentation check: SDLC §6 applies the CI change verification to the environment configuration files listed in Requirements, and the scope of owner approval for CI policy changes is unchanged.
+- [ ] Documentation check: SDLC §6 applies the CI change verification to the workflow, CI script, and environment configuration files listed in Requirements, requires a PR that adds such a file to add it to the list, and the scope of owner approval for CI policy changes is unchanged.
 - [ ] Documentation check: SDLC §3 and the `to-tickets` adaptation describe the lighter task format: a CI AC only beyond the gate, a verification method in each AC, a Verification section only for checks no AC covers, only "Blocked by", and AC as a checkbox list.
 - [ ] Documentation check: SDLC §4, SDLC §5, and the `implement` adaptation let the implementing agent tick met AC in the commit that sets `done`, and the reviewer reports a ticked AC that it does not assess as `PASS`.
 - [ ] Documentation check: SDLC §4 and §5 name squash merge for every PR, with the PR title as the commit title, an empty message, and red commits kept in the PR and `refs/pull/<N>/head`. The `git bisect --first-parent` sentence is gone, and SDLC lists the target repository settings as the owner's action.
@@ -173,7 +178,7 @@ The current convention becomes the rule. The installed php-cs-fixer (3.95), whic
 - [ ] Documentation check: `docs/testing-strategy.md` names the two php-cs-fixer rules as the enforcement and states the parts of the PHPUnit and Behat naming convention that no fixer checks, as in Requirements.
 - [ ] Tool output: with the two rules in `.php-cs-fixer.dist.php`, `composer cs:check` passes and no test file changes. A temporary camelCase test method, not committed, makes `composer cs:check` fail; the PR shows that output inside `<details>`.
 - [ ] Documentation check: the implementation PR description carries a rule-to-home table. It lists every removed or moved sentence that states a rule, with its new location or the reason it binds nothing, and every removed or renamed heading anchor with the links that used it. The reviewer checks the table against the diff.
-- [ ] Manual check: the independent review of the implementation PR returns `PASS` in the scope its diff sets, a full review because the diff changes `.php-cs-fixer.dist.php`, applying the two exceptions in "Effect on this task's own PRs", and the PR's task-file diff contains only `approved` to `done` and the ticked AC of this task.
+- [ ] Manual check, by the implementation PR's own independent review: the review runs in the scope its diff sets, a full review because the diff changes `.php-cs-fixer.dist.php`; it applies the two exceptions in "Effect on this task's own PRs"; and the PR's task-file diff contains only `approved` to `done` and the ticked AC of this task. The `PASS` itself is the merge gate in SDLC §5, not part of this AC.
 
 ## Dependencies
 
