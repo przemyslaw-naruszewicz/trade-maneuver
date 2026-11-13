@@ -1,6 +1,6 @@
 ---
 id: SDLC-003
-status: draft
+status: approved
 ---
 
 # SDLC-003: Simpler process documents and cheaper delivery
