@@ -11,7 +11,7 @@ Never create `GLOSSARY.md`, `GLOSSARY-MAP.md`, or `docs/adr/`. This applies to `
 
 ## Before exploring
 
-Read `docs/dictionary.md` and the ADRs in `docs/ADR/` that touch the area. Check each ADR's `Status:` line: an accepted ADR can describe a target that is not implemented yet. The architecture and DDD rules listed in AGENTS.md also apply.
+Read `docs/dictionary.md` and the ADRs in `docs/ADR/` that touch the area. An accepted ADR can describe a target that is not implemented yet; check the code for the implementation state. The architecture and DDD rules listed in AGENTS.md also apply.
 
 ## Dictionary
 

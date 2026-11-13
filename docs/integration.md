@@ -98,9 +98,8 @@ Trade Maneuver to stability: a breaking change affects all producers at once.
 
 The intake adapter validates `v1`, maps it to typed application input, and invokes the use case.
 The broker gateway provides the anti-corruption layer for the broker's model.
-Both diagrams show the planned integration, with Proximtype as the example producer. Proximtype is
-not integrated; the tasks build a local flow with the demo analytics application and a simulated
-broker. Producer table names in the diagrams are generic.
+Both diagrams show the planned integration, with Proximtype as the example producer. Producer
+table names in the diagrams are generic.
 
 ![Trade Maneuver integration architecture](diagrams/integration/integration-architecture.svg)
 

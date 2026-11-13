@@ -27,6 +27,7 @@ These documents are mandatory. Distinguish target architecture and planned tooli
 - After modifying PHP, run `docker compose exec app vendor/bin/pint --dirty --format agent`.
 - Build frontend assets with `make build` when needed.
 - Create documentation only when requested or required by these project rules.
+- Governing documents and ADRs state rules and decisions. They do not list what is implemented; a task updates them only when it changes a rule or delivers an item marked Planned.
 - Update documents that describe the current process in place. Keep documents that weigh options in their original form, because their starting state and reasoning matter, and add at most a short note on what no longer applies.
 - Humanize English prose: when writing documentation, tasks, PR descriptions, or other English text for people, apply a writing skill such as `humanizer` if one is available.
 - Use only clearly fictional instruments, such as `DEMO_A`, and the fictional exchange `DEMO`; the underscore keeps the symbols from matching real tickers. Derive every exchange code, ticker, ISIN, and invalid currency code from `DEMO`, for example `DEM0` or `DEMOX`, and never invent a plausible one, because it may belong to a real market, security, or currency. Use real currency codes, such as `EUR` and `USD`, only for the real currencies. The rule covers code, tests, temporary changes such as break checks, documentation, task drafts, commit messages, and PR descriptions. The same applies to funds, issuers, and cryptocurrencies.

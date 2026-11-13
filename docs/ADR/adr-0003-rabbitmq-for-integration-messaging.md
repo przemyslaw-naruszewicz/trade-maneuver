@@ -2,7 +2,7 @@
 
 Date: 2026-10-27
 
-Status: Accepted. TM-005 implemented the intake consumer, the publication of signal outcomes from the outbox, and the local RabbitMQ service.
+Status: Accepted
 
 ## Context
 

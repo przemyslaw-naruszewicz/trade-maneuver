@@ -2,7 +2,7 @@
 
 Date: 2026-11-02
 
-Status: Accepted. TM-009 implemented the first read model, for orders awaiting approval, and its Deptrac rules; no Livewire component exists yet.
+Status: Accepted
 
 ## Context
 
