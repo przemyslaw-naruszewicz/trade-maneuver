@@ -53,3 +53,8 @@ parameters:
             allowInInstanceOf:
                 - 'TradeManeuver\*\Domain\*RepositoryInterface'
                 - 'PHPUnit\Framework\TestCase'
+    # Test methods carry the test_ prefix, which php-cs-fixer checks; it does not check methods marked with the attribute.
+    disallowedAttributes:
+        -
+            attribute: 'PHPUnit\Framework\Attributes\Test'
+            message: 'name the test method with the test_ prefix instead.'

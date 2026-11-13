@@ -6,10 +6,13 @@ use PhpCsFixer\Config;
 use PhpCsFixer\Finder;
 
 return (new Config)
+    ->setRiskyAllowed(true)
     ->setRules([
         '@PSR12' => true,
         'braces_position' => ['anonymous_classes_opening_brace' => 'next_line_unless_newline_at_signature_end'],
         'new_with_parentheses' => ['anonymous_class' => false, 'named_class' => false],
+        'php_unit_method_casing' => ['case' => 'snake_case'],
+        'php_unit_test_annotation' => ['style' => 'prefix'],
         'single_line_empty_body' => true,
         'single_trait_insert_per_statement' => false,
     ])
