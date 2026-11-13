@@ -86,7 +86,7 @@ SDLC §4 defines the three levels:
 - `MAJOR`: a defect or a violation of a documented rule on a normal path; a rare edge case with one of the `BLOCKER` impacts; custom tooling that an installed tool could replace.
 - `MINOR`: a rare edge case without those impacts, a judgement call such as a code smell, and wording or style.
 
-A rare edge case is one that only a combination of conditions produces, conditions that normal use and the task's scenarios do not create. Each `BLOCKER` and `MAJOR` finding states its impact and whether it occurs on a normal path or only in a rare edge case, with the conditions that trigger it. Findings stay under their Standards or Spec axis. `BLOCKER` and `MAJOR` block `PASS`; `MINOR` does not.
+A rare edge case is one that only a combination of conditions produces, conditions that normal use and the task's scenarios do not create. Each `BLOCKER` and `MAJOR` finding states its impact and whether it occurs on a normal path or only in a rare edge case, with the conditions that trigger it. The visible line of the finding carries a short marker, `normal path` or `rare edge case`; the impact and the triggering conditions go in the report's `<details>` section, so the visible part keeps its 10-line limit. Findings stay under their Standards or Spec axis. `BLOCKER` and `MAJOR` block `PASS`; `MINOR` does not.
 
 ### Shorter PR descriptions
 
@@ -94,7 +94,7 @@ A rare edge case is one that only a combination of conditions produces, conditio
 - The visible part, outside `<details>`, has at most about 250 words.
 - The description links the task and does not restate its requirements, its AC text, or the diff.
 - Deviations and Risks list only real entries, otherwise "None".
-- The AC, test, and red commit table and the rule-to-home table go inside `<details>`.
+- The AC, test, and red commit table goes inside `<details>`.
 - An update after follow-up commits changes only the parts that no longer match the diff.
 
 ### Incremental review
@@ -105,10 +105,11 @@ A rare edge case is one that only a combination of conditions produces, conditio
   - It reruns the red-evidence check only for AC whose red commit SHA or test assertions changed since the reviewed SHA.
   - The review scope (full or documentation) still follows the diff between base and head.
   - The report's result line adds `incremental since <short-sha>`.
-- A full review is required when the requirements changed (the task, linked shared requirements, the requirements of a change without a task, or an approved task adaptation), when the PR has no earlier `PASS`, or when its last result was `FAIL`.
+- A full review is required when the requirements changed (the task, linked shared requirements, the requirements of a change without a task, or an approved task adaptation), when an update from `main` changed AGENTS.md or a document it makes mandatory, when the PR has no earlier `PASS`, or when its last result was `FAIL`. The reviewer finds a changed governing document with `git diff --name-only <old-base> <new-base>`.
 - Incremental reviews may follow one another. No full review is required before merge.
 - An update from `main` gets an incremental review. SDLC §5 says so in its rule on updating the branch.
 - The reviewer finds the reviewed SHA itself: it reads the latest independent review report posted on the PR, whose result line gives the result and the head SHA. SDLC §4 and `docs/agents/independent-review.md` add that report to the reviewer's inputs. The reviewer prompt keeps its four items (PR number, task ID or direct-change note, base SHA, head SHA), so the implementing agent passes no hint about where the review starts.
+- The reviewer uses that report as the starting point only when its result is `PASS`, its result line follows the SDLC §4 format, the comment has not been edited, and its head SHA exists in the repository.
 - The reviewer checks the conditions itself. When a condition fails, it runs a full review and says why in the report.
 - The status-only exception stays as it is.
 - The `code-review` adaptation in `docs/agents/skills.md` sets the skill's fixed point to the reviewed SHA and replaces its three-dot diff with `git range-diff` after an update from `main`.
@@ -124,7 +125,7 @@ The current convention becomes the rule. The installed php-cs-fixer (3.95), whic
 
 - The rules take effect when this task's implementation PR merges. Until then, this task's PRs follow the rules on `main` at their base, with two exceptions for the implementation PR, by the owner's decision:
   - It ticks this task's met AC in the commit that sets `done`. Its review accepts that task-file change, and the task-file diff may contain only `approved` to `done` and the ticked AC.
-  - Its review reads the rule-to-home table in the PR description and checks it against the diff, although under the base rules the review reads only named parts of the PR description, and none of them is that table.
+  - Its description carries the rule-to-home table inside `<details>`. Its review reads that table and checks it against the diff, although under the base rules the review reads only named parts of the PR description, and none of them is that table.
 
 ## Decisions
 
@@ -136,7 +137,7 @@ The current convention becomes the rule. The installed php-cs-fixer (3.95), whic
   - A rare edge case is at most `MINOR` unless it has one of the listed impacts.
   - The visible PR description has at most about 250 words.
   - No full review is required before merge.
-  - The current test naming convention becomes the rule, and php-cs-fixer enforces its PHPUnit part. The review of PR #27 found that the installed fixer can check it, and the owner accepted the adaptation. Adding the two rules changes what CI checks, and approving this task approves that change.
+  - The current test naming convention becomes the rule, and php-cs-fixer enforces its PHPUnit part. The review of PR #27 found that the installed fixer can check it, and the owner accepted the change. Adding the two rules changes what CI checks, and approving this task approves that change.
   - Done tasks stay unticked.
   - The draft tasks get the new format in a separate PR after this task.
   - The reviewer finds the reviewed SHA in its latest report on the PR, so the reviewer prompt and the subagent definition stay unchanged.
@@ -155,6 +156,7 @@ The current convention becomes the rule. The installed php-cs-fixer (3.95), whic
 - A chain of incremental reviews can miss a problem that only the whole diff shows. Each incremental review checks how its change interacts with the rest of the PR, and any change to the requirements forces a full review.
 - A reviewer can label a real problem a rare edge case. The finding states its triggering conditions, and the owner sees them in the report.
 - After squash merges, red commits are reachable only from the PR, not from a plain clone of `main`.
+- An incremental review trusts the earlier report comment on the PR. Only the owner and the owner's agents write in the repository, and an edited comment or a missing SHA forces a full review.
 
 ## Acceptance criteria
 
@@ -165,9 +167,9 @@ The current convention becomes the rule. The installed php-cs-fixer (3.95), whic
 - [ ] Documentation check: SDLC §3 and the `to-tickets` adaptation describe the lighter task format: a CI AC only beyond the gate, a verification method in each AC, a Verification section only for checks no AC covers, only "Blocked by", and AC as a checkbox list.
 - [ ] Documentation check: SDLC §4, SDLC §5, and the `implement` adaptation let the implementing agent tick met AC in the commit that sets `done`, and the reviewer reports a ticked AC that it does not assess as `PASS`.
 - [ ] Documentation check: SDLC §4 and §5 name squash merge for every PR, with the PR title as the commit title, an empty message, and red commits kept in the PR and `refs/pull/<N>/head`. The `git bisect --first-parent` sentence is gone, and SDLC lists the target repository settings as the owner's action.
-- [ ] Documentation check: SDLC §4 defines `BLOCKER`, `MAJOR`, and `MINOR` as in Requirements, including the rare edge case rule and its exceptions, and requires each `BLOCKER` and `MAJOR` finding to state its impact and frequency.
+- [ ] Documentation check: SDLC §4 defines `BLOCKER`, `MAJOR`, and `MINOR` as in Requirements, including the rare edge case rule and its exceptions, and requires each `BLOCKER` and `MAJOR` finding to state its impact and frequency, with the frequency marker in the visible line and the detail in `<details>`.
 - [ ] Documentation check: SDLC §4 and the `pr` adaptation limit the visible part of every PR description to about 250 words, with tables inside `<details>`, no restated task content, and "None" for empty Deviations and Risks.
-- [ ] Documentation check: SDLC §4, SDLC §5, `docs/agents/independent-review.md`, and the `code-review` and `implement` adaptations define incremental review as in Requirements: its conditions, the reviewer finding the reviewed SHA in the latest report on the PR with an unchanged four-item prompt, `git range-diff` after an update from `main`, the red-evidence rerun only for changed AC, the full review cases, the fallback to a full review, and the report marker.
+- [ ] Documentation check: SDLC §4, SDLC §5, `docs/agents/independent-review.md`, and the `code-review` adaptation define incremental review as in Requirements: its conditions, the reviewer finding the reviewed SHA in the latest report on the PR with an unchanged four-item prompt, the conditions on that report, `git range-diff` after an update from `main`, the red-evidence rerun only for changed AC, the full review cases, the fallback to a full review, and the report marker.
 - [ ] Documentation check: `docs/testing-strategy.md` names the two php-cs-fixer rules as the enforcement and states the parts of the PHPUnit and Behat naming convention that no fixer checks, as in Requirements.
 - [ ] Tool output: with the two rules in `.php-cs-fixer.dist.php`, `composer cs:check` passes and no test file changes. A temporary camelCase test method, not committed, makes `composer cs:check` fail; the PR shows that output inside `<details>`.
 - [ ] Documentation check: the implementation PR description carries a rule-to-home table. It lists every removed or moved sentence that states a rule, with its new location or the reason it binds nothing, and every removed or renamed heading anchor with the links that used it. The reviewer checks the table against the diff.
