@@ -33,7 +33,7 @@ Out of scope:
 
 - SDLC §4 holds the review policy: the reviewer's inputs, the scope rule, task adaptation, `PASS` and `FAIL`, finding severity, the report format, incremental review, and the gates.
 - `docs/agents/independent-review.md` is the reviewer's only procedure. It takes over the commands from the `code-review` section of `docs/agents/skills.md`: base and head SHA, the task-file diff, and the red-evidence check. It keeps the operational rules that no other file states: the test database only, literal `-e` options under zsh, red evidence on the main working tree, and memory notes that are neither requirements nor evidence. Its bullets that restate SDLC §4 become links to the relevant SDLC §4 sections.
-- `docs/agents/skills.md` states only how each skill's steps change and links to SDLC for the rule. Its `code-review` section keeps the version pin, the upstream link, and one line saying that the skill runs only as the independent review, following `independent-review.md`. Its `pr` section names the skill sections that the SDLC PR description replaces.
+- `docs/agents/skills.md` states only how each skill's steps change and links to SDLC for the rule. Its `code-review` section keeps the version pin, the upstream link, one line saying that the skill runs only as the independent review, following `independent-review.md`, and the incremental review changes to the skill's steps (see Incremental review). Its `pr` section names the skill sections that the SDLC PR description replaces.
 - `docs/agents/issue-tracker.md` keeps the step mapping of `to-spec` and `to-tickets` and the working spec path. It drops the restated SDLC §3 and §4 rules: the ID format, the definition of ready, and planning PR naming.
 - One-line pointers stay at the point of action for three guardrails: agents never merge, nothing changes after `FAIL` until the owner asks, and no other reviewer starts when the report is missing.
 
@@ -42,7 +42,7 @@ Out of scope:
 - The subagent limit appears once. That rule keeps the list of affected skills and the instruction to do their agent work one step after another in the main agent.
 - The commit exceptions appear once. That rule keeps the push, the PR, and the ban on merging.
 - The existing-tools rule keeps the implementer's checks. The reviewer's obligation (at least `MAJOR`, adapt the task) stays only in SDLC §4.
-- The bullet that names Matt Pocock's `code-review`, the fictional code rule, the Docker commands, and the feedback rule stay as they are.
+- The bullet that names Matt Pocock's `code-review`, the fictional code rule, the Docker commands, and the rule on concise user-facing output stay as they are.
 
 ### Smaller SDLC corrections
 
@@ -111,6 +111,7 @@ A rare edge case is one that only a combination of conditions produces, conditio
   - The review scope (full or documentation) still follows the diff between base and head.
   - The report's result line adds `incremental since <short-sha>`.
 - A full review is required when the requirements changed (the task, linked shared requirements, the requirements of a change without a task, or an approved task adaptation), when an update from `main` changed AGENTS.md or a document it makes mandatory, when the PR has no earlier `PASS`, or when its last result was `FAIL`. The reviewer finds a changed governing document with `git diff --name-only <old-base> <new-base>`.
+- In a planning or task-change PR, the task file is the change under review, and the spec source is the SDLC §3 definition of ready and the requested documentation change. A follow-up commit that edits that task file therefore gets an incremental review, unless another full-review condition applies.
 - Incremental reviews may follow one another. No full review is required before merge.
 - An update from `main` gets an incremental review. SDLC §5 says so in its rule on updating the branch.
 - The reviewer finds the reviewed SHA itself: it reads the latest independent review report posted on the PR, whose first two lines give the result and the head SHA. SDLC §4 and `docs/agents/independent-review.md` add that report to the reviewer's inputs. The reviewer prompt keeps its four items (PR number, task ID or direct-change note, base SHA, head SHA), so the implementing agent passes no hint about where the review starts.
@@ -124,7 +125,8 @@ A rare edge case is one that only a combination of conditions produces, conditio
 The current convention becomes the rule. The installed php-cs-fixer (3.95), which CI already runs through `composer cs:check`, enforces the part a tool can check:
 
 - `.php-cs-fixer.dist.php` enables `php_unit_method_casing` with `case: snake_case` and `php_unit_test_annotation` with `style: prefix`, and sets `setRiskyAllowed(true)` because the second rule is risky. A dry run of both rules on the current tests changes no file.
-- `docs/testing-strategy.md` names those two rules as the enforcement and states only what no fixer checks. A PHPUnit test method name, after `test_`, is a sentence that states the behavior in domain terms, for example `test_a_message_without_an_id_is_not_processable_and_audited`. A Behat `Feature` names the capability, for example "Trade signal intake". A `Scenario` is a declarative sentence that states the behavior, for example "A trade signal without a required field is rejected".
+- PHPUnit tests use no `#[Test]` attribute, because `php_unit_test_annotation` checks only `@test` docblocks, and an attribute-marked method without the `test_` prefix would pass the fixer.
+- `docs/testing-strategy.md` names those two rules as the enforcement, states the ban on `#[Test]`, and states only what no fixer checks. A PHPUnit test method name, after `test_`, is a sentence that states the behavior in domain terms, for example `test_a_message_without_an_id_is_not_processable_and_audited`. A Behat `Feature` names the capability, for example "Trade signal intake". A `Scenario` is a declarative sentence that states the behavior, for example "A trade signal without a required field is rejected".
 
 ### Effect on this task's own PRs
 
@@ -175,7 +177,7 @@ The current convention becomes the rule. The installed php-cs-fixer (3.95), whic
 - [ ] Documentation check: SDLC §4 defines `BLOCKER`, `MAJOR`, and `MINOR` as in Requirements, including the rare edge case rule and its exceptions, and requires each `BLOCKER` and `MAJOR` finding to state its impact and frequency, with the frequency marker in the visible line and the detail in `<details>`.
 - [ ] Documentation check: SDLC §4 and the `pr` adaptation limit the visible part of every PR description to about 250 words, with tables inside `<details>`, no restated task content, and "None" for empty Deviations and Risks.
 - [ ] Documentation check: SDLC §4, SDLC §5, `docs/agents/independent-review.md`, and the `code-review` adaptation define incremental review as in Requirements: its conditions, the reviewer finding the reviewed SHA in the latest report on the PR with an unchanged four-item prompt, the conditions on that report, `git range-diff` after an update from `main`, the red-evidence rerun only for changed AC, the full review cases, the fallback to a full review, and the report marker.
-- [ ] Documentation check: `docs/testing-strategy.md` names the two php-cs-fixer rules as the enforcement and states the parts of the PHPUnit and Behat naming convention that no fixer checks, as in Requirements.
+- [ ] Documentation check: `docs/testing-strategy.md` names the two php-cs-fixer rules as the enforcement, bans the `#[Test]` attribute, and states the parts of the PHPUnit and Behat naming convention that no fixer checks, as in Requirements.
 - [ ] Tool output, which the reviewer reproduces without changing repository files: with the two rules in `.php-cs-fixer.dist.php`, `composer cs:check` passes and no test file changes. A PHPUnit test class with a camelCase test method, written to a temporary file outside the repository (for example `/tmp` in the `app` container), makes `vendor/bin/php-cs-fixer fix --dry-run --diff --using-cache=no --config=.php-cs-fixer.dist.php <file>` exit with a non-zero code and propose the snake_case name.
 - [ ] Documentation check: the implementation PR description carries a rule-to-home table. It lists every removed or moved sentence that states a rule, with its new location or the reason it binds nothing, and every removed or renamed heading anchor with the links that used it. The reviewer checks the table against the diff.
 - [ ] Manual check, by the implementation PR's own independent review: the review runs in the scope its diff sets, a full review because the diff changes `.php-cs-fixer.dist.php`; it applies the two exceptions in "Effect on this task's own PRs"; and the PR's task-file diff contains only `approved` to `done` and the ticked AC of this task. The `PASS` itself is the merge gate in SDLC §5, not part of this AC.
