@@ -29,15 +29,11 @@ For step 2, start from the [seams in the testing strategy](../testing-strategy.m
 
 ### to-tickets
 
-- Write one task per file at `docs/tasks/<TASK-ID>.md` (create `docs/tasks/` if missing) with the SDLC §3 frontmatter and `status: draft`.
-- Use the SDLC ID format, e.g. `AUTH-002`. If no existing task sets the prefix or next number, ask.
-- Replace the skill's issue template with the task content SDLC §3 requires. Carry over every decision needed for implementation and verification, because the working spec never enters the repository (SDLC §2).
-- Apply the SDLC §3 definition of ready to every AC, including its test level and concrete expected values.
-- Express blocking edges as dependencies on other TASK-IDs. Put shared requirements in each task or in a linked repository document.
+- Write one task per file at `docs/tasks/<TASK-ID>.md` (create `docs/tasks/` if missing), with the ID, frontmatter, and `status: draft` as [SDLC §3](../../SDLC.md#3-task-preparation-and-approval) describes, in place of the skill's `.scratch/` files and their `NN` numbers.
+- Replace the skill's ticket template with the SDLC §3 task content and format: AC as a checkbox list, each with its verification method; a Verification section only for checks no AC covers; an AC on CI only when it asks for more than the merge gate; and the skill's blocking edges as "Blocked by" task IDs. Carry over every decision needed for implementation and verification, because the working spec never enters the repository (SDLC §2).
 - The user approving the breakdown in step 4 is not task approval. Leave `status: draft` and apply no labels; `ready-for-agent` does not replace human approval.
 - A task that prescribes custom tooling, scripts, infrastructure code, or generic helpers states why no existing tool fits (AGENTS.md).
-- The planning PR title and its commits name every task they add, as a range for consecutive IDs (`TM-007..TM-010`) or a list (SDLC §4).
-- Invoking `to-tickets` authorizes pushing the planning branch, opening the planning PR, and starting the independent review under the [SDLC §4 review flow](../../SDLC.md#review-flow). Never merge.
+- Name the planning PR and its commits as [SDLC §4](../../SDLC.md#branches-and-prs) describes, then push, open the PR, and start the review under the [SDLC §4 review flow](../../SDLC.md#review-flow). Never merge.
 - Leave tasks with `status: approved` or `done` as they are. Propose a task-change PR for an approved task; a fix or extension of a `done` task gets a new task linked to it.
 
 ### wayfinder, triage
