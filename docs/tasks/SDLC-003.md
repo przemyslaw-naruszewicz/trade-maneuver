@@ -25,6 +25,7 @@ Out of scope:
 - V2 review in GitHub Actions, an automatic fix loop, and CD.
 - Updating the `mattpocock-skills` plugin from 1.3.1.
 - Changes to CI, dependencies, code, or tests.
+- Changes to `.claude/agents/independent-reviewer.md`. Its prompt of four items stays, because the reviewer finds the reviewed SHA for an incremental review on the PR itself.
 
 ## Requirements
 
@@ -107,7 +108,8 @@ A rare edge case is one that only a combination of conditions produces, conditio
 - A full review is required when the requirements changed (the task, linked shared requirements, the requirements of a change without a task, or an approved task adaptation), when the PR has no earlier `PASS`, or when its last result was `FAIL`.
 - Incremental reviews may follow one another. No full review is required before merge.
 - An update from `main` gets an incremental review. SDLC §5 says so in its rule on updating the branch.
-- The implementing agent adds the reviewed SHA, taken from the last `PASS` report, to the reviewer prompt. The reviewer reads that report on the PR and checks the conditions. When a condition fails, it runs a full review and says why in the report.
+- The reviewer finds the reviewed SHA itself: it reads the latest independent review report posted on the PR, whose result line gives the result and the head SHA. SDLC §4 and `docs/agents/independent-review.md` add that report to the reviewer's inputs. The reviewer prompt keeps its four items (PR number, task ID or direct-change note, base SHA, head SHA), so the implementing agent passes no hint about where the review starts.
+- The reviewer checks the conditions itself. When a condition fails, it runs a full review and says why in the report.
 - The status-only exception stays as it is.
 - The `code-review` adaptation in `docs/agents/skills.md` sets the skill's fixed point to the reviewed SHA and replaces its three-dot diff with `git range-diff` after an update from `main`.
 
@@ -120,8 +122,9 @@ A rare edge case is one that only a combination of conditions produces, conditio
 
 ### Effect on this task's own PRs
 
-- The rules take effect when this task's implementation PR merges. Until then, this task's PRs follow the rules on `main` at their base.
-- By the owner's decision, the implementation PR already ticks this task's AC in the commit that sets `done`, and its review accepts that change.
+- The rules take effect when this task's implementation PR merges. Until then, this task's PRs follow the rules on `main` at their base, with two exceptions for the implementation PR, by the owner's decision:
+  - It ticks this task's met AC in the commit that sets `done`. Its review accepts that task-file change, and the task-file diff may contain only `approved` to `done` and the ticked AC.
+  - Its review reads the rule-to-home table in the PR description and checks it against the diff, although a documentation review under the base rules reads nothing else from the PR description.
 
 ## Decisions
 
@@ -136,6 +139,8 @@ A rare edge case is one that only a combination of conditions produces, conditio
   - The current test naming convention becomes the rule.
   - Done tasks stay unticked.
   - The draft tasks get the new format in a separate PR after this task.
+  - The reviewer finds the reviewed SHA in its latest report on the PR, so the reviewer prompt and the subagent definition stay unchanged.
+  - This task's implementation PR applies two exceptions to the base rules: ticked AC and the rule-to-home table check.
 - Squash happens at merge in GitHub, not on the branch. A squash on the branch would change `head SHA`, invalidate the `PASS`, and destroy the red commits that the review checks.
 
 ## Constraints
@@ -162,10 +167,10 @@ A rare edge case is one that only a combination of conditions produces, conditio
 - [ ] Documentation check: SDLC §4 and §5 name squash merge for every PR, with the PR title as the commit title, an empty message, and red commits kept in the PR and `refs/pull/<N>/head`. The `git bisect --first-parent` sentence is gone, and SDLC lists the target repository settings as the owner's action.
 - [ ] Documentation check: SDLC §4 defines `BLOCKER`, `MAJOR`, and `MINOR` as in Requirements, including the rare edge case rule and its exceptions, and requires each `BLOCKER` and `MAJOR` finding to state its impact and frequency.
 - [ ] Documentation check: SDLC §4 and the `pr` adaptation limit the visible part of every PR description to about 250 words, with tables inside `<details>`, no restated task content, and "None" for empty Deviations and Risks.
-- [ ] Documentation check: SDLC §4, SDLC §5, `docs/agents/independent-review.md`, and the `code-review` and `implement` adaptations define incremental review as in Requirements: its conditions, the reviewed SHA in the prompt, `git range-diff` after an update from `main`, the red-evidence rerun only for changed AC, the full review cases, the fallback to a full review, and the report marker.
+- [ ] Documentation check: SDLC §4, SDLC §5, `docs/agents/independent-review.md`, and the `code-review` and `implement` adaptations define incremental review as in Requirements: its conditions, the reviewer finding the reviewed SHA in the latest report on the PR with an unchanged four-item prompt, `git range-diff` after an update from `main`, the red-evidence rerun only for changed AC, the full review cases, the fallback to a full review, and the report marker.
 - [ ] Documentation check: `docs/testing-strategy.md` states the PHPUnit and Behat naming convention from Requirements, and no test file changes.
 - [ ] Documentation check: the implementation PR description carries a rule-to-home table. It lists every removed or moved sentence that states a rule, with its new location or the reason it binds nothing, and every removed or renamed heading anchor with the links that used it. The reviewer checks the table against the diff.
-- [ ] Manual check: the independent review of the implementation PR returns `PASS` as a documentation review, and the PR's task-file diff contains only `approved` to `done` and the ticked AC of this task.
+- [ ] Manual check: the independent review of the implementation PR returns `PASS` as a documentation review, applying the two exceptions in "Effect on this task's own PRs", and the PR's task-file diff contains only `approved` to `done` and the ticked AC of this task.
 
 ## Dependencies
 
