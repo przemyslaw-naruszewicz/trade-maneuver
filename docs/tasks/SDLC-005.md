@@ -34,24 +34,25 @@ Out of scope:
 
 ### Dependency rules
 
-PHPat repeats every row of the [dependency rules](../architecture.md#dependency-rules) for the classes in `src`, in both namespaces, `Trading` and `DemoAnalytics`. The layers are those Deptrac defines. Third-party code means every class outside `TradeManeuver\`, `App\`, and `Database\`, and outside PHP itself. Each rule may use `canOnlyDependOn` or `shouldNotDependOn`, whichever states the row exactly.
+PHPat repeats every row of the [dependency rules](../architecture.md#dependency-rules) for the classes in `src`, in both namespaces, `Trading` and `DemoAnalytics`. The layers are those Deptrac defines, and every layer may also depend on itself, as in Deptrac. The allowed libraries are `Brick\Money`, `Brick\Math`, `Psr\Clock`, and in Trading `Psr\Log`. Third-party code means, as in Deptrac's `ThirdParty` layer, every class outside `TradeManeuver\`, `App\`, `Database\`, the allowed libraries, and PHP itself. Each rule may use `canOnlyDependOn` or `shouldNotDependOn`, whichever states the row exactly.
 
 | Layer in `src` | May depend on |
 | --- | --- |
 | `Domain` | Its own `Domain`, `Brick\Money`, and `Brick\Math` |
 | `Application` | Its own `Application` and `Domain`, `Psr\Clock`, and in Trading `Psr\Log` |
-| `Infrastructure`, apart from read models, query adapters, and the service provider | Its own `Application` and `Domain`, the libraries above, and third-party code |
+| `Infrastructure`, apart from read models, query adapters, and the service provider | Its own `Application` and `Domain`, the allowed libraries, and third-party code |
 | Trading read models in `Infrastructure/{Aggregate}/ReadModel` | Third-party code only |
 | Trading query adapters, `Infrastructure/{Aggregate}/{Aggregate}Query` | The same as `Infrastructure`, and Trading read models |
-| `Ui`, apart from Livewire components | Its own `Application` and `Domain`, the libraries above, and third-party code |
+| `Ui`, apart from Livewire components | Its own `Application` and `Domain`, the allowed libraries, and third-party code |
 | Trading Livewire components in `Ui/Livewire` | The same as `Ui`, and Trading read models |
-| The service provider, the composition root | Every layer of its own namespace and third-party code |
+| The service provider, the composition root | Every layer of its own namespace, the allowed libraries, and third-party code |
 
 These rules follow from the table:
 
 - `Ui` and `Infrastructure` do not depend on each other, apart from the read-model rows.
 - No class in one namespace depends on a class in the other.
 - No class in `src` depends on `App\` or `Database\`.
+- Read models depend on no allowed library, and no DemoAnalytics class depends on `Psr\Log`.
 
 ### Class shape
 
@@ -91,7 +92,8 @@ These rules select classes in `src` only, in both namespaces.
   | Unqualified `config()` call | missed (the PHPStan disallowed-calls entry reports it) | missed |
   | Non-final class, interface without the suffix, mutable integration event | no such rule | reported |
 
-- Break checks verify the rules through `composer analyse`, at the project tool seam in the [testing strategy](../testing-strategy.md#seams). No fixture tests are committed (owner decision, 2026-11-16).
+- The php-cs-fixer `final_class` fixer was considered for the `final` rule and rejected. Its rules apply to the whole Finder, which covers the whole repository, including the non-final classes in `app/` and `tests/`. It also cannot check the `Interface` suffix or `readonly` integration events, which PHPat checks in the same run.
+- Break checks verify the rules through `composer analyse`, at the project tool seam in the [testing strategy](../testing-strategy.md#seams). No fixture tests are committed (owner decision, 2026-11-16). The break checks prove each rule when it is added, as in SDLC-004, so both tasks use one verification method. `RuleTestCase` fixtures like those in `tests/PHPStan` would need a fixture set per PHPat rule, and review catches a later weakening of the configuration.
 
 ## Constraints
 
@@ -108,7 +110,7 @@ These rules select classes in `src` only, in both namespaces.
 
 - [ ] Break check: in both `Trading` and `DemoAnalytics`, a temporary `Domain` enum that implements an `Application` interface makes `composer analyse` fail, and so does a temporary `Illuminate` attribute on a `Domain` class constant.
 - [ ] Break check: a temporary `Infrastructure` enum that implements a `Ui` interface, and a temporary attribute from the other namespace on a `Ui` class constant, each make `composer analyse` fail.
-- [ ] Break check: one temporary probe per row, each a dependency the row forbids, makes `composer analyse` fail: `Domain` on an `Illuminate` class, `Application` on `Infrastructure`, `Infrastructure` on `Ui`, `Ui` on `Infrastructure`, a repository and a non-Livewire `Ui` class each on a read model, a read model on `Application`, a query adapter on `Ui`, a Livewire component on an `Infrastructure` class other than a read model, and the service provider on the other namespace.
+- [ ] Break check: one temporary probe per row, each a dependency the row forbids and placed in `Trading` unless stated otherwise, makes `composer analyse` fail: `Domain` on an `Illuminate` class, `Application` on `Infrastructure`, `Infrastructure` on `Ui`, `Ui` on `Infrastructure`, a repository and a non-Livewire `Ui` class each on a read model, a read model on `Application`, a query adapter on `Ui`, a Livewire component on an `Infrastructure` class other than a read model, the service provider on the other namespace, a read model on `Brick\Money`, and a DemoAnalytics `Application` class and a DemoAnalytics `Infrastructure` class each on `Psr\Log`.
 - [ ] Break check: a temporary class in `Trading` that depends on `DemoAnalytics`, one in `DemoAnalytics` that depends on `Trading`, and one in `src` that depends on `App\` each make `composer analyse` fail.
 - [ ] Break check: a temporary class in `Application\IntegrationEvent` that is not `readonly` makes `composer analyse` fail.
 - [ ] Break check: a temporary non-final concrete class and a temporary interface without the `Interface` suffix in `src` each make `composer analyse` fail, while an abstract class, an enum, and a trait pass.
