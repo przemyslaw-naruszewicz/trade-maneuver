@@ -40,7 +40,8 @@ Run `make ci` (or `sh bin/ci`) from the host. It builds the PHP image with PCOV,
 | --- | --- |
 | Composer validation and `composer audit --locked` | `composer.json`, `composer.lock` |
 | PHP CS Fixer in check mode: PSR-12 with explicit adjustments matching the existing Pint style | `.php-cs-fixer.dist.php` |
-| PHPStan with Larastan at level 8, with cognitive complexity limits of 9 per function or method and 40 per class (`tomasvotruba/cognitive-complexity`) and disallowed calls (`spaze/phpstan-disallowed-calls`) | `phpstan.neon.dist` |
+| PHPStan with Larastan at level 8, with cognitive complexity limits of 9 per function or method and 30 per class (`tomasvotruba/cognitive-complexity`) and disallowed calls (`spaze/phpstan-disallowed-calls`) | `phpstan.neon.dist` |
+| PHPMD with six rules at their default limits: `CyclomaticComplexity`, `NPathComplexity`, `ExcessiveMethodLength`, `ExcessiveParameterList` (constructors exempt), `EmptyCatchBlock`, and `UnusedLocalVariable` | `phpmd.xml` |
 | Deptrac; run it separately with `docker compose exec app composer analyse:architecture` | `deptrac.yaml` |
 | PHPUnit | `phpunit.xml` |
 | Behat | `behat.php` |

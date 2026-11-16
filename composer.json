@@ -68,6 +68,7 @@
         "cs:fix": "@php vendor/bin/php-cs-fixer fix",
         "analyse": "@php vendor/bin/phpstan analyse --no-progress --memory-limit=1G",
         "analyse:architecture": "@php vendor/bin/deptrac analyse --config-file=deptrac.yaml --no-progress --no-cache",
+        "analyse:phpmd": "@php vendor/bin/phpmd analyze --ruleset=phpmd.xml src app tests",
         "test:phpunit": "@php vendor/bin/phpunit --log-junit storage/quality/phpunit.xml",
         "test:behat": "@php vendor/bin/behat --strict --no-interaction --format=progress",
         "test:mutation": "@php -d pcov.enabled=1 vendor/bin/infection --with-uncovered --no-progress --no-interaction",
@@ -87,6 +88,7 @@
             "@cs:check",
             "@analyse",
             "@analyse:architecture",
+            "@analyse:phpmd",
             "@test:phpunit",
             "@test:behat"
         ],

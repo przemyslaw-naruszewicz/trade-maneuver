@@ -14,7 +14,7 @@ parameters:
         - %rootDir%/../../../config
         - %rootDir%/../../../src/*/Infrastructure/Resources
     cognitive_complexity:
-        class: 40
+        class: 30
         function: 9
     paths:
         - app
