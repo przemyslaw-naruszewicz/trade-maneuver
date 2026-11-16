@@ -34,7 +34,7 @@ Out of scope:
 
 ### Dependency rules
 
-PHPat repeats every row of the [dependency rules](../architecture.md#dependency-rules) for the classes in `src`, in both namespaces, `Trading` and `DemoAnalytics`. The layers are those Deptrac defines, and every layer may also depend on itself, as in Deptrac. The allowed libraries are `Brick\Money`, `Brick\Math`, `Psr\Clock`, and in Trading `Psr\Log`. Third-party code means, as in Deptrac's `ThirdParty` layer, every class outside `TradeManeuver\`, `App\`, `Database\`, the allowed libraries, and PHP itself. Each rule may use `canOnlyDependOn` or `shouldNotDependOn`, whichever states the row exactly.
+PHPat repeats every row of the [dependency rules](../architecture.md#dependency-rules) for the classes in `src`, in both namespaces, `Trading` and `DemoAnalytics`. The layers are those Deptrac defines, and every layer may also depend on itself, as in Deptrac. The allowed libraries are `Brick\Money`, `Brick\Math`, `Psr\Clock`, and in Trading `Psr\Log`. Third-party code means, as in Deptrac's `ThirdParty` layer, every class outside `TradeManeuver\`, `App\`, `Database\`, `Brick\Money`, `Brick\Math`, `Psr\Clock`, `Psr\Log`, and PHP itself, in both namespaces. Each rule may use `canOnlyDependOn` or `shouldNotDependOn`, whichever states the row exactly.
 
 | Layer in `src` | May depend on |
 | --- | --- |
@@ -45,7 +45,7 @@ PHPat repeats every row of the [dependency rules](../architecture.md#dependency-
 | Trading query adapters, `Infrastructure/{Aggregate}/{Aggregate}Query` | The same as `Infrastructure`, and Trading read models |
 | `Ui`, apart from Livewire components | Its own `Application` and `Domain`, the allowed libraries, and third-party code |
 | Trading Livewire components in `Ui/Livewire` | The same as `Ui`, and Trading read models |
-| The service provider, the composition root | Every layer of its own namespace, the allowed libraries, and third-party code |
+| The service provider, the composition root | Every layer of its own namespace apart from read models, the allowed libraries, and third-party code |
 
 These rules follow from the table:
 
