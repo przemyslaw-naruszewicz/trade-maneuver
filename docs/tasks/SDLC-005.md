@@ -45,7 +45,7 @@ PHPat repeats every row of the [dependency rules](../architecture.md#dependency-
 | Trading query adapters, `Infrastructure/{Aggregate}/{Aggregate}Query` | The same as `Infrastructure`, and Trading read models |
 | `Ui`, apart from Livewire components | Its own `Application` and `Domain`, the allowed libraries, and third-party code |
 | Trading Livewire components in `Ui/Livewire` | The same as `Ui`, and Trading read models |
-| The service provider, the composition root | Every layer of its own namespace apart from read models, the allowed libraries, and third-party code |
+| The service provider, the composition root | The allowed libraries, third-party code, and every layer of its own namespace apart from read models |
 
 These rules follow from the table:
 
@@ -110,7 +110,7 @@ These rules select classes in `src` only, in both namespaces.
 
 - [ ] Break check: in both `Trading` and `DemoAnalytics`, a temporary `Domain` enum that implements an `Application` interface makes `composer analyse` fail, and so does a temporary `Illuminate` attribute on a `Domain` class constant.
 - [ ] Break check: a temporary `Infrastructure` enum that implements a `Ui` interface, and a temporary attribute from the other namespace on a `Ui` class constant, each make `composer analyse` fail.
-- [ ] Break check: one temporary probe per row, each a dependency the row forbids and placed in `Trading` unless stated otherwise, makes `composer analyse` fail: `Domain` on an `Illuminate` class, `Application` on `Infrastructure`, `Infrastructure` on `Ui`, `Ui` on `Infrastructure`, a repository and a non-Livewire `Ui` class each on a read model, a read model on `Application`, a query adapter on `Ui`, a Livewire component on an `Infrastructure` class other than a read model, the service provider on the other namespace, a read model on `Brick\Money`, and a DemoAnalytics `Application` class and a DemoAnalytics `Infrastructure` class each on `Psr\Log`.
+- [ ] Break check: one temporary probe per row, each a dependency the row forbids and placed in `Trading` unless stated otherwise, makes `composer analyse` fail: `Domain` on an `Illuminate` class, `Application` on `Infrastructure`, `Infrastructure` on `Ui`, `Ui` on `Infrastructure`, a repository and a non-Livewire `Ui` class each on a read model, a read model on `Application`, a query adapter on `Ui`, a Livewire component on an `Infrastructure` class other than a read model, the service provider on the other namespace, the Trading service provider on a read model, a read model on `Brick\Money`, and a DemoAnalytics `Application` class and a DemoAnalytics `Infrastructure` class each on `Psr\Log`.
 - [ ] Break check: a temporary class in `Trading` that depends on `DemoAnalytics`, one in `DemoAnalytics` that depends on `Trading`, and one in `src` that depends on `App\` each make `composer analyse` fail.
 - [ ] Break check: a temporary class in `Application\IntegrationEvent` that is not `readonly` makes `composer analyse` fail.
 - [ ] Break check: a temporary non-final concrete class and a temporary interface without the `Interface` suffix in `src` each make `composer analyse` fail, while an abstract class, an enum, and a trait pass.
