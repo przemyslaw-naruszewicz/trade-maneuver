@@ -1,6 +1,6 @@
 ---
 id: SDLC-005
-status: draft
+status: approved
 ---
 
 # SDLC-005: Architecture checks with PHPat

@@ -1,6 +1,6 @@
 ---
 id: SDLC-004
-status: draft
+status: approved
 ---
 
 # SDLC-004: Complexity checks in CI
