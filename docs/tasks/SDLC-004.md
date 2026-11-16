@@ -1,6 +1,6 @@
 ---
 id: SDLC-004
-status: approved
+status: done
 ---
 
 # SDLC-004: Complexity checks in CI
@@ -73,11 +73,11 @@ Out of scope:
 
 ## Acceptance criteria
 
-- [ ] Break check: a temporary class with cognitive complexity above 30 makes `composer analyse` fail, and `composer analyse` passes without it.
-- [ ] Break check: the PHPMD script fails for each of six temporary probes, one per rule: a 12-condition `||` chain, 8 sequential `if` statements, a 101-line method, an ordinary method with 11 parameters, an empty `catch` block, and an unused local variable. It passes without the probes.
-- [ ] Break check: a temporary constructor with 11 promoted parameters passes the PHPMD script.
-- [ ] Tool output: `composer.lock` gains only `phpmd/phpmd` and `pdepend/pdepend`, and `ci:checks` runs the PHPMD script; `make ci` shows the PHPMD step and passes.
-- [ ] Documentation check: [docs/development.md](../development.md#ci-quality-checks) states the class limit of 30 and lists PHPMD with its ruleset.
+- [x] Break check: a temporary class with cognitive complexity above 30 makes `composer analyse` fail, and `composer analyse` passes without it.
+- [x] Break check: the PHPMD script fails for each of six temporary probes, one per rule: a 12-condition `||` chain, 8 sequential `if` statements, a 101-line method, an ordinary method with 11 parameters, an empty `catch` block, and an unused local variable. It passes without the probes.
+- [x] Break check: a temporary constructor with 11 promoted parameters passes the PHPMD script.
+- [x] Tool output: `composer.lock` gains only `phpmd/phpmd` and `pdepend/pdepend`, and `ci:checks` runs the PHPMD script; `make ci` shows the PHPMD step and passes.
+- [x] Documentation check: [docs/development.md](../development.md#ci-quality-checks) states the class limit of 30 and lists PHPMD with its ruleset.
 
 ## Dependencies
 
