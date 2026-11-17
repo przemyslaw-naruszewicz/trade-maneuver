@@ -173,7 +173,7 @@ Application commands and domain factories are plain PHP objects. Console command
 
 ### Dependency rules
 
-Deptrac enforces these rules for each bounded context. Third-party code means every class outside the project and PHP itself, so a new package's classes stay out of `Domain` and `Application` until the task that adopts the package allows them.
+Deptrac enforces these rules for each bounded context, including the root files in the last row. PHPat repeats the rows for `src` as PHPStan rules, because Deptrac misses an enum's `implements` and an attribute on a class constant. A change to a row changes `deptrac.yaml`, the PHPat rules in `tests/Architecture/ArchitectureRules.php`, and this table together. Third-party code means every class outside the project and PHP itself, so a new package's classes stay out of `Domain` and `Application` until the task that adopts the package allows them.
 
 | Layer | May depend on |
 | --- | --- |
@@ -191,12 +191,14 @@ Deptrac enforces these rules for each bounded context. Third-party code means ev
 
 The demo analytics application has the same rows in its own layers; its `Application` may depend only on its `Domain` and the PSR-20 clock contract. No rule allows a dependency between it and Trading, in either direction. It stands in for an external application and is not a bounded context, so this rule is separate from the rules between contexts.
 
-PHPStan, through the `spaze/phpstan-disallowed-calls` extension, enforces two rules that Deptrac cannot:
+PHPat also checks class shape in `src`: concrete classes are `final`, interfaces end with `Interface` ([coding standards](coding-standards.md#types-and-naming)), and integration events are `readonly`.
+
+PHPStan, through the `spaze/phpstan-disallowed-calls` extension, enforces two rules that Deptrac and PHPat cannot:
 
 - `Domain` and `Application` call no function from an installed package.
 - Only repository implementations and tests call an aggregate's `state()` ([Persistence and Eloquent](#persistence-and-eloquent)).
 
-Neither tool detects a global function of the project called unqualified from another layer, or a call through a callable whose name PHPStan cannot determine. Reviewers check these by hand. Deptrac checks who depends on read models, not that they refuse writes; tests prove that.
+No tool detects a global function of the project called unqualified from another layer, or a call through a callable whose name PHPStan cannot determine. Reviewers check these by hand. Deptrac checks who depends on read models, not that they refuse writes; tests prove that.
 
 ## GUI approach
 

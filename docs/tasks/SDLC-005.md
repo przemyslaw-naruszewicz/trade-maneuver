@@ -1,6 +1,6 @@
 ---
 id: SDLC-005
-status: approved
+status: done
 ---
 
 # SDLC-005: Architecture checks with PHPat
@@ -108,14 +108,14 @@ These rules select classes in `src` only, in both namespaces.
 
 ## Acceptance criteria
 
-- [ ] Break check: in both `Trading` and `DemoAnalytics`, a temporary `Domain` enum that implements an `Application` interface makes `composer analyse` fail, and so does a temporary `Illuminate` attribute on a `Domain` class constant.
-- [ ] Break check: a temporary `Infrastructure` enum that implements a `Ui` interface, and a temporary attribute from the other namespace on a `Ui` class constant, each make `composer analyse` fail.
-- [ ] Break check: one temporary probe per row, each a dependency the row forbids and placed in `Trading` unless stated otherwise, makes `composer analyse` fail: `Domain` on an `Illuminate` class, `Application` on `Infrastructure`, `Infrastructure` on `Ui`, `Ui` on `Infrastructure`, a repository and a non-Livewire `Ui` class each on a read model, a read model on `Application`, a query adapter on `Ui`, a Livewire component on an `Infrastructure` class other than a read model, the service provider on the other namespace, the Trading service provider on a read model, a read model on `Brick\Money`, and a DemoAnalytics `Application` class and a DemoAnalytics `Infrastructure` class each on `Psr\Log`.
-- [ ] Break check: a temporary class in `Trading` that depends on `DemoAnalytics`, one in `DemoAnalytics` that depends on `Trading`, and one in `src` that depends on `App\` each make `composer analyse` fail.
-- [ ] Break check: a temporary class in `Application\IntegrationEvent` that is not `readonly` makes `composer analyse` fail.
-- [ ] Break check: a temporary non-final concrete class and a temporary interface without the `Interface` suffix in `src` each make `composer analyse` fail, while an abstract class, an enum, and a trait pass.
-- [ ] Tool output: `composer analyse` passes without the probes, `composer.lock` gains only `phpat/phpat`, the Deptrac configuration is unchanged, and `composer analyse:architecture` passes.
-- [ ] Documentation check: coding-standards.md, architecture.md, and development.md state the rules in Documentation.
+- [x] Break check: in both `Trading` and `DemoAnalytics`, a temporary `Domain` enum that implements an `Application` interface makes `composer analyse` fail, and so does a temporary `Illuminate` attribute on a `Domain` class constant.
+- [x] Break check: a temporary `Infrastructure` enum that implements a `Ui` interface, and a temporary attribute from the other namespace on a `Ui` class constant, each make `composer analyse` fail.
+- [x] Break check: one temporary probe per row, each a dependency the row forbids and placed in `Trading` unless stated otherwise, makes `composer analyse` fail: `Domain` on an `Illuminate` class, `Application` on `Infrastructure`, `Infrastructure` on `Ui`, `Ui` on `Infrastructure`, a repository and a non-Livewire `Ui` class each on a read model, a read model on `Application`, a query adapter on `Ui`, a Livewire component on an `Infrastructure` class other than a read model, the service provider on the other namespace, the Trading service provider on a read model, a read model on `Brick\Money`, and a DemoAnalytics `Application` class and a DemoAnalytics `Infrastructure` class each on `Psr\Log`.
+- [x] Break check: a temporary class in `Trading` that depends on `DemoAnalytics`, one in `DemoAnalytics` that depends on `Trading`, and one in `src` that depends on `App\` each make `composer analyse` fail.
+- [x] Break check: a temporary class in `Application\IntegrationEvent` that is not `readonly` makes `composer analyse` fail.
+- [x] Break check: a temporary non-final concrete class and a temporary interface without the `Interface` suffix in `src` each make `composer analyse` fail, while an abstract class, an enum, and a trait pass.
+- [x] Tool output: `composer analyse` passes without the probes, `composer.lock` gains only `phpat/phpat`, the Deptrac configuration is unchanged, and `composer analyse:architecture` passes.
+- [x] Documentation check: coding-standards.md, architecture.md, and development.md state the rules in Documentation.
 
 ## Dependencies
 

@@ -1,6 +1,7 @@
 includes:
     - vendor/larastan/larastan/extension.neon
     - vendor/nesbot/carbon/extension.neon
+    - vendor/phpat/phpat/extension.neon
     - vendor/phpstan/phpstan-phpunit/extension.neon
     - vendor/phpstan/phpstan-phpunit/rules.neon
     - vendor/spaze/phpstan-disallowed-calls/extension.neon
@@ -8,6 +9,8 @@ includes:
 
 parameters:
     level: 8
+    phpat:
+        ignore_built_in_classes: true
     parseModelCastsMethod: true
     # Context configuration is merged with mergeConfigFrom(), so env() there is read when the configuration is cached.
     configDirectories:
@@ -58,3 +61,10 @@ parameters:
         -
             attribute: 'PHPUnit\Framework\Attributes\Test'
             message: 'name the test method with the test_ prefix instead.'
+
+services:
+    # The PHPat architecture rules, which repeat the deptrac.yaml matrix for src and check class shape.
+    -
+        class: Tests\Architecture\ArchitectureRules
+        tags:
+            - phpat.test
