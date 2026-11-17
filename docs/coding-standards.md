@@ -19,4 +19,5 @@ These rules apply to application-owned code, whoever writes it. [architecture.md
 
 - Apply the strictest practical typing: declare `strict_types=1` in application-owned PHP files and explicitly type parameters, return values, and properties, subject to inherited framework contracts.
 - Use domain types, value objects, enums, and typed DTOs to avoid ambiguous primitives, unstructured arrays, and `mixed`. Add concise PHPDoc array shapes and collection element types where native PHP types cannot express the contract.
+- Declare concrete classes in `src` `final`. Enums, interfaces, traits, and abstract classes, such as abstract exception bases, are exempt.
 - Name application-owned interfaces with the `Interface` suffix, such as `OrderRepositoryInterface`, and data transfer objects with the exact `Dto` suffix, such as `SignalOutcomeDto`.
