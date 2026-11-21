@@ -1,4 +1,4 @@
-.PHONY: setup up down logs shell migrate test build format ci ci-lint diagrams
+.PHONY: setup up down logs shell migrate test build format ci ci-lint scan-images diagrams
 
 setup:
 	./bin/setup
@@ -33,6 +33,9 @@ ci:
 
 ci-lint:
 	sh bin/lint-ci
+
+scan-images:
+	sh bin/scan-images
 
 diagrams:
 	python3 docs/diagrams/integration/render-integration.py

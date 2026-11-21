@@ -46,6 +46,7 @@ Run `make ci` (or `sh bin/ci`) from the host. It builds the PHP image with PCOV,
 | PHPUnit | `phpunit.xml` |
 | Behat | `behat.php` |
 | Infection | `infection.json5` |
+| Trivy image scan, `make scan-images`: known critical and high vulnerabilities in the OS packages of every image from `docker compose config --images`, when a fixed version exists | `bin/scan-images`, `.trivyignore.yaml` when an exception exists |
 
 [The architecture](architecture.md#dependency-rules) states the rules that Deptrac, PHPat, and the PHPStan disallowed-calls entries enforce.
 
@@ -53,6 +54,23 @@ Infection uses minimum MSI 80% and covered MSI 100%. The full run checks all con
 
 Local `make ci` includes the full Infection run by default. Use `CI_WITH_MUTATION=diff make ci` for the pull-request checks, after `git fetch` so that `origin/main` is current, and `CI_WITH_MUTATION=0 make ci` to skip Infection. `CI_SKIP_BUILD=1` reuses an already built PHP image, as the workflow does after its cached build step.
 
-GitHub Actions runs `make ci`; [SDLC §6](../SDLC.md#6-ci) states which Infection run each event gets. Docker build layers and Composer downloads are cached between workflow runs, and Composer downloads are kept in `storage/framework/cache/composer`. PHPUnit and Infection reports are written to `storage/quality/` and uploaded as workflow artifacts for seven days.
+GitHub Actions runs `make ci` in the `quality` job; [SDLC §6](../SDLC.md#6-ci) states which Infection run each event gets. Docker build layers and Composer downloads are cached between workflow runs, and Composer downloads are kept in `storage/framework/cache/composer`. PHPUnit and Infection reports are written to `storage/quality/` and uploaded as workflow artifacts for seven days.
 
 `make ci-lint` checks workflows, shell scripts, and Compose; GitHub Actions runs it before building the PHP image.
+
+`make scan-images` runs the same image scan as CI. CI runs it in its own `image-scan` job, next to `quality` and outside `make ci`. The scan checks each image once. Trivy pulls the registry images itself and reads the locally built PHP image from a `docker save` archive, so its container gets no access to the Docker socket. The vulnerability database is kept in `storage/framework/cache/trivy`, and the workflow caches it for a day.
+
+Every registry image in `compose.yaml`, and both images that `docker/php/Dockerfile` builds from, have an exact tag and a digest. A local scan and CI therefore check the same registry images, and both build the PHP image from the same PHP and Composer images. The PHP image can still differ in the packages its Dockerfile installs, because a build installs the versions available that day and the build cache keeps them. `docker compose build --no-cache app` rebuilds it with current packages.
+
+To update a pinned image, a PR changes its tag and its digest, which `docker buildx imagetools inspect <name>:<tag>` shows, and the PR's scan checks the new image.
+
+When a finding has to wait for a fix, add an exception to `.trivyignore.yaml` and create the file if it does not exist yet. The exception gives the vulnerability ID, an `expired_at` date, and a `statement` with the reason and the image it concerns. Narrow it with `purls` where the finding allows. `make scan-images` passes the file to Trivy when it exists. Each new exception needs the owner's approval in the PR that adds it.
+
+```yaml
+vulnerabilities:
+  - id: <vulnerability-id>
+    expired_at: <yyyy-mm-dd>
+    statement: <reason>; <image>
+    purls:
+      - <package-url>
+```
