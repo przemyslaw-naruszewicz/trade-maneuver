@@ -1,6 +1,6 @@
 ---
 id: SDLC-006
-status: approved
+status: done
 ---
 
 # SDLC-006: Image vulnerability scan with Trivy
@@ -105,13 +105,13 @@ In [README](../../README.md#quality-checks), "Quality checks", the text says to 
 
 ## Acceptance criteria
 
-- [ ] Tool output: `make scan-images` scans every image from `docker compose config --images` once, names each one, and passes on the images this change pins.
-- [ ] Break check: with nginx temporarily set to `nginx:1.30.6-alpine`, `make scan-images` fails and reports CVE-2026-123007 for the `nginx` package.
-- [ ] Break check: with the PHP image temporarily built from `php:8.5.0-fpm-alpine`, `make scan-images` fails and reports CVE-2026-111497 in `brotli-libs` for the PHP image. A spike on 2026-11-19 built that image and found 30 fixable critical or high OS findings, including that one.
-- [ ] Manual check: every registry image in `compose.yaml` and both image references in the PHP Dockerfile have an exact version tag on their current line and a digest. The implementation PR shows, inside `<details>`, the `docker buildx imagetools inspect <name>:<tag>` output from the day of implementation; each pinned digest matches that output, and `docker buildx imagetools inspect <name>@sha256:<digest>` resolves. nginx is on the stable line at `1.30.7` or later, the Trivy cache key in the workflow contains the date and has `restore-keys`, and `make ci-lint` passes.
-- [ ] CI check: the PR's GitHub Actions run shows the scan job running in parallel with `quality` and passing, and a rerun of the job restores the Trivy cache.
-- [ ] Documentation check: development.md and README state the items in Documentation.
-- [ ] Manual check: after a local `make scan-images`, no file in `storage/framework/cache/trivy` belongs to root.
+- [x] Tool output: `make scan-images` scans every image from `docker compose config --images` once, names each one, and passes on the images this change pins.
+- [x] Break check: with nginx temporarily set to `nginx:1.30.6-alpine`, `make scan-images` fails and reports CVE-2026-123007 for the `nginx` package.
+- [x] Break check: with the PHP image temporarily built from `php:8.5.0-fpm-alpine`, `make scan-images` fails and reports CVE-2026-111497 in `brotli-libs` for the PHP image. A spike on 2026-11-19 built that image and found 30 fixable critical or high OS findings, including that one.
+- [x] Manual check: every registry image in `compose.yaml` and both image references in the PHP Dockerfile have an exact version tag on their current line and a digest. The implementation PR shows, inside `<details>`, the `docker buildx imagetools inspect <name>:<tag>` output from the day of implementation; each pinned digest matches that output, and `docker buildx imagetools inspect <name>@sha256:<digest>` resolves. nginx is on the stable line at `1.30.7` or later, the Trivy cache key in the workflow contains the date and has `restore-keys`, and `make ci-lint` passes.
+- [x] CI check: the PR's GitHub Actions run shows the scan job running in parallel with `quality` and passing, and a rerun of the job restores the Trivy cache.
+- [x] Documentation check: development.md and README state the items in Documentation.
+- [x] Manual check: after a local `make scan-images`, no file in `storage/framework/cache/trivy` belongs to root.
 
 ## Dependencies
 
