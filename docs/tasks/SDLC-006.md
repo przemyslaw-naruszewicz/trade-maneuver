@@ -18,6 +18,7 @@ In scope:
 - Exact version tags for every image in `compose.yaml`.
 - A Trivy ignore file for exceptions, created only if the scan needs one.
 - [docs/development.md](../development.md#ci-quality-checks), "CI quality checks".
+- [README](../../README.md#quality-checks), "Quality checks".
 
 Out of scope:
 
@@ -37,6 +38,7 @@ Out of scope:
 - Scan options: the vulnerability scanner only, OS packages only, severities `CRITICAL` and `HIGH`, and unfixed vulnerabilities ignored. A finding fails the scan with a non-zero exit code.
 - Pass the locally built PHP image to Trivy as an image archive (`docker save` and `--input`). Do not mount the Docker socket into the Trivy container. Trivy pulls the registry images itself.
 - Keep the Trivy cache, including the vulnerability database, in `storage/framework/cache/trivy`. The existing `storage/framework/cache/.gitignore` already ignores it.
+- Run the Trivy container as `${LOCAL_UID}:${LOCAL_GID}`, like the other Compose containers, so a local scan leaves no root-owned files in the cache.
 - The output names each scanned image and, for each finding, the image, the package, the vulnerability ID, the installed version, and the fixed version.
 
 ### CI job
@@ -66,12 +68,14 @@ In [docs/development.md](../development.md#ci-quality-checks), "CI quality check
 - The text says that a local scan checks the images on disk, which can be older than the ones CI builds or pulls, even under the same exact tag, and that `docker compose pull` and `docker compose build --pull` bring them up to date.
 - The text says how to add an exception.
 
+In [README](../../README.md#quality-checks), "Quality checks", the text says to run `make scan-images` before opening a pull request as well, because CI runs it in its own job outside `make ci`.
+
 ## Decisions
 
 - The owner chose detection over bot pull requests on 2026-11-19. Dependabot version updates for Compose were considered and set aside: they open pull requests from a bot, which SDLC does not provide for, and they know nothing about vulnerabilities.
 - No scheduled job during the build phase (owner decision, 2026-11-19). Nothing runs outside the owner's machine, and PRs are frequent enough to run the scan. A scheduled scan of the deployed image belongs to CD.
 - Trivy over Docker Scout and Grype. The code of Trivy, its database, and its action is Apache-2.0, and none of them needs an account or secret. The data in the database comes from outside sources under their own terms, and the OS package scan uses the distributions' security data. Docker Scout is proprietary, and CI would need a Docker login. Grype was not tested.
-- The official Trivy image runs through a Make target instead of `aquasecurity/trivy-action`. The action wraps the same program, versions from 0.31.0 had a script injection vulnerability (GHSA-9p44-j4g5-cfx5), and in March 2026 an attacker published malicious Trivy releases and moved the action's version tags to credential-stealing code (GHSA-69fq-xp46-6x23, CVE-2026-33634). The digest pin protects against a moved tag.
+- The official Trivy image runs through a Make target instead of `aquasecurity/trivy-action`. The action wraps the same program, some of its versions had a script injection vulnerability (GHSA-9p44-j4g5-cfx5), and in March 2026 an attacker published malicious Trivy releases and moved the action's version tags to credential-stealing code (GHSA-69fq-xp46-6x23, CVE-2026-33634). The digest pin protects against a moved tag.
 - OS packages only (owner decision, 2026-11-19). A spike on 2026-11-19 found fixable language-library findings that only the image maintainers can fix: 1 critical and 26 high in the Go standard library of `gosu` in `postgres:18-alpine`, and 6 high in npm packages bundled with `node:24-alpine`. Scanning them would keep CI red or need lasting exceptions. Our PHP dependencies are covered by `composer audit`.
 - nginx moves from mainline `1.31.9` to the stable line (owner decision, 2026-11-19). Trivy matches Alpine images against Alpine's security data, which tracks the stable line. In the spike, `nginx:1.30.6-alpine` showed all five nginx2root CVEs (CVE-2026-123007, CVE-2026-123633, CVE-2026-123634, CVE-2026-121810, CVE-2026-113425), while the vulnerable mainline `nginx:1.31.8-alpine` scanned clean. Alpine's data lists `1.30.7` as fixing all five. The stable line receives only bug and security fixes, and the local configuration uses no feature added in 1.31.
 - Exact tags for every image (owner decision, 2026-11-19). CI pulls a floating tag fresh, while the local environment may run an older image under the same tag, so the scan would check something other than what runs. With exact tags, every version change goes through a PR and its scan. The image maintainers still rebuild an exact tag on a newer Alpine base, so the same tag can name a newer image in CI than on disk. A digest pin would prevent that, but every base rebuild would then need a PR, so the task keeps readable tags and documents the gap.
@@ -103,7 +107,8 @@ In [docs/development.md](../development.md#ci-quality-checks), "CI quality check
 - [ ] Break check: with the PHP image temporarily built from `php:8.5.0-fpm-alpine`, `make scan-images` fails and reports CVE-2026-111497 in `brotli-libs` for the PHP image. A spike on 2026-11-19 built that image and found 30 fixable critical or high OS findings, including that one.
 - [ ] Manual check: every image in `compose.yaml` has an exact version tag on its current line, nginx is on the stable line at `1.30.7` or later, the Trivy cache key in the workflow contains the date and has `restore-keys`, and `make ci-lint` passes.
 - [ ] CI check: the PR's GitHub Actions run shows the scan job running in parallel with `quality` and passing, and a rerun of the job restores the Trivy cache.
-- [ ] Documentation check: development.md states the items in Documentation.
+- [ ] Documentation check: development.md and README state the items in Documentation.
+- [ ] Manual check: after a local `make scan-images`, no file in `storage/framework/cache/trivy` belongs to root.
 
 ## Dependencies
 
