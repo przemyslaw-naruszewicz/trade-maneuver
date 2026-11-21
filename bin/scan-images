@@ -25,8 +25,14 @@ if [ -f "$ignore_file" ]; then
     ignore_option="--ignorefile=/config/$ignore_file"
 fi
 
+images=$(docker compose config --images)
+if [ -z "$images" ]; then
+    echo 'docker compose config --images lists no images.' >&2
+    exit 1
+fi
+
 failed=
-for image in $(docker compose config --images | sort -u); do
+for image in $(printf '%s\n' "$images" | sort -u); do
     printf '\nScanning %s\n' "$image"
 
     # Registry images are pinned by digest, and Trivy pulls them itself.
