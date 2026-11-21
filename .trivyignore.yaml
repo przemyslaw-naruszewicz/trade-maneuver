@@ -1,0 +1,10 @@
+vulnerabilities:
+  - id: CVE-2026-86144
+    expired_at: 2026-12-05
+    statement: >-
+      Alpine fixes libxml2 in 2.13.9-r3, but the latest nginx:1.30.7-alpine,
+      postgres:18.7-alpine, and php:8.5.13-fpm-alpine images, on which the
+      PHP image is built, still have 2.13.9-r2 on 2026-11-21. Remove the
+      exception once rebuilt images with the fix are pinned.
+    purls:
+      - pkg:apk/alpine/libxml2@2.13.9-r2

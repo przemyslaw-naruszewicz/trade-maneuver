@@ -68,3 +68,45 @@ jobs:
       - name: Stop CI services
         if: always()
         run: docker compose down --remove-orphans
+
+  image-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Get the date for the Trivy cache key
+        id: date
+        run: echo "date=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
+      # A cache entry cannot be overwritten, so the first run of a day saves
+      # the refreshed vulnerability database and later runs reuse it.
+      - name: Cache Trivy database
+        uses: actions/cache@v5
+        with:
+          path: storage/framework/cache/trivy
+          key: ${{ runner.os }}-trivy-${{ steps.date.outputs.date }}
+          restore-keys: |
+            ${{ runner.os }}-trivy-
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build PHP image
+        uses: docker/build-push-action@v7
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: 'false'
+        with:
+          context: .
+          file: docker/php/Dockerfile
+          load: true
+          tags: trade-maneuver-php:dev
+          cache-from: type=gha,scope=php
+          cache-to: type=gha,scope=php,mode=max,ignore-error=true,timeout=2m
+
+      - name: Scan images
+        env:
+          CI_SKIP_BUILD: '1'
+        run: make scan-images
