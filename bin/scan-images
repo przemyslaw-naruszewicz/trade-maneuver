@@ -1,0 +1,62 @@
+#!/bin/sh
+set -eu
+
+cd "$(dirname "$0")/.."
+
+trivy_image=aquasec/trivy:0.76.2@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb
+cache_dir=storage/framework/cache/trivy
+ignore_file=.trivyignore.yaml
+
+if [ "${CI_SKIP_BUILD:-0}" != 1 ]; then
+    docker compose build app
+fi
+mount_owner=$(docker compose run --rm -T --no-deps --user 0:0 app stat -c '%u:%g' /var/www/html)
+export LOCAL_UID="${LOCAL_UID:-${mount_owner%:*}}"
+export LOCAL_GID="${LOCAL_GID:-${mount_owner#*:}}"
+
+mkdir -p "$cache_dir"
+archive_dir=$(mktemp -d)
+trap 'rm -rf "$archive_dir"' EXIT
+
+set -- --volume "$PWD/$cache_dir:/cache"
+ignore_option=
+if [ -f "$ignore_file" ]; then
+    set -- "$@" --volume "$PWD/$ignore_file:/config/$ignore_file:ro"
+    ignore_option="--ignorefile=/config/$ignore_file"
+fi
+
+images=$(docker compose config --images)
+if [ -z "$images" ]; then
+    echo 'docker compose config --images lists no images.' >&2
+    exit 1
+fi
+
+failed=
+for image in $(printf '%s\n' "$images" | sort -u); do
+    printf '\nScanning %s\n' "$image"
+
+    # Registry images are pinned by digest, and Trivy pulls them itself.
+    # An image without a digest is built locally and goes in as an archive.
+    if [ "${image#*@sha256:}" = "$image" ]; then
+        archive=$(printf '%s' "$image" | tr '/:' '__').tar
+        docker save --output "$archive_dir/$archive" "$image"
+        target="--input=/images/$archive"
+    else
+        target="$image"
+    fi
+
+    # shellcheck disable=SC2086 # $ignore_option is empty or one word.
+    docker run --rm --user "$LOCAL_UID:$LOCAL_GID" --env HOME=/tmp "$@" \
+        --volume "$archive_dir:/images:ro" \
+        "$trivy_image" image --quiet --cache-dir /cache --image-src remote \
+        --scanners vuln --pkg-types os --severity CRITICAL,HIGH --ignore-unfixed \
+        --exit-code 1 $ignore_option "$target" \
+        || failed="$failed $image"
+
+    rm -f "$archive_dir"/*.tar
+done
+
+if [ -n "$failed" ]; then
+    printf '\nThe scan failed for:%s\n' "$failed" >&2
+    exit 1
+fi

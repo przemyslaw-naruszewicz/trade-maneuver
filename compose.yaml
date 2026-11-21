@@ -29,7 +29,7 @@ services:
       start_period: 10s
 
   nginx:
-    image: nginx:1.31.9-alpine
+    image: nginx:1.30.7-alpine@sha256:caf4e1e032a20f9c3c5e28fc7f25ffd768ad8677b4975c54193075997b3a97e3
     ports:
       - "127.0.0.1:${APP_PORT:-8080}:80"
     volumes:
@@ -46,7 +46,7 @@ services:
       start_period: 10s
 
   postgres:
-    image: postgres:18-alpine
+    image: postgres:18.7-alpine@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71
     environment:
       POSTGRES_DB: ${DB_DATABASE:-trade_maneuver}
       POSTGRES_USER: ${DB_USERNAME:-trade_maneuver}
@@ -65,7 +65,7 @@ services:
       start_period: 10s
 
   rabbitmq:
-    image: rabbitmq:4.2-alpine
+    image: rabbitmq:4.2.9-alpine@sha256:cd4f5c5bb4ffe530dba84770a8d139b8518470cdd385fec9cf014ebfff6bb009
     # The node name, and so the data directory, depends on the host name.
     hostname: rabbitmq
     environment:
@@ -114,7 +114,7 @@ services:
         condition: service_healthy
 
   node:
-    image: node:24-alpine
+    image: node:24.22.3-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5
     working_dir: /var/www/html
     user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
     environment:

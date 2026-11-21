@@ -1,4 +1,4 @@
-FROM php:8.5-fpm-alpine
+FROM php:8.5.13-fpm-alpine@sha256:51414d5291758fe27f58a64c7e8a078465d32cc7dcef7bda803f5b36019802e0
 
 RUN apk add --no-cache git unzip icu-libs libpq libzip \
     && apk add --no-cache --virtual .build-deps \
@@ -8,7 +8,7 @@ RUN apk add --no-cache git unzip icu-libs libpq libzip \
     && docker-php-ext-enable pcov \
     && apk del .build-deps
 
-COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
+COPY --from=composer:2.11.2@sha256:50ea4d33fdcde1adb0f045547295faa1548b33872e5f789dae5b02ce2fb5de93 /usr/bin/composer /usr/local/bin/composer
 COPY docker/php/local.ini /usr/local/etc/php/conf.d/99-local.ini
 COPY docker/php/www.conf /usr/local/etc/php-fpm.d/zz-local.conf
 
