@@ -38,7 +38,7 @@ Out of scope:
 - Scan options: the vulnerability scanner only, OS packages only, severities `CRITICAL` and `HIGH`, and unfixed vulnerabilities ignored. A finding fails the scan with a non-zero exit code.
 - Pass the locally built PHP image to Trivy as an image archive (`docker save` and `--input`). Do not mount the Docker socket into the Trivy container. Trivy pulls the registry images itself.
 - Keep the Trivy cache, including the vulnerability database, in `storage/framework/cache/trivy`. The existing `storage/framework/cache/.gitignore` already ignores it.
-- Run the Trivy container as `${LOCAL_UID}:${LOCAL_GID}`, like the other Compose containers, so a local scan leaves no root-owned files in the cache.
+- Run the Trivy container as `${LOCAL_UID}:${LOCAL_GID}`, like the PHP and Node.js containers, so a local scan leaves no root-owned files in the cache. When the variables are unset, as in the CI job, detect them as `bin/ci` does.
 - The output names each scanned image and, for each finding, the image, the package, the vulnerability ID, the installed version, and the fixed version.
 
 ### CI job
