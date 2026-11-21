@@ -1,13 +1,13 @@
 ---
 id: SDLC-006
-status: approved
+status: draft
 ---
 
 # SDLC-006: Image vulnerability scan with Trivy
 
 ## Goal
 
-CI fails when an image that the Compose environment runs has a known critical or high vulnerability in an OS package and a fixed package version exists. Every PR and every push to `main` runs the scan in its own job, next to `quality`, and `make scan-images` runs the same scan locally. Every image in `compose.yaml` uses an exact version tag, so the scan checks the versions the environment runs, and nginx returns to the stable line, which the scanner's data covers.
+CI fails when an image that the Compose environment runs has a known critical or high vulnerability in an OS package and a fixed package version exists. Every PR and every push to `main` runs the scan in its own job, next to `quality`, and `make scan-images` runs the same scan locally. Every image in `compose.yaml` and the base of the PHP image use an exact version tag with its digest, so a local scan and CI check the same images that the environment runs, and nginx returns to the stable line, which the scanner's data covers.
 
 ## Scope
 
@@ -15,7 +15,7 @@ In scope:
 
 - A Make target, `make scan-images`, that scans every image the Compose environment uses.
 - A new job in the GitHub Actions CI workflow that runs it.
-- Exact version tags for every image in `compose.yaml`.
+- Exact version tags with digests for every image in `compose.yaml` and for the `FROM` line in `docker/php/Dockerfile`.
 - A Trivy ignore file for exceptions, created only if the scan needs one.
 - [docs/development.md](../development.md#ci-quality-checks), "CI quality checks".
 - [README](../../README.md#quality-checks), "Quality checks".
@@ -49,9 +49,9 @@ Out of scope:
 
 ### Images
 
-- Each image in `compose.yaml` uses an exact version tag: the latest release on its current line when the task is implemented. No major version changes.
+- Each image in `compose.yaml` has the form `<name>:<tag>@sha256:<digest>`. The tag is exact: the latest release on the image's current line when the task is implemented. The digest is the one the registry serves for that tag, the multi-platform image index, so the reference works on any host platform. No major version changes.
 - nginx uses the latest stable-line release, at least `1.30.7-alpine`.
-- The locally built PHP image keeps its `FROM` line unchanged.
+- The `FROM` line of the PHP image takes the same form, with the exact tag of the latest PHP 8.5 release in the `fpm-alpine` variant. The rest of `docker/php/Dockerfile` stays unchanged.
 
 ### Exceptions
 
@@ -65,7 +65,9 @@ In [docs/development.md](../development.md#ci-quality-checks), "CI quality check
 
 - The table gains a row for the image scan and its configuration.
 - The text says that `make scan-images` runs the same scan as CI, in its own job outside `make ci`.
-- The text says that a local scan checks the images on disk, which can be older than the ones CI builds or pulls, even under the same exact tag, and that `docker compose pull` and `docker compose build --pull` bring them up to date.
+- The text says that, with the digests, a local scan and CI check the same registry images, and both build the PHP image on the same base.
+- The text says that the PHP image can still differ in the packages its Dockerfile installs, because a build installs the versions available that day and the build cache keeps them, and that `docker compose build --no-cache app` rebuilds it with current packages.
+- The text says how to update a pinned image: a PR changes its tag and digest, and the PR's scan checks the new image.
 - The text says how to add an exception.
 
 In [README](../../README.md#quality-checks), "Quality checks", the text says to run `make scan-images` before opening a pull request as well, because CI runs it in its own job outside `make ci`.
@@ -78,7 +80,8 @@ In [README](../../README.md#quality-checks), "Quality checks", the text says to 
 - The official Trivy image runs through a Make target instead of `aquasecurity/trivy-action`. The action wraps the same program, some of its versions had a script injection vulnerability (GHSA-9p44-j4g5-cfx5), and in March 2026 an attacker published malicious Trivy releases and moved the action's version tags to credential-stealing code (GHSA-69fq-xp46-6x23, CVE-2026-33634). The digest pin protects against a moved tag.
 - OS packages only (owner decision, 2026-11-19). A spike on 2026-11-19 found fixable language-library findings that only the image maintainers can fix: 1 critical and 26 high in the Go standard library of `gosu` in `postgres:18-alpine`, and 6 high in npm packages bundled with `node:24-alpine`. Scanning them would keep CI red or need lasting exceptions. Our PHP dependencies are covered by `composer audit`.
 - nginx moves from mainline `1.31.9` to the stable line (owner decision, 2026-11-19). Trivy matches Alpine images against Alpine's security data, which tracks the stable line. In the spike, `nginx:1.30.6-alpine` showed all five nginx2root CVEs (CVE-2026-123007, CVE-2026-123633, CVE-2026-123634, CVE-2026-121810, CVE-2026-113425), while the vulnerable mainline `nginx:1.31.8-alpine` scanned clean. Alpine's data lists `1.30.7` as fixing all five. The stable line receives only bug and security fixes, and the local configuration uses no feature added in 1.31.
-- Exact tags for every image (owner decision, 2026-11-19). CI pulls a floating tag fresh, while the local environment may run an older image under the same tag, so the scan would check something other than what runs. With exact tags, every version change goes through a PR and its scan. The image maintainers still rebuild an exact tag on a newer Alpine base, so the same tag can name a newer image in CI than on disk. A digest pin would prevent that, but every base rebuild would then need a PR, so the task keeps readable tags and documents the gap.
+- Exact tags with digests for every image and for the PHP base (owner decision, 2026-11-21). The image maintainers rebuild a tag on a newer Alpine base, so a tag alone can name a newer image in CI than on disk, and the scan would check something other than what runs. A digest names one image, so the local environment, a local scan, and CI use the same registry images and the same PHP base. The tag stays next to the digest for readers. Every version change and every maintainer rebuild then reaches the project only through a PR and its scan. Docker Scout or Renovate could open those PRs, but the project takes no bot pull requests (decision above).
+- With digests, Trivy pulls from the registry the same images that the local environment runs, so only the locally built PHP image goes in as an archive. The same flow fits a later delivery through GHCR: CI builds the PHP image once, scans its archive, and can publish that image, and the digests name the registry images that a deployment would run.
 - A separate parallel job, not a step in `bin/ci`. The spike measured about 53 s to download the 1.7 GB database and about 2 minutes to pull and scan the four registry images from a cold cache, against 2 min 54 s for `quality` on PR #33. In parallel, the scan does not lengthen the wait for the result.
 - The Make target only loops over `docker compose config --images`, because `trivy image` scans one image per call and no installed tool scans a whole Compose environment.
 - The PHP image goes in as an archive, because the socket would give the Trivy container control over the host's Docker. After a fresh build, the PHP image had no fixable critical or high OS findings. An image built on 2026-11-09 had 48.
@@ -97,15 +100,15 @@ In [README](../../README.md#quality-checks), "Quality checks", the text says to 
 - Trivy downloads the vulnerability database without a pin, so a crafted database could attack Trivy itself. The job takes no secrets, its token is read-only, and the Trivy container gets no Docker socket, which limits the damage.
 - The scan depends on the Trivy database registry being reachable. An outage or a rate limit fails the job.
 - Trivy pulls the four registry images from Docker Hub anonymously, on top of the pulls the `quality` job makes, so Docker Hub's limit on anonymous pulls can fail the job.
-- An exact tag can still move when the image maintainers rebuild it, so a local image may differ from the one CI scans.
-- Exact tags do not update themselves, so fixes arrive only through a PR that a red scan or the owner prompts.
+- Digests do not update themselves, so fixes in a base image arrive only through a PR that a red scan or the owner prompts.
+- The build cache keeps the packages that the PHP Dockerfile installs, in CI as well as locally. A fix in such a package reaches the image only when that layer is rebuilt, for example after a change to the `FROM` digest or the Dockerfile.
 
 ## Acceptance criteria
 
 - [ ] Tool output: `make scan-images` scans every image from `docker compose config --images` once, names each one, and passes on the images this change pins.
 - [ ] Break check: with nginx temporarily set to `nginx:1.30.6-alpine`, `make scan-images` fails and reports CVE-2026-123007 for the `nginx` package.
 - [ ] Break check: with the PHP image temporarily built from `php:8.5.0-fpm-alpine`, `make scan-images` fails and reports CVE-2026-111497 in `brotli-libs` for the PHP image. A spike on 2026-11-19 built that image and found 30 fixable critical or high OS findings, including that one.
-- [ ] Manual check: every image in `compose.yaml` has an exact version tag on its current line, nginx is on the stable line at `1.30.7` or later, the Trivy cache key in the workflow contains the date and has `restore-keys`, and `make ci-lint` passes.
+- [ ] Manual check: every image in `compose.yaml` and the `FROM` line of the PHP Dockerfile have an exact version tag on their current line and a digest that `docker buildx imagetools inspect <name>:<tag>` reports for that tag, nginx is on the stable line at `1.30.7` or later, the Trivy cache key in the workflow contains the date and has `restore-keys`, and `make ci-lint` passes.
 - [ ] CI check: the PR's GitHub Actions run shows the scan job running in parallel with `quality` and passing, and a rerun of the job restores the Trivy cache.
 - [ ] Documentation check: development.md and README state the items in Documentation.
 - [ ] Manual check: after a local `make scan-images`, no file in `storage/framework/cache/trivy` belongs to root.
