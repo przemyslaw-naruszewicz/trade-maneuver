@@ -1,6 +1,6 @@
 ---
 id: SDLC-006
-status: draft
+status: approved
 ---
 
 # SDLC-006: Image vulnerability scan with Trivy
