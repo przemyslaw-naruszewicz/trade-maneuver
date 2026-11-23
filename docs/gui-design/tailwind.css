@@ -1,0 +1,499 @@
+/*
+ * Trade Maneuver panel: design tokens and shared components.
+ *
+ * Build: docker compose run --rm --no-deps node npx vite build --config docs/gui-design/vite.config.js
+ * The compiled file, build/tailwind.css, stays next to the pages so they open without a build step.
+ * Rebuild it in the same commit as any change to this file or to the pages.
+ */
+@import 'tailwindcss' source(none);
+
+@source './*.html';
+
+:root,
+[data-theme='light'] {
+    --paper: #f7f6f2;
+    --surface: #ffffff;
+    --sunken: #eeede8;
+    --ink: #15181c;
+    --ink-muted: #555a61;
+    --ink-faint: #62676e;
+    --line: #dad9d3;
+    --line-strong: #15181c;
+    --accent: #b3261e;
+    --accent-mark: #da3b2e;
+    --accent-tint: #fbeeec;
+    --on-accent: #ffffff;
+    --band: #15181c;
+    --on-band: #f7f6f2;
+}
+
+[data-theme='dark'] {
+    --paper: #0d0f12;
+    --surface: #16191d;
+    --sunken: #1d2126;
+    --ink: #e9e8e4;
+    --ink-muted: #a2a7ae;
+    --ink-faint: #8e939a;
+    --line: #2a2f35;
+    --line-strong: #e9e8e4;
+    --accent: #f2695b;
+    --accent-mark: #f2695b;
+    --accent-tint: #2c1513;
+    --on-accent: #0d0f12;
+    --band: #1d2126;
+    --on-band: #e9e8e4;
+}
+
+@theme inline {
+    --color-*: initial;
+    --color-paper: var(--paper);
+    --color-surface: var(--surface);
+    --color-sunken: var(--sunken);
+    --color-ink: var(--ink);
+    --color-ink-muted: var(--ink-muted);
+    --color-ink-faint: var(--ink-faint);
+    --color-line: var(--line);
+    --color-line-strong: var(--line-strong);
+    --color-accent: var(--accent);
+    --color-accent-mark: var(--accent-mark);
+    --color-accent-tint: var(--accent-tint);
+    --color-on-accent: var(--on-accent);
+    --color-band: var(--band);
+    --color-on-band: var(--on-band);
+
+    --font-display: 'Jost', ui-sans-serif, system-ui, sans-serif;
+    --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    --text-xs: 0.8125rem;
+    --text-xs--line-height: 1.25rem;
+    --text-sm: 0.9375rem;
+    --text-sm--line-height: 1.5rem;
+}
+
+@layer base {
+    html {
+        font-kerning: normal;
+        text-rendering: optimizeLegibility;
+    }
+}
+
+@layer components {
+    /* Panel shell */
+    .sim-band {
+        @apply sticky top-0 z-20 flex flex-wrap items-center gap-x-8 gap-y-1 bg-band px-4 py-2 text-xs font-medium text-on-band lg:px-8;
+    }
+
+    .sim-mark {
+        @apply size-2 shrink-0 bg-accent-mark;
+    }
+
+    .shell-aside {
+        @apply flex shrink-0 grow basis-60 flex-col gap-8 border-b border-line px-4 py-6 lg:sticky lg:top-9 lg:h-[calc(100vh-2.25rem)] lg:self-start lg:overflow-y-auto lg:border-r lg:border-b-0 lg:px-8 lg:py-8;
+    }
+
+    .shell-main {
+        @apply max-w-full min-w-0 grow-[999] basis-[35rem] px-4 py-8 lg:px-12 lg:py-12;
+    }
+
+    .brand {
+        @apply flex min-h-11 items-center gap-3;
+    }
+
+    .brand-name {
+        @apply inline-grid gap-1 font-display text-xl leading-none font-medium tracking-tight;
+    }
+
+    .brand-rule {
+        @apply block h-px bg-accent-mark;
+    }
+
+    .nav-link {
+        @apply flex min-h-11 items-center gap-3 border-b border-line text-sm text-ink-muted hover:text-ink;
+    }
+
+    .nav-link[aria-current='page'] {
+        @apply border-line-strong font-medium text-ink;
+    }
+
+    .nav-link[aria-current='page']::before {
+        @apply size-1.5 shrink-0 bg-accent-mark;
+        content: '';
+    }
+
+    .nav-count {
+        @apply ml-auto text-xs font-medium text-accent tabular-nums;
+    }
+
+    /* Typography roles */
+    .page-header {
+        @apply border-b-4 border-double border-line-strong pb-8;
+    }
+
+    .eyebrow {
+        @apply text-xs font-medium tracking-[0.08em] text-ink-muted uppercase;
+    }
+
+    .page-title {
+        @apply font-display text-6xl leading-[0.98] tracking-tight text-balance lg:text-7xl;
+    }
+
+    .page-lede {
+        @apply mt-4 max-w-2xl text-lg text-pretty text-ink-muted lg:text-xl;
+    }
+
+    .section-title {
+        @apply flex items-baseline gap-3 border-b border-line-strong pb-3 font-display text-3xl tracking-tight;
+    }
+
+    .section-count {
+        @apply font-sans text-sm tracking-normal text-ink-muted tabular-nums;
+    }
+
+    .section-link {
+        @apply -my-2.5 ml-auto inline-flex min-h-11 items-center font-sans text-sm font-medium tracking-normal text-ink-muted underline underline-offset-4 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mark;
+    }
+
+    .column-head {
+        @apply border-b border-line pb-2 font-display text-lg font-medium;
+    }
+
+    .caption {
+        @apply text-xs font-medium text-ink-muted;
+    }
+
+    .note {
+        @apply text-xs text-ink-muted tabular-nums;
+    }
+
+    /* Definition grid for order and trade signal fields */
+    .facts {
+        @apply grid grid-cols-[repeat(auto-fit,minmax(min(10rem,100%),1fr))] gap-x-6 gap-y-5;
+    }
+
+    .fact-value {
+        @apply mt-1 text-sm tabular-nums;
+    }
+
+    .fact-value-lg {
+        @apply mt-1 text-xl font-medium tabular-nums;
+    }
+
+    /* Order awaiting approval */
+    .order-band {
+        @apply grid grid-cols-[repeat(auto-fit,minmax(min(16rem,100%),1fr))] gap-8 border-b border-line py-8;
+    }
+
+    .order-symbol {
+        @apply font-display text-4xl tracking-tight;
+    }
+
+    .action-panel {
+        @apply col-span-full grid gap-5 bg-sunken p-5 lg:p-6;
+    }
+
+    /* Two equal panes: order status and time left */
+    .decision-pair {
+        @apply grid grid-cols-2 gap-px border border-line bg-line;
+    }
+
+    .decision-cell {
+        @apply flex flex-col gap-2 bg-surface p-3;
+    }
+
+    .decision-pair-soonest {
+        @apply border-accent border-t-[3px] bg-accent;
+    }
+
+    .decision-pair-soonest .time-left {
+        @apply text-accent;
+    }
+
+    /*
+     * Four equal tiles on the start page. From two columns up, each frame line is a real element
+     * in its own 1 px grid track, and the outer 0.75rem tracks give every line end the same length.
+     */
+    .tiles {
+        @apply grid gap-px border border-line-strong bg-line-strong sm:-mx-3 sm:gap-0 sm:border-0 sm:bg-transparent;
+    }
+
+    @media (width >= 40rem) {
+        .tiles {
+            grid-template-columns: 0.75rem 1px minmax(0, 1fr) 1px minmax(0, 1fr) 1px 0.75rem;
+            grid-template-rows: 0.75rem 1px 1fr 1px 1fr 1px 0.75rem;
+        }
+    }
+
+    .tile-rule {
+        @apply hidden bg-line-strong sm:block;
+    }
+
+    .tile {
+        @apply flex min-h-64 flex-col bg-surface p-6 lg:p-8 xl:min-h-80;
+    }
+
+    .tile-label {
+        @apply font-display text-2xl leading-tight tracking-tight;
+    }
+
+    .tile-note {
+        @apply mt-1 text-sm text-pretty text-ink-muted;
+    }
+
+    .tile-value {
+        @apply mt-auto pt-8 font-display text-[clamp(6rem,11vw,11rem)] leading-[0.82] font-light tracking-tight;
+    }
+
+    .tile-unit {
+        @apply ml-3 text-3xl font-normal tracking-normal whitespace-nowrap;
+    }
+
+    .tile-value-accent {
+        @apply text-accent;
+    }
+
+    .tile-link {
+        @apply hover:bg-sunken focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-accent-mark;
+    }
+
+    .tile-action {
+        @apply mt-auto flex items-end justify-between gap-4 pt-8;
+    }
+
+    .tile-action-label {
+        @apply font-display text-5xl leading-none tracking-tight xl:text-6xl;
+    }
+
+    .tile-door {
+        @apply flex size-16 shrink-0 items-center justify-center bg-accent text-on-accent;
+    }
+
+    .tile-link:hover .tile-door {
+        @apply bg-ink text-paper;
+    }
+
+    /* Order lifecycle: stages hang from the section rule like marks on a dimension line */
+    .lifecycle {
+        @apply grid grid-cols-2 gap-x-6 sm:grid-cols-3 xl:grid-cols-6;
+    }
+
+    .lifecycle-stage {
+        @apply relative flex flex-col gap-3 py-6;
+    }
+
+    .lifecycle-stage::before {
+        @apply absolute top-0 left-0 h-3 w-px bg-line-strong;
+        content: '';
+    }
+
+    .lifecycle-count {
+        @apply font-display text-6xl leading-none font-light tracking-tight;
+    }
+
+    /* Disclaimer on the start page and the short note closing every other screen */
+    .disclaimer {
+        @apply mt-20 grid gap-8 border-t-4 border-double border-line-strong pt-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:gap-12;
+    }
+
+    .disclaimer-lead {
+        @apply mt-4 font-display text-3xl leading-tight tracking-tight text-balance;
+    }
+
+    .disclaimer-body {
+        @apply columns-1 gap-8 text-sm text-ink-muted xl:columns-2;
+    }
+
+    .disclaimer-body p {
+        @apply mb-4 text-pretty break-inside-avoid;
+    }
+
+    .colophon {
+        @apply mt-20 flex flex-wrap items-start justify-between gap-x-8 gap-y-3 border-t-4 border-double border-line-strong pt-6 text-xs text-ink-muted;
+    }
+
+    /* Buttons */
+    .btn {
+        @apply inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 border px-4 text-sm font-medium whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mark disabled:cursor-not-allowed;
+    }
+
+    .btn-primary {
+        @apply border-accent bg-accent text-on-accent hover:border-ink hover:bg-ink hover:text-paper disabled:border-line disabled:bg-sunken disabled:text-ink-faint;
+    }
+
+    .btn-secondary {
+        @apply border-line-strong bg-transparent text-ink hover:bg-ink hover:text-paper disabled:border-line disabled:bg-transparent disabled:text-ink-faint;
+    }
+
+    .btn-quiet {
+        @apply border-transparent bg-transparent px-0 text-ink-muted underline-offset-4 hover:text-ink hover:underline;
+    }
+
+    /* Form fields */
+    .field-label {
+        @apply mb-2 block text-sm font-medium;
+    }
+
+    .field-hint {
+        @apply mt-2 text-sm text-ink-muted;
+    }
+
+    .field-error {
+        @apply mt-2 flex items-start gap-2 text-sm font-medium text-accent;
+    }
+
+    .field-error::before {
+        @apply mt-2 size-2 shrink-0 bg-accent-mark;
+        content: '';
+    }
+
+    .input {
+        @apply min-h-11 w-full border border-line-strong bg-surface px-3 text-sm text-ink tabular-nums placeholder:text-ink-faint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mark;
+    }
+
+    .input-invalid {
+        @apply border-2 border-accent;
+    }
+
+    .input-addon {
+        @apply flex items-center gap-3;
+    }
+
+    .read-only-value {
+        @apply mt-1 flex min-h-11 items-center border-b border-line font-mono text-sm;
+    }
+
+    /* Live updates */
+    .live-status {
+        @apply inline-flex items-center gap-2 text-xs text-ink-muted tabular-nums;
+    }
+
+    .live-status::before {
+        @apply size-2 shrink-0 bg-current;
+        content: '';
+    }
+
+    .live-status-lost {
+        @apply bg-accent px-2 py-1 font-medium text-on-accent;
+    }
+
+    .data-table .recently-changed td {
+        @apply bg-sunken;
+    }
+
+    /* Notices */
+    .notice {
+        @apply flex flex-wrap items-center justify-between gap-4 border border-line-strong p-4 text-sm;
+    }
+
+    .notice-attention {
+        @apply border-accent bg-accent-tint text-ink;
+    }
+
+    /* Tables */
+    .data-table {
+        @apply w-full min-w-[54rem] border-collapse text-left text-sm tabular-nums;
+    }
+
+    .data-table th {
+        @apply border-b border-line py-3 pr-6 text-xs font-medium text-ink-muted;
+    }
+
+    .data-table td {
+        @apply border-b border-line py-4 pr-6 align-top;
+    }
+
+    .data-table td:last-child,
+    .data-table th:last-child {
+        @apply pr-0 text-right;
+    }
+
+    .data-table .inline-confirm td:last-child {
+        @apply bg-sunken p-5 text-left;
+    }
+
+    /* Execution progress */
+    .meter {
+        @apply mt-2 block h-1 w-32 bg-line;
+    }
+
+    .meter-fill {
+        @apply block h-full bg-ink;
+    }
+
+    /* Loading placeholder */
+    .skeleton {
+        @apply block h-4 bg-sunken motion-safe:animate-pulse;
+    }
+
+    /* Glyph markers: the glyph and the label together carry the meaning, never color alone. */
+    .status,
+    .time-left {
+        @apply inline-flex items-start gap-2 text-sm font-medium tabular-nums;
+    }
+
+    .status::before,
+    .time-left::before {
+        @apply mt-[0.3125rem] size-3.5 shrink-0 bg-current;
+        content: '';
+        mask: var(--glyph) center / contain no-repeat;
+    }
+
+    .time-left {
+        --glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 1.5h10v2.2L9.2 8l3.8 4.3v2.2H3v-2.2L6.8 8 3 3.7z'/%3E%3C/svg%3E");
+    }
+
+    .status-awaiting-approval {
+        @apply text-accent;
+        --glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6.5'/%3E%3C/svg%3E");
+    }
+
+    .status-approved {
+        --glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='none' stroke='%23000' stroke-width='2'/%3E%3Ccircle cx='8' cy='8' r='2.5'/%3E%3C/svg%3E");
+    }
+
+    .status-submitting {
+        --glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='none' stroke='%23000' stroke-width='2'/%3E%3Cpath d='M8 3.5a4.5 4.5 0 0 1 0 9z'/%3E%3C/svg%3E");
+    }
+
+    .status-open {
+        --glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='none' stroke='%23000' stroke-width='2'/%3E%3C/svg%3E");
+    }
+
+    .status-cancelling {
+        --glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='none' stroke='%23000' stroke-width='2'/%3E%3Cpath d='M4.5 8h7' stroke='%23000' stroke-width='2'/%3E%3C/svg%3E");
+    }
+
+    .status-filled {
+        --glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2 8.5 6.5 13 14 3.5' fill='none' stroke='%23000' stroke-width='2.5'/%3E%3C/svg%3E");
+    }
+
+    .status-expired {
+        @apply text-ink-muted;
+        --glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='none' stroke='%23000' stroke-width='2'/%3E%3Cpath d='M8 4.5V8l2.5 2' fill='none' stroke='%23000' stroke-width='1.5'/%3E%3C/svg%3E");
+    }
+
+    .status-rejected {
+        @apply text-ink-muted;
+        --glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m3 3 10 10M13 3 3 13' stroke='%23000' stroke-width='2.5'/%3E%3C/svg%3E");
+    }
+
+    .status-cancelled {
+        @apply text-ink-muted;
+        --glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='none' stroke='%23000' stroke-width='2'/%3E%3Cpath d='m4 12 8-8' stroke='%23000' stroke-width='2'/%3E%3C/svg%3E");
+    }
+
+    .status-refused {
+        @apply text-ink-muted;
+        --glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2 8h12' stroke='%23000' stroke-width='3'/%3E%3C/svg%3E");
+    }
+
+    .status-terminal {
+        @apply text-ink-muted;
+        --glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 3h10v10H3z'/%3E%3C/svg%3E");
+    }
+
+    .status-lapsed {
+        @apply text-ink-muted;
+        --glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='none' stroke='%23000' stroke-width='2' stroke-dasharray='2.5 2.5'/%3E%3C/svg%3E");
+    }
+}

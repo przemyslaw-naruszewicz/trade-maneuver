@@ -1,0 +1,64 @@
+/*
+ * Local copies of the panel fonts, unmodified files from their authors' releases.
+ * Each font is licensed under the SIL Open Font License 1.1; its license file sits next to it.
+ *
+ * IBM Plex Sans 2.0.0 and IBM Plex Mono 2.5.0: npm packages @ibm/plex-sans and @ibm/plex-mono
+ * (https://github.com/IBM/plex), complete WOFF2 files.
+ * Jost 3.5: release Jost.zip from https://github.com/indestructible-type/Jost, OTF files.
+ */
+
+@font-face {
+    font-family: 'IBM Plex Sans';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('ibm-plex-sans/IBMPlexSans-Regular.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'IBM Plex Sans';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url('ibm-plex-sans/IBMPlexSans-Medium.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'IBM Plex Mono';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('ibm-plex-mono/IBMPlexMono-Regular.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'IBM Plex Mono';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url('ibm-plex-mono/IBMPlexMono-Medium.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Jost';
+    font-style: normal;
+    font-weight: 300;
+    font-display: swap;
+    src: url('jost/Jost-300-Light.otf') format('opentype');
+}
+
+@font-face {
+    font-family: 'Jost';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('jost/Jost-400-Book.otf') format('opentype');
+}
+
+@font-face {
+    font-family: 'Jost';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url('jost/Jost-500-Medium.otf') format('opentype');
+}
