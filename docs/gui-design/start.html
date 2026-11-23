@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Start</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="build/tailwind.css">
+<script src="theme.js" defer></script>
+</head>
+<body>
+<div data-theme="light" class="flex min-h-screen flex-col bg-paper font-sans text-ink antialiased">
+    <p class="sim-band"><span class="sim-mark"></span><span>Simulated broker: no real orders</span><span class="ml-auto">Manual execution mode</span></p>
+    <div class="flex grow flex-wrap">
+        <aside class="shell-aside">
+            <a class="brand" href="start.html" aria-label="Trade Maneuver">
+                <span class="brand-name"><span>Trade</span><span class="brand-rule"></span><span>Maneuver</span></span>
+            </a>
+            <nav class="flex flex-col" aria-label="Panel">
+                <a class="nav-link" href="start.html" aria-current="page">Start</a>
+                <a class="nav-link" href="orders.html">Orders<span class="nav-count">3</span></a>
+                <a class="nav-link" href="investment-configuration.html">Investment configuration</a>
+            </nav>
+            <div class="mt-auto flex flex-col items-start gap-1">
+                <p class="note">operator@example.test</p>
+                <button class="btn btn-quiet" type="button" data-theme-toggle>Switch theme</button>
+                <a class="btn btn-quiet" href="sign-in.html">Log out</a>
+            </div>
+        </aside>
+        <main class="shell-main">
+            <header class="page-header flex flex-wrap items-end justify-between gap-6">
+                <div>
+                    <p class="eyebrow">Tuesday, 3 November 2026</p>
+                    <h1 class="page-title mt-3">Start</h1>
+                    <p class="page-lede">In manual execution mode, every order waits for your approval before it reaches the simulated broker.</p>
+                </div>
+                <p class="live-status">Live, updated 13:02:31 UTC</p>
+            </header>
+
+            <div class="tiles mt-12">
+                <span class="tile-rule col-span-full row-start-2" aria-hidden="true"></span>
+                <span class="tile-rule col-span-full row-start-4" aria-hidden="true"></span>
+                <span class="tile-rule col-span-full row-start-6" aria-hidden="true"></span>
+                <span class="tile-rule col-start-2 row-span-full" aria-hidden="true"></span>
+                <span class="tile-rule col-start-4 row-span-full" aria-hidden="true"></span>
+                <span class="tile-rule col-start-6 row-span-full" aria-hidden="true"></span>
+                <dl class="tile sm:col-start-3 sm:row-start-3">
+                    <dt class="tile-label">Awaiting approval</dt>
+                    <dd class="tile-note">Orders await your decision</dd>
+                    <dd class="tile-value tile-value-accent">3</dd>
+                </dl>
+                <dl class="tile sm:col-start-5 sm:row-start-3">
+                    <dt class="tile-label">Soonest signal validity</dt>
+                    <dd class="tile-note">DEMO_A, valid until 3 Nov 2026, 13:45 UTC</dd>
+                    <dd class="tile-value">43<span class="tile-unit">min left</span></dd>
+                </dl>
+                <dl class="tile sm:col-start-3 sm:row-start-5">
+                    <dt class="tile-label">Other non-terminal orders</dt>
+                    <dd class="tile-note">Approved, submitting, open, or cancelling</dd>
+                    <dd class="tile-value">5</dd>
+                </dl>
+                <a class="tile tile-link sm:col-start-5 sm:row-start-5" href="orders.html">
+                    <span class="tile-label">Orders</span>
+                    <span class="tile-note">Approve, refuse, or cancel</span>
+                    <span class="tile-action">
+                        <span class="tile-action-label">Open orders</span>
+                        <span class="tile-door"><svg class="size-7 fill-none stroke-current stroke-[1.5]" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12H20M14 6l6 6-6 6"></path></svg></span>
+                    </span>
+                </a>
+            </div>
+
+            <section class="mt-20" aria-labelledby="order-lifecycle">
+                <h2 class="section-title" id="order-lifecycle">Order lifecycle<span class="section-count">Orders at each stage now</span></h2>
+                <ol class="lifecycle">
+                    <li class="lifecycle-stage"><span class="lifecycle-count">3</span><span class="status status-awaiting-approval">Awaiting approval</span></li>
+                    <li class="lifecycle-stage"><span class="lifecycle-count">1</span><span class="status status-approved">Approved</span></li>
+                    <li class="lifecycle-stage"><span class="lifecycle-count">1</span><span class="status status-submitting">Submitting</span></li>
+                    <li class="lifecycle-stage"><span class="lifecycle-count">2</span><span class="status status-open">Open</span></li>
+                    <li class="lifecycle-stage"><span class="lifecycle-count">1</span><span class="status status-cancelling">Cancelling</span></li>
+                    <li class="lifecycle-stage"><span class="lifecycle-count">42</span><span class="status status-terminal">Terminal</span></li>
+                </ol>
+            </section>
+
+            <div class="mt-16 grid grid-cols-[repeat(auto-fit,minmax(min(26rem,100%),1fr))] gap-x-12 gap-y-16">
+                <section aria-labelledby="awaiting-approval">
+                    <h2 class="section-title" id="awaiting-approval">Awaiting approval<a class="section-link" href="orders.html">All orders</a></h2>
+                    <div class="overflow-x-auto">
+                        <table class="data-table min-w-0">
+                            <thead>
+                                <tr><th scope="col">Instrument</th><th scope="col">Limit price</th><th scope="col">Quantity</th><th scope="col">Time left</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td class="font-medium">DEMO_A</td><td>10.45 EUR</td><td>19</td><td><span class="time-left">43 min left</span></td></tr>
+                                <tr><td class="font-medium">DEMO_B</td><td>6.23 EUR</td><td>32</td><td><span class="time-left">2 h 28 min left</span></td></tr>
+                                <tr><td class="font-medium">DEMO_C</td><td>24.92 EUR</td><td>8</td><td><span class="time-left">2 days left</span></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+                <section aria-labelledby="latest-changes">
+                    <h2 class="section-title" id="latest-changes">Latest changes<span class="section-count">Most recent first</span></h2>
+                    <div class="overflow-x-auto">
+                        <table class="data-table min-w-0">
+                            <thead>
+                                <tr><th scope="col">Instrument</th><th scope="col">Status</th><th scope="col">Changed</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td class="font-medium">DEMO_B</td><td><span class="status status-open">Open</span><span class="note block">Partial, 12 of 28</span></td><td>3 Nov, 13:02 UTC</td></tr>
+                                <tr><td class="font-medium">DEMO_F</td><td><span class="status status-submitting">Submitting</span><span class="note block">None, 0 of 12</span></td><td>3 Nov, 13:01 UTC</td></tr>
+                                <tr><td class="font-medium">DEMO_A</td><td><span class="status status-filled">Filled</span><span class="note block">Complete, 19 of 19</span></td><td>3 Nov, 12:44 UTC</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+
+            <section class="mt-16" aria-labelledby="investment-configuration">
+                <h2 class="section-title" id="investment-configuration">Investment configuration<a class="section-link" href="investment-configuration.html">Edit</a></h2>
+                <dl class="facts mt-6">
+                    <div><dt class="caption">Reference</dt><dd class="fact-value font-mono">demo-eur</dd></div>
+                    <div><dt class="caption">Currency</dt><dd class="fact-value">EUR</dd></div>
+                    <div><dt class="caption">Brokerage account</dt><dd class="fact-value font-mono">DEMO-ACC-001</dd></div>
+                    <div><dt class="caption">Order amount</dt><dd class="fact-value">200.00 EUR</dd></div>
+                    <div><dt class="caption">Limit price tolerance</dt><dd class="fact-value">0.50 %</dd></div>
+                    <div><dt class="caption">Authorized analytics applications</dt><dd class="fact-value font-mono">demo-analytics</dd></div>
+                </dl>
+            </section>
+
+            <section class="disclaimer" aria-labelledby="disclaimer">
+                <div>
+                    <h2 class="eyebrow" id="disclaimer">Disclaimer</h2>
+                    <p class="disclaimer-lead">Trade Maneuver is a simulation, built as a portfolio and educational project.</p>
+                    <p class="mt-4 text-sm text-pretty text-ink-muted">Its broker, brokerage accounts, instruments, prices, and amounts are fictional, and so are the trade signals of its local flow. It has no connection to a real market, real funds, or a real brokerage account.</p>
+                </div>
+                <div class="disclaimer-body">
+                    <p>This is a portfolio and educational project, published only so that others can read and review the code. It is designed to run only against a simulated, fictional broker and places no real orders. It offers no hosted access, signal feed, or account management to anyone, and it is not intended for use by anyone other than its owner. Do not run it against a live brokerage account.</p>
+                    <p>Nothing in this repository or in the software's output, including trade signals, orders, investment configurations, documentation, and examples, is investment advice, an investment recommendation, or an offer or encouragement to buy, sell, or hold any asset. The trade signals, instruments, prices, and amounts used in this project and its examples are fictional and illustrative only. This project is not a regulated investment service.</p>
+                    <p>Anyone who runs or changes this code despite that does so at their own risk and is solely responsible for their configuration, the resulting orders and outcomes, and compliance with applicable law, tax obligations, and broker terms. Investing involves risk, including the loss of the entire amount invested. Automated execution adds risks such as software defects, misconfiguration, inaccurate data, and broker or network failures.</p>
+                    <p>The software is provided "as is", without warranty of any kind. To the maximum extent permitted by law, its authors are not liable for any loss arising from its use, including losses from orders it places or fails to place.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+</div>
+</body>
+</html>

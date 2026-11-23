@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Investment configuration</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="build/tailwind.css">
+<script src="theme.js" defer></script>
+</head>
+<body>
+<div data-theme="light" class="flex min-h-screen flex-col bg-paper font-sans text-ink antialiased">
+    <p class="sim-band"><span class="sim-mark"></span><span>Simulated broker: no real orders</span><span class="ml-auto">Manual execution mode</span></p>
+    <div class="flex grow flex-wrap">
+        <aside class="shell-aside">
+            <a class="brand" href="start.html" aria-label="Trade Maneuver">
+                <span class="brand-name"><span>Trade</span><span class="brand-rule"></span><span>Maneuver</span></span>
+            </a>
+            <nav class="flex flex-col" aria-label="Panel">
+                <a class="nav-link" href="start.html">Start</a>
+                <a class="nav-link" href="orders.html">Orders<span class="nav-count">3</span></a>
+                <a class="nav-link" href="investment-configuration.html" aria-current="page">Investment configuration</a>
+            </nav>
+            <div class="mt-auto flex flex-col items-start gap-1">
+                <p class="note">operator@example.test</p>
+                <button class="btn btn-quiet" type="button" data-theme-toggle>Switch theme</button>
+                <a class="btn btn-quiet" href="sign-in.html">Log out</a>
+            </div>
+        </aside>
+        <main class="shell-main">
+            <header class="page-header">
+                <h1 class="page-title">Investment configuration</h1>
+                <p class="page-lede">Changes apply only to trade signals evaluated afterwards. Existing orders keep their settings snapshot.</p>
+            </header>
+
+            <dl class="mt-10 grid grid-cols-[repeat(auto-fit,minmax(min(14rem,100%),1fr))] gap-x-8 gap-y-6">
+                <div><dt class="caption">Reference</dt><dd class="read-only-value">demo-eur</dd></div>
+                <div><dt class="caption">Currency</dt><dd class="read-only-value">EUR</dd></div>
+                <div><dt class="caption">Brokerage account</dt><dd class="read-only-value">DEMO-ACC-001</dd></div>
+            </dl>
+
+            <form class="mt-14 grid max-w-3xl gap-10" aria-label="Edit the investment configuration">
+                <div class="grid grid-cols-[repeat(auto-fit,minmax(min(14rem,100%),1fr))] gap-x-8 gap-y-8">
+                    <div>
+                        <label class="field-label" for="order-amount">Order amount</label>
+                        <div class="input-addon"><input class="input" id="order-amount" inputmode="decimal" value="200.00"><span class="note">EUR</span></div>
+                        <p class="field-hint">Greater than zero, with at most two decimal places.</p>
+                    </div>
+                    <div>
+                        <label class="field-label" for="limit-price-tolerance">Limit price tolerance</label>
+                        <div class="input-addon"><input class="input" id="limit-price-tolerance" inputmode="decimal" value="0.50"><span class="note">%</span></div>
+                        <p class="field-hint">From 0 % to 5 % inclusive.</p>
+                    </div>
+                </div>
+
+                <fieldset>
+                    <legend class="field-label">Authorized analytics applications</legend>
+                    <div class="border-t border-line">
+                        <label class="flex min-h-11 cursor-pointer items-center gap-3 border-b border-line text-sm" for="app-demo-analytics">
+                            <input class="size-4 accent-accent" id="app-demo-analytics" type="checkbox" checked="checked">
+                            <span class="font-mono">demo-analytics</span>
+                        </label>
+                        <label class="flex min-h-11 cursor-pointer items-center gap-3 border-b border-line text-sm" for="app-demo-analytics-2">
+                            <input class="size-4 accent-accent" id="app-demo-analytics-2" type="checkbox">
+                            <span class="font-mono">demo-analytics-2</span>
+                        </label>
+                    </div>
+                    <p class="field-hint">Later trade signals from a removed analytics application end with SignalRejected. Existing orders are not affected.</p>
+                </fieldset>
+
+                <div class="flex flex-wrap items-center gap-4">
+                    <a class="btn btn-primary" href="investment-configuration-errors.html">Save changes</a>
+                </div>
+            </form>
+
+            <footer class="colophon">
+                <p class="max-w-2xl text-pretty">Trade Maneuver is a simulation, built as a portfolio and educational project. It has no connection to a real market, real funds, or a real brokerage account. Nothing shown here is investment advice.</p>
+                <a class="section-link my-0" href="start.html">Read the disclaimer</a>
+            </footer>
+        </main>
+    </div>
+</div>
+</body>
+</html>

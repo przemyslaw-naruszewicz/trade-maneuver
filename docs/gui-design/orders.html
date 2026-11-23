@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orders</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="build/tailwind.css">
+<script src="theme.js" defer></script>
+</head>
+<body>
+<div data-theme="light" class="flex min-h-screen flex-col bg-paper font-sans text-ink antialiased">
+    <p class="sim-band"><span class="sim-mark"></span><span>Simulated broker: no real orders</span><span class="ml-auto">Manual execution mode</span></p>
+    <div class="flex grow flex-wrap">
+        <aside class="shell-aside">
+            <a class="brand" href="start.html" aria-label="Trade Maneuver">
+                <span class="brand-name"><span>Trade</span><span class="brand-rule"></span><span>Maneuver</span></span>
+            </a>
+            <nav class="flex flex-col" aria-label="Panel">
+                <a class="nav-link" href="start.html">Start</a>
+                <a class="nav-link" href="orders.html" aria-current="page">Orders<span class="nav-count">3</span></a>
+                <a class="nav-link" href="investment-configuration.html">Investment configuration</a>
+            </nav>
+            <div class="mt-auto flex flex-col items-start gap-1">
+                <p class="note">operator@example.test</p>
+                <button class="btn btn-quiet" type="button" data-theme-toggle>Switch theme</button>
+                <a class="btn btn-quiet" href="sign-in.html">Log out</a>
+            </div>
+        </aside>
+        <main class="shell-main">
+            <header class="page-header flex flex-wrap items-end justify-between gap-6">
+                <div>
+                    <h1 class="page-title">Orders</h1>
+                    <p class="page-lede">3 orders await your decision. The soonest signal validity ends in 43 minutes.</p>
+                </div>
+                <p class="live-status">Live, updated 13:02:31 UTC</p>
+            </header>
+
+            <section class="mt-14" aria-labelledby="awaiting-approval">
+                <h2 class="section-title" id="awaiting-approval">Awaiting approval<span class="section-count">3, soonest validity first</span></h2>
+
+                <article class="order-band">
+                    <div>
+                        <h3 class="order-symbol">DEMO_A</h3>
+                        <p class="note mt-1">MIC DEMO, long</p>
+                        <dl class="decision-pair decision-pair-soonest mt-5">
+                            <div class="decision-cell"><dt class="caption">Status</dt><dd class="status status-awaiting-approval">Awaiting approval</dd></div>
+                            <div class="decision-cell"><dt class="caption">Signal validity</dt><dd class="time-left">43 min left</dd></div>
+                        </dl>
+                        <p class="note mt-2">Valid until 3 Nov 2026, 13:45 UTC</p>
+                    </div>
+                    <div>
+                        <p class="column-head">Trade signal</p>
+                        <dl class="facts mt-4">
+                            <div><dt class="caption">Confidence</dt><dd class="fact-value">0.72</dd></div>
+                            <div><dt class="caption">Horizon</dt><dd class="fact-value">5 trading sessions</dd></div>
+                            <div><dt class="caption">Expected move</dt><dd class="fact-value">+2.00 % to +4.00 %</dd></div>
+                            <div><dt class="caption">Reference price</dt><dd class="fact-value">10.40 EUR</dd><dd class="note mt-1">As of 12:58 UTC</dd></div>
+                            <div><dt class="caption">Analytics application</dt><dd class="fact-value font-mono">demo-analytics</dd></div>
+                        </dl>
+                    </div>
+                    <div>
+                        <p class="column-head">Order</p>
+                        <dl class="facts mt-4">
+                            <div><dt class="caption">Limit price</dt><dd class="fact-value-lg">10.45 EUR</dd></div>
+                            <div><dt class="caption">Quantity</dt><dd class="fact-value-lg">19</dd></div>
+                            <div><dt class="caption">Order amount</dt><dd class="fact-value">200.00 EUR</dd></div>
+                        </dl>
+                        <div class="mt-6 flex flex-wrap gap-3">
+                            <a class="btn btn-primary" href="order-actions.html">Approve</a>
+                            <a class="btn btn-secondary" href="order-actions.html">Refuse</a>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="order-band">
+                    <div>
+                        <h3 class="order-symbol">DEMO_B</h3>
+                        <p class="note mt-1">MIC DEMO, long</p>
+                        <dl class="decision-pair mt-5">
+                            <div class="decision-cell"><dt class="caption">Status</dt><dd class="status status-awaiting-approval">Awaiting approval</dd></div>
+                            <div class="decision-cell"><dt class="caption">Signal validity</dt><dd class="time-left">2 h 28 min left</dd></div>
+                        </dl>
+                        <p class="note mt-2">Valid until 3 Nov 2026, 15:30 UTC</p>
+                    </div>
+                    <div>
+                        <p class="column-head">Trade signal</p>
+                        <dl class="facts mt-4">
+                            <div><dt class="caption">Confidence</dt><dd class="fact-value">0.64</dd></div>
+                            <div><dt class="caption">Horizon</dt><dd class="fact-value">10 trading sessions</dd></div>
+                            <div><dt class="caption">Expected move</dt><dd class="fact-value">+1.50 % to +3.00 %</dd></div>
+                            <div><dt class="caption">Reference price</dt><dd class="fact-value">6.20 EUR</dd><dd class="note mt-1">As of 12:40 UTC</dd></div>
+                            <div><dt class="caption">Analytics application</dt><dd class="fact-value font-mono">demo-analytics</dd></div>
+                        </dl>
+                    </div>
+                    <div>
+                        <p class="column-head">Order</p>
+                        <dl class="facts mt-4">
+                            <div><dt class="caption">Limit price</dt><dd class="fact-value-lg">6.23 EUR</dd></div>
+                            <div><dt class="caption">Quantity</dt><dd class="fact-value-lg">32</dd></div>
+                            <div><dt class="caption">Order amount</dt><dd class="fact-value">200.00 EUR</dd></div>
+                        </dl>
+                        <div class="mt-6 flex flex-wrap gap-3">
+                            <a class="btn btn-primary" href="order-actions.html">Approve</a>
+                            <a class="btn btn-secondary" href="order-actions.html">Refuse</a>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="order-band">
+                    <div>
+                        <h3 class="order-symbol">DEMO_C</h3>
+                        <p class="note mt-1">MIC DEMO, long</p>
+                        <dl class="decision-pair mt-5">
+                            <div class="decision-cell"><dt class="caption">Status</dt><dd class="status status-awaiting-approval">Awaiting approval</dd></div>
+                            <div class="decision-cell"><dt class="caption">Signal validity</dt><dd class="time-left">2 days left</dd></div>
+                        </dl>
+                        <p class="note mt-2">Valid until 5 Nov 2026, 16:00 UTC</p>
+                    </div>
+                    <div>
+                        <p class="column-head">Trade signal</p>
+                        <dl class="facts mt-4">
+                            <div><dt class="caption">Confidence</dt><dd class="fact-value">0.58</dd></div>
+                            <div><dt class="caption">Horizon</dt><dd class="fact-value">Until 28 Nov 2026</dd></div>
+                            <div><dt class="caption">Expected move</dt><dd class="fact-value text-ink-muted">Not provided</dd></div>
+                            <div><dt class="caption">Reference price</dt><dd class="fact-value">24.80 EUR</dd><dd class="note mt-1">As of 12:31 UTC</dd></div>
+                            <div><dt class="caption">Analytics application</dt><dd class="fact-value font-mono">demo-analytics</dd></div>
+                        </dl>
+                    </div>
+                    <div>
+                        <p class="column-head">Order</p>
+                        <dl class="facts mt-4">
+                            <div><dt class="caption">Limit price</dt><dd class="fact-value-lg">24.92 EUR</dd></div>
+                            <div><dt class="caption">Quantity</dt><dd class="fact-value-lg">8</dd></div>
+                            <div><dt class="caption">Order amount</dt><dd class="fact-value">200.00 EUR</dd></div>
+                        </dl>
+                        <div class="mt-6 flex flex-wrap gap-3">
+                            <a class="btn btn-primary" href="order-actions.html">Approve</a>
+                            <a class="btn btn-secondary" href="order-actions.html">Refuse</a>
+                        </div>
+                    </div>
+                </article>
+            </section>
+
+            <section class="mt-16" aria-labelledby="non-terminal-orders">
+                <h2 class="section-title" id="non-terminal-orders">Non-terminal orders<span class="section-count">5</span></h2>
+                <div class="overflow-x-auto">
+                    <table class="data-table">
+                        <thead>
+                            <tr><th scope="col">Instrument</th><th scope="col">Status</th><th scope="col">Execution progress</th><th scope="col">Limit price</th><th scope="col">Valid until</th><th scope="col"><span class="sr-only">Action</span></th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="font-medium">DEMO_F<span class="note block font-normal">DEMO</span></td>
+                                <td><span class="status status-submitting">Submitting</span><span class="note mt-1 block">Since 13:01:48 UTC</span></td>
+                                <td>None, 0 of 12<span class="meter" aria-hidden="true"></span></td>
+                                <td>16.58 EUR</td>
+                                <td>3 Nov, 16:00 UTC</td>
+                                <td></td>
+                            </tr>
+                            <tr class="recently-changed">
+                                <td class="font-medium">DEMO_B<span class="note block font-normal">DEMO</span></td>
+                                <td><span class="status status-open">Open</span></td>
+                                <td>Partial, 12 of 28<span class="meter" aria-hidden="true"><span class="meter-fill w-[43%]"></span></span><span class="note mt-2 block">Changed at 13:02:14 UTC</span></td>
+                                <td>7.12 EUR</td>
+                                <td>3 Nov, 16:30 UTC</td>
+                                <td><a class="btn btn-secondary" href="order-actions.html">Cancel</a></td>
+                            </tr>
+                            <tr>
+                                <td class="font-medium">DEMO_E<span class="note block font-normal">DEMO</span></td>
+                                <td><span class="status status-cancelling">Cancelling</span><span class="note mt-1 block">Reason: operator</span></td>
+                                <td>Partial, 5 of 14<span class="meter" aria-hidden="true"><span class="meter-fill w-[36%]"></span></span></td>
+                                <td>14.05 EUR</td>
+                                <td>3 Nov, 17:00 UTC</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td class="font-medium">DEMO_C<span class="note block font-normal">DEMO</span></td>
+                                <td><span class="status status-open">Open</span></td>
+                                <td>None, 0 of 7<span class="meter" aria-hidden="true"></span></td>
+                                <td>27.40 EUR</td>
+                                <td>4 Nov, 16:00 UTC</td>
+                                <td><a class="btn btn-secondary" href="order-actions.html">Cancel</a></td>
+                            </tr>
+                            <tr>
+                                <td class="font-medium">DEMO_A<span class="note block font-normal">DEMO</span></td>
+                                <td><span class="status status-approved">Approved</span><span class="note mt-1 block">Waiting for a trading session</span></td>
+                                <td>None, 0 of 18<span class="meter" aria-hidden="true"></span></td>
+                                <td>11.05 EUR</td>
+                                <td>4 Nov, 17:00 UTC</td>
+                                <td><a class="btn btn-secondary" href="order-actions.html">Cancel</a></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="mt-16" aria-labelledby="terminal-orders">
+                <h2 class="section-title" id="terminal-orders">Terminal orders<span class="section-count">42, most recent first</span></h2>
+                <div class="overflow-x-auto">
+                    <table class="data-table">
+                        <thead>
+                            <tr><th scope="col">Instrument</th><th scope="col">Status</th><th scope="col">Execution progress</th><th scope="col">Limit price</th><th scope="col">Ended</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="font-medium">DEMO_A<span class="note block font-normal">DEMO</span></td>
+                                <td><span class="status status-filled">Filled</span></td>
+                                <td>Complete, 19 of 19<span class="meter" aria-hidden="true"><span class="meter-fill w-full"></span></span></td>
+                                <td>10.38 EUR</td>
+                                <td>3 Nov, 12:44 UTC</td>
+                            </tr>
+                            <tr>
+                                <td class="font-medium">DEMO_D<span class="note block font-normal">DEMO</span></td>
+                                <td><span class="status status-rejected">Rejected</span></td>
+                                <td>None, 0 of 9<span class="meter" aria-hidden="true"></span></td>
+                                <td>21.30 EUR</td>
+                                <td>3 Nov, 11:20 UTC</td>
+                            </tr>
+                            <tr>
+                                <td class="font-medium">DEMO_B<span class="note block font-normal">DEMO</span></td>
+                                <td><span class="status status-expired">Expired</span></td>
+                                <td>Partial, 16 of 30<span class="meter" aria-hidden="true"><span class="meter-fill w-[53%]"></span></span></td>
+                                <td>6.60 EUR</td>
+                                <td>2 Nov, 17:00 UTC</td>
+                            </tr>
+                            <tr>
+                                <td class="font-medium">DEMO_E<span class="note block font-normal">DEMO</span></td>
+                                <td><span class="status status-cancelled">Cancelled</span></td>
+                                <td>None, 0 of 14<span class="meter" aria-hidden="true"></span></td>
+                                <td>14.20 EUR</td>
+                                <td>2 Nov, 15:12 UTC</td>
+                            </tr>
+                            <tr>
+                                <td class="font-medium">DEMO_C<span class="note block font-normal">DEMO</span></td>
+                                <td><span class="status status-refused">Refused by the operator</span></td>
+                                <td>None, 0 of 8<span class="meter" aria-hidden="true"></span></td>
+                                <td>24.10 EUR</td>
+                                <td>2 Nov, 10:05 UTC</td>
+                            </tr>
+                            <tr>
+                                <td class="font-medium">DEMO_A<span class="note block font-normal">DEMO</span></td>
+                                <td><span class="status status-lapsed">Lapsed</span></td>
+                                <td>None, 0 of 19<span class="meter" aria-hidden="true"></span></td>
+                                <td>10.30 EUR</td>
+                                <td>30 Oct, 16:00 UTC</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <nav class="mt-6 flex flex-wrap items-center justify-between gap-4" aria-label="Terminal orders pages">
+                    <p class="note">1 to 6 of 42</p>
+                    <div class="flex gap-3">
+                        <button class="btn btn-secondary" type="button" disabled="disabled">Previous</button>
+                        <button class="btn btn-secondary" type="button">Next</button>
+                    </div>
+                </nav>
+            </section>
+
+            <footer class="colophon">
+                <p class="max-w-2xl text-pretty">Trade Maneuver is a simulation, built as a portfolio and educational project. It has no connection to a real market, real funds, or a real brokerage account. Nothing shown here is investment advice.</p>
+                <a class="section-link my-0" href="start.html">Read the disclaimer</a>
+            </footer>
+        </main>
+    </div>
+</div>
+</body>
+</html>
