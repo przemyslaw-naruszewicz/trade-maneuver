@@ -29,3 +29,7 @@ THE SOFTWARE.
 ## Dependencies
 
 Composer and npm dependencies are not stored in this repository. They are installed from their registries, and each one keeps the license shipped with its package. `docker compose exec app composer licenses` lists the licenses of the Composer dependencies, and `package-lock.json` records the license of each npm package.
+
+## Fonts
+
+The GUI mockup in `docs/gui-design/fonts/` includes the Jost and IBM Plex fonts, licensed under the SIL Open Font License 1.1. Each font's license file is stored next to it.
