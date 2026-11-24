@@ -14,6 +14,7 @@ Route::middleware('web')->withoutMiddleware(PreventRequestForgery::class)->group
     Route::post('/login', [OperatorSignInController::class, 'store'])->name('login.store');
     Route::get('/login/totp', [OperatorTotpChallengeController::class, 'create'])->name('login.totp');
     Route::post('/login/totp', [OperatorTotpChallengeController::class, 'store'])->name('login.totp.store');
+    Route::view('/register', 'trading.auth.sign-in')->name('register');
     Route::post('/logout', OperatorLogoutController::class)->name('logout');
 
     Route::livewire('/', Start::class)->name('panel.start');
