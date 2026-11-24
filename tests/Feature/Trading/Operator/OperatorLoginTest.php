@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature\Trading\Operator;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Routing\Route;
+use Illuminate\Support\Facades\Route as Router;
 use Tests\Feature\Trading\Operator\Support\OperatorAccounts;
 use Tests\TestCase;
 
@@ -56,5 +58,32 @@ final class OperatorLoginTest extends TestCase
 
         $this->assertGuest();
         $this->get(route('panel.start'))->assertRedirect(route('login'));
+    }
+
+    public function test_a_password_only_session_cannot_open_any_panel_page(): void
+    {
+        $this->submitPassword()->assertRedirect(route('login.totp'));
+
+        $panelRoutes = $this->panelPageRoutes();
+        $this->assertNotEmpty($panelRoutes);
+        foreach ($panelRoutes as $route) {
+            $this->get('/'.ltrim($route->uri(), '/'))->assertRedirect(route('login'));
+        }
+        $this->assertGuest();
+    }
+
+    /**
+     * @return list<Route>
+     */
+    private function panelPageRoutes(): array
+    {
+        $routes = [];
+        foreach (Router::getRoutes()->getRoutes() as $route) {
+            if (str_starts_with((string) $route->getName(), 'panel.') && in_array('GET', $route->methods(), true)) {
+                $routes[] = $route;
+            }
+        }
+
+        return $routes;
     }
 }
