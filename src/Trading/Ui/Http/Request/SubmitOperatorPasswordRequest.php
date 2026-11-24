@@ -20,11 +20,11 @@ final class SubmitOperatorPasswordRequest extends FormRequest
     }
 
     /**
-     * The submitted address in the form the operator account stores it.
+     * The submitted address in the form the operator account stores it. The web middleware already trims input.
      */
     public function email(): string
     {
-        return strtolower(trim($this->string('email')->toString()));
+        return strtolower($this->string('email')->toString());
     }
 
     public function password(): string
