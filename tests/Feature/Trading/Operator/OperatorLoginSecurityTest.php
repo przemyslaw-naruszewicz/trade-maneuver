@@ -71,12 +71,13 @@ final class OperatorLoginSecurityTest extends TestCase
 
     public function test_each_login_step_starts_a_new_session_and_the_login_ends_the_totp_challenge(): void
     {
+        // Without the session cookie each test request would start a new session, so it is sent like a browser does.
         $this->get(route('login'))->assertOk();
         $sessionBeforePassword = session()->getId();
 
-        $this->submitPassword()->assertRedirect(route('login.totp'));
+        $this->withSessionCookie($sessionBeforePassword)->submitPassword()->assertRedirect(route('login.totp'));
         $sessionAfterPassword = session()->getId();
-        $this->submitTotpCode($this->currentTotpCode())->assertRedirect(route('panel.start'));
+        $this->withSessionCookie($sessionAfterPassword)->submitTotpCode($this->currentTotpCode())->assertRedirect(route('panel.start'));
 
         $this->assertNotSame($sessionBeforePassword, $sessionAfterPassword);
         $this->assertNotSame($sessionAfterPassword, session()->getId());
@@ -131,6 +132,14 @@ final class OperatorLoginSecurityTest extends TestCase
         $tokenAfterLogout = session()->get('_token');
         $this->assertIsString($tokenAfterLogout);
         $this->assertNotSame($tokenBeforeLogout, $tokenAfterLogout);
+    }
+
+    private function withSessionCookie(string $sessionId): self
+    {
+        $cookie = config('session.cookie');
+        $this->assertIsString($cookie);
+
+        return $this->withCookie($cookie, $sessionId);
     }
 
     /**
