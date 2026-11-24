@@ -65,8 +65,8 @@ final readonly class OperatorTotpChallengeController
 
         $this->throttle->clear(OperatorLoginStep::Totp, $challenge->email);
         PendingTotpChallenge::end($request->session());
+        // Logging in moves the session to a new identifier.
         $this->auth->guard()->loginUsingId($challenge->operatorId);
-        $request->session()->regenerate();
 
         return redirect()->intended(route('panel.start'));
     }
