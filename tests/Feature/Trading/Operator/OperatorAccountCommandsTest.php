@@ -31,6 +31,18 @@ final class OperatorAccountCommandsTest extends TestCase
         $this->assertTrue(Hash::check(self::PASSWORD, $storedPassword));
     }
 
+    public function test_a_second_operator_account_is_refused(): void
+    {
+        $this->createOperator(self::EMAIL, self::PASSWORD)->assertSuccessful();
+
+        $this->createOperator('second-operator@example.test', self::PASSWORD)
+            ->expectsOutputToContain('The operator account already exists.')
+            ->assertFailed();
+
+        $this->assertDatabaseCount('trading_operators', 1);
+        $this->assertSame(self::EMAIL, DB::table('trading_operators')->value('email'));
+    }
+
     private function createOperator(string $email, string $password): PendingCommand
     {
         $command = $this->artisan('trading:create-operator', ['email' => $email]);
