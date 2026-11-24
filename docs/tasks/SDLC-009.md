@@ -14,7 +14,7 @@ Playwright tests drive the GUI in a real browser, against the application runnin
 In scope:
 
 - `@playwright/test` and `otpauth` as development dependencies, and the official Playwright image pinned by tag and digest.
-- A Compose profile `e2e` with its own PHP, nginx, and Playwright services and its own database.
+- A Compose profile `e2e` with its own PHP, nginx, Node.js, and Playwright services and its own database.
 - A seeder for the browser-test operator account.
 - `make e2e`, a script in `bin/` that it runs, and a CI job `e2e`.
 - The first browser tests, for the TM-010 screens.
@@ -25,16 +25,19 @@ Out of scope:
 - Tests against a deployed system, which the testing strategy still plans for CD.
 - Browsers other than Chromium.
 - Browser tests for screens of later tasks. Each GUI task adds its own.
+- Scanning the Playwright image with `make scan-images`.
 - The `Protect main` Ruleset. After merge, the owner adds the new job as a required check (SDLC §5).
 
 ## Requirements
 
 ### Environment
 
-- The Compose profile `e2e` adds a PHP service and an nginx service that serve the application from the same image and code as the development services, and a Playwright service. They use the existing PostgreSQL service with a separate database, `trade_maneuver_e2e`, which `bin/e2e` creates the way `bin/ci` creates the test database. They use the RabbitMQ vhost of the tests, so the development vhost stays untouched.
+- The Compose profile `e2e` adds a PHP service and an nginx service that serve the application from the same image and code as the development services, a Node.js service for the frontend build, and a Playwright service. They use the existing PostgreSQL service with a separate database, `trade_maneuver_e2e`, which `bin/e2e` creates the way `bin/ci` creates the test database. They use the RabbitMQ vhost of the tests, so the development vhost stays untouched.
 - The e2e PHP service serves the production Vite build, even while the development Vite server runs and `public/hot` exists. It points Laravel's Vite hot file at a path that does not exist, through an environment variable that the application reads in a service provider.
-- `bin/e2e` builds the frontend (`npm ci`, `npm run build`), starts the profile, migrates the e2e database from scratch, seeds the browser-test operator, runs the Playwright tests, and stops the profile's services. Any failing step fails `make e2e`.
-- The development services, their database, and their containers keep running unchanged during and after `make e2e`.
+- The Node.js service of the profile uses the same image as the development `node` service and keeps `node_modules` in a named Docker volume, so `npm ci` does not touch the `node_modules` that the development Vite server uses.
+- `bin/e2e` builds the frontend in that service (`npm ci`, `npm run build`), starts the profile, drops and recreates `trade_maneuver_e2e` with `psql`, runs `php artisan migrate`, seeds the browser-test operator, runs the Playwright tests, and stops the profile's services. Any failing step fails `make e2e`.
+- The guard in `AppServiceProvider` that allows destructive database commands only on the test database stays as it is: `bin/e2e` resets the e2e database without `migrate:fresh`.
+- The development services, their database, their containers, and the working tree's `node_modules` stay unchanged during and after `make e2e`.
 
 ### Tests
 
@@ -62,6 +65,9 @@ Out of scope:
 - `otpauth` over a TOTP implementation of our own (owner decision, 2026-11-24): MIT, version 9.6.0 when drafted.
 - Mockup comparison with a 1% pixel tolerance; for screens whose content differs from the mockup, only the shared elements (owner decision, 2026-11-24). `start.html` shows the Orders and Investment configuration entries and the execution mode of later tasks, so a whole-page or whole-panel comparison of the start page would fail. A spike on 2026-11-24 with Playwright 1.65.1 compared `/login` with `sign-in.html` at 1280×800: both themes passed, and the only visible difference was the focus outline of the e-mail field.
 - A separate CI job, parallel to `quality` (owner decision, 2026-11-24). The repository is public, so GitHub Actions minutes cost nothing. The job is expected to take 2 to 3 minutes, shorter than `quality`.
+- `bin/e2e` drops and recreates the e2e database with `psql` and then migrates it, instead of `migrate:fresh` (owner decision, 2026-11-24). The guard against destructive commands keeps allowing them only on the test database.
+- The Playwright image is not scanned (owner decision, 2026-11-24). It runs only for tests, only reaches the local application, and never runs in production. It is a large Ubuntu image, so fixable findings in it would often block PRs or need lasting exceptions. Under the profile, it also stays out of `docker compose config --images`, which `make scan-images` scans.
+- The frontend build for the browser tests runs in its own Node.js service with a named volume for `node_modules` (owner decision, 2026-11-24), so the development Vite server keeps its dependencies.
 - These tests take over the manual check that TM-010 first required: the look of its screens in both themes and the theme behavior (owner decision, 2026-11-24).
 - The spike checked that a stored dark theme is set when the browser parses `<body>`, before the first paint, through an init script with a `MutationObserver`.
 
@@ -74,6 +80,7 @@ Out of scope:
 ## Risks
 
 - The Playwright image is about 1 GB, and CI pulls it on every run.
+- Vulnerabilities in the Playwright image go unnoticed, because it is not scanned.
 - A Playwright update can change rendering, so the image and the package are updated together in a PR whose browser tests show the effect.
 - The 1% tolerance can hide a small change, such as one wrong color in a small element. Behavior checks and the PHP tests cover what the comparison misses.
 - A mockup change makes the comparison fail until the application follows it. This is intended: the mockup sets the look.
@@ -85,7 +92,7 @@ Out of scope:
 - [ ] Browser test: the login page and the TOTP page match `sign-in.html` and `totp-challenge.html`, and the start page's brand, Start navigation entry, theme switch, logout action, and page title match those of `start.html`, in both themes, with at most 1% of the pixels differing.
 - [ ] Break check: without the inline theme script in the document head, the first-paint test fails.
 - [ ] Break check: with a temporary change of one color token in `resources/css/app.css`, a mockup comparison fails and the report shows the difference image.
-- [ ] Manual check: with the development environment running and `public/hot` present, `make e2e` passes, and afterwards the development containers are still running and the development database is unchanged.
+- [ ] Manual check: with the development environment running and `public/hot` present, `make e2e` passes, and afterwards the development containers are still running, the development Vite server still serves the pages, the development database is unchanged, and the working tree's `node_modules` has the same modification time as before.
 - [ ] CI check: the PR's GitHub Actions run shows the `e2e` job running in parallel with `quality` and passing.
 - [ ] Documentation check: testing-strategy.md, development.md, README, and the SDLC §6 file list state the items in Documentation and Constraints.
 
