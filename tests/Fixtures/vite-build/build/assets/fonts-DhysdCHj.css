@@ -1,0 +1,73 @@
+@font-face {
+  font-family: "Jost";
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("/build/assets/jost-300-normal-BK37X6g5.otf") format("opentype");
+}
+
+@font-face {
+  font-family: "Jost";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/build/assets/jost-400-normal-CDwwXZmh.otf") format("opentype");
+}
+
+@font-face {
+  font-family: "Jost";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/build/assets/jost-500-normal-MqDTw6XA.otf") format("opentype");
+}
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/build/assets/ibm-plex-sans-400-normal-B_s_wmKv.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/build/assets/ibm-plex-sans-500-normal-DlylhkIy.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/build/assets/ibm-plex-mono-400-normal-Du0PCiXT.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/build/assets/ibm-plex-mono-500-normal-CiYsa3y2.woff2") format("woff2");
+}
+
+:root {
+  --font-jost: "Jost";
+  --font-ibm-plex-sans: "IBM Plex Sans";
+  --font-ibm-plex-mono: "IBM Plex Mono";
+}
+
+.font-jost {
+  font-family: var(--font-jost);
+}
+
+.font-ibm-plex-sans {
+  font-family: var(--font-ibm-plex-sans);
+}
+
+.font-ibm-plex-mono {
+  font-family: var(--font-ibm-plex-mono);
+}
