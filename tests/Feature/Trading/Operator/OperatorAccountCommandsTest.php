@@ -43,9 +43,42 @@ final class OperatorAccountCommandsTest extends TestCase
         $this->assertSame(self::EMAIL, DB::table('trading_operators')->value('email'));
     }
 
+    public function test_a_password_reset_changes_the_password(): void
+    {
+        $this->createOperator(self::EMAIL, self::PASSWORD)->assertSuccessful();
+
+        $this->resetPassword(self::EMAIL, 'a-new-local-operator-password')
+            ->expectsOutputToContain('The operator password was reset.')
+            ->assertSuccessful();
+
+        $this->assertTrue(Hash::check('a-new-local-operator-password', $this->storedPassword()));
+        $this->assertFalse(Hash::check(self::PASSWORD, $this->storedPassword()));
+    }
+
+    public function test_a_password_reset_for_an_unknown_e_mail_address_changes_nothing(): void
+    {
+        $this->createOperator(self::EMAIL, self::PASSWORD)->assertSuccessful();
+
+        $this->resetPassword('someone-else@example.test', 'a-new-local-operator-password')
+            ->expectsOutputToContain('No operator account has the e-mail address "someone-else@example.test".')
+            ->assertFailed();
+
+        $this->assertTrue(Hash::check(self::PASSWORD, $this->storedPassword()));
+    }
+
     private function createOperator(string $email, string $password): PendingCommand
     {
         $command = $this->artisan('trading:create-operator', ['email' => $email]);
+        $this->assertInstanceOf(PendingCommand::class, $command);
+
+        return $command
+            ->expectsQuestion('Password', $password)
+            ->expectsQuestion('Confirm the password', $password);
+    }
+
+    private function resetPassword(string $email, string $password): PendingCommand
+    {
+        $command = $this->artisan('trading:reset-operator-password', ['email' => $email]);
         $this->assertInstanceOf(PendingCommand::class, $command);
 
         return $command
