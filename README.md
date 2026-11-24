@@ -135,6 +135,18 @@ docker compose start queue
 docker compose exec app php artisan demo-analytics:read-signal-outcomes
 ```
 
+## Operator panel
+
+The operator logs in at http://localhost:8080/login with an e-mail address, a password, and a TOTP code. Only console commands manage the single operator account:
+
+```sh
+docker compose exec app php artisan trading:create-operator operator@example.test
+docker compose exec app php artisan trading:enrol-operator-totp operator@example.test
+docker compose exec app php artisan trading:reset-operator-password operator@example.test
+```
+
+The first and the last command ask for the password without echo. The enrolment command prints the TOTP secret and its `otpauth://` URI once; add either to an authenticator app. Running it again replaces the secret.
+
 ## Quality checks
 
 Before opening a pull request, run `git fetch` so that `origin/main` is current, then `CI_WITH_MUTATION=diff make ci` for the pull-request checks. Run `make scan-images` as well, because CI runs the image scan in its own job outside `make ci`. `make ci` alone runs the complete pipeline, including the full Infection run. For CI configuration changes, follow the [three-step verification process](SDLC.md#changes-to-ci-configuration). [The development reference](docs/development.md#ci-quality-checks) lists the checks, their configuration, the Infection variants, and the reports.
