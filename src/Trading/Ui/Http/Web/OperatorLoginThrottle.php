@@ -19,6 +19,11 @@ final readonly class OperatorLoginThrottle
         private int $maxFailedAttemptsPerMinute,
     ) {}
 
+    public function admitAttempt(OperatorLoginStep $step, string $account): bool
+    {
+        return ! $this->isBlocked($step, $account);
+    }
+
     public function isBlocked(OperatorLoginStep $step, string $account): bool
     {
         return $this->rateLimiter->tooManyAttempts($this->key($step, $account), $this->maxFailedAttemptsPerMinute);
