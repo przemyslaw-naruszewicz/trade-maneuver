@@ -35,4 +35,26 @@ final class OperatorLoginTest extends TestCase
         $this->assertNotSame($sessionBeforeLogin, session()->getId());
         $this->get(route('panel.start'))->assertOk();
     }
+
+    public function test_a_wrong_password_is_refused_without_a_totp_challenge(): void
+    {
+        $this->from(route('login'))->submitPassword('a-wrong-password')
+            ->assertRedirect(route('login'))
+            ->assertSessionHasErrors(['email' => 'These credentials do not match the operator account.']);
+
+        $this->assertGuest();
+        $this->get(route('login.totp'))->assertRedirect(route('login'));
+    }
+
+    public function test_a_wrong_code_is_refused(): void
+    {
+        $this->submitPassword()->assertRedirect(route('login.totp'));
+
+        $this->from(route('login.totp'))->submitTotpCode($this->wrongTotpCode())
+            ->assertRedirect(route('login.totp'))
+            ->assertSessionHasErrors(['code' => 'This code is not valid, or it has already been used.']);
+
+        $this->assertGuest();
+        $this->get(route('panel.start'))->assertRedirect(route('login'));
+    }
 }
