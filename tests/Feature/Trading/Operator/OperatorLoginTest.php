@@ -72,6 +72,21 @@ final class OperatorLoginTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_a_replayed_totp_code_is_rejected(): void
+    {
+        $code = $this->currentTotpCode();
+        $this->submitPassword();
+        $this->submitTotpCode($code)->assertRedirect(route('panel.start'));
+        $this->post(route('logout'))->assertRedirect(route('login'));
+
+        $this->submitPassword()->assertRedirect(route('login.totp'));
+        $this->from(route('login.totp'))->submitTotpCode($code)
+            ->assertRedirect(route('login.totp'))
+            ->assertSessionHasErrors(['code' => 'This code is not valid, or it has already been used.']);
+
+        $this->assertGuest();
+    }
+
     /**
      * @return list<Route>
      */
