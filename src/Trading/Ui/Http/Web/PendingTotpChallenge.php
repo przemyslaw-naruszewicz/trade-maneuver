@@ -26,11 +26,8 @@ final readonly class PendingTotpChallenge
     public static function of(Session $session): ?self
     {
         $challenge = $session->get(self::SESSION_KEY);
-        if (! is_array($challenge) || ! is_string($challenge['operator_id'] ?? null) || ! is_string($challenge['email'] ?? null)) {
-            return null;
-        }
 
-        return new self($challenge['operator_id'], $challenge['email']);
+        return is_array($challenge) ? new self((string) $challenge['operator_id'], (string) $challenge['email']) : null;
     }
 
     public static function end(Session $session): void

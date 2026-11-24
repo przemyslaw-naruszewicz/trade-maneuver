@@ -24,7 +24,7 @@ final class SubmitOperatorPasswordRequest extends FormRequest
      */
     public function email(): string
     {
-        return mb_strtolower(trim($this->string('email')->toString()));
+        return strtolower(trim($this->string('email')->toString()));
     }
 
     public function password(): string

@@ -36,6 +36,6 @@ final readonly class OperatorLoginThrottle
 
     private function key(OperatorLoginStep $step, string $account): string
     {
-        return 'trading:operator-login:'.$step->value.':'.$account;
+        return sprintf('trading:operator-login:%s:%s', $step->value, $account);
     }
 }

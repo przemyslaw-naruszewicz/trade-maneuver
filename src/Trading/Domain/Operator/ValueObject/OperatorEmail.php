@@ -8,6 +8,7 @@ use TradeManeuver\Trading\Domain\Operator\Exception\InvalidOperatorValueExceptio
 
 /**
  * The e-mail address the operator logs in with, kept in lower case so that a login matches it whatever the case.
+ * The address is ASCII: the validation accepts no other characters.
  */
 final readonly class OperatorEmail
 {
@@ -18,7 +19,7 @@ final readonly class OperatorEmail
      */
     public function __construct(string $value)
     {
-        $normalized = mb_strtolower(trim($value));
+        $normalized = strtolower(trim($value));
         if (filter_var($normalized, FILTER_VALIDATE_EMAIL) === false) {
             throw new InvalidOperatorValueException(sprintf('"%s" is not a valid e-mail address.', $value));
         }

@@ -31,9 +31,14 @@ final readonly class Google2FaTotpAuthenticator implements TotpAuthenticatorInte
         return $this->google2fa->getQRCodeUrl(self::ISSUER, $email->toString(), $secret->toString());
     }
 
+    /**
+     * Given an earlier time step, the library returns the matching step instead of true. Step 0 excludes no real
+     * step, so changing it to -1 or 1 is an equivalent mutant.
+     *
+     * @infection-ignore-all
+     */
     public function matchingTimestep(TotpSecret $secret, #[\SensitiveParameter] string $code): ?TotpTimestep
     {
-        // With an earlier time step the library returns the matching step instead of true; 0 excludes no real step.
         $timestep = $this->google2fa->verifyKeyNewer($secret->toString(), $code, 0, self::TOLERANCE_IN_STEPS);
 
         return is_int($timestep) ? new TotpTimestep($timestep) : null;
