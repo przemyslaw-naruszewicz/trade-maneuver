@@ -73,6 +73,32 @@ final class OperatorLoginAttemptLimitTest extends TestCase
         $this->assertAuthenticated();
     }
 
+    public function test_a_blocked_password_step_does_not_block_the_totp_step(): void
+    {
+        $this->submitPassword()->assertRedirect(route('login.totp'));
+        for ($attempt = 1; $attempt <= 6; $attempt++) {
+            $this->submitPassword('a-wrong-password');
+        }
+        $this->submitPassword()->assertSessionHasErrors(['email' => $this->blockedMessage()]);
+
+        $this->submitTotpCode($this->wrongTotpCode())->assertSessionHasErrors(['code' => self::WRONG_CODE]);
+        $this->submitTotpCode($this->currentTotpCode())->assertRedirect(route('panel.start'));
+        $this->assertAuthenticated();
+    }
+
+    public function test_a_blocked_totp_step_does_not_block_the_password_step(): void
+    {
+        $this->submitPassword()->assertRedirect(route('login.totp'));
+        for ($attempt = 1; $attempt <= 6; $attempt++) {
+            $this->submitTotpCode($this->wrongTotpCode());
+        }
+        $this->submitTotpCode($this->currentTotpCode())->assertSessionHasErrors(['code' => $this->blockedMessage()]);
+
+        $this->submitPassword('a-wrong-password')->assertSessionHasErrors(['email' => self::WRONG_PASSWORD]);
+        $this->submitPassword()->assertRedirect(route('login.totp'));
+        $this->assertGuest();
+    }
+
     private function blockedMessage(): string
     {
         return 'Too many failed attempts. Try again in a minute.';
