@@ -33,6 +33,37 @@ final class OperatorAccountCommandsTest extends TestCase
         $this->assertTrue(Hash::check(self::PASSWORD, $storedPassword));
     }
 
+    public function test_an_empty_password_is_refused(): void
+    {
+        $this->createOperator(self::EMAIL, '')
+            ->expectsOutputToContain('The password must not be empty.')
+            ->assertFailed();
+
+        $this->assertDatabaseCount('trading_operators', 0);
+    }
+
+    public function test_a_password_that_does_not_match_its_confirmation_is_refused(): void
+    {
+        $command = $this->artisan('trading:create-operator', ['email' => self::EMAIL]);
+        $this->assertInstanceOf(PendingCommand::class, $command);
+
+        $command->expectsQuestion('Password', self::PASSWORD)
+            ->expectsQuestion('Confirm the password', 'a-different-password')
+            ->expectsOutputToContain('The passwords do not match.')
+            ->assertFailed();
+
+        $this->assertDatabaseCount('trading_operators', 0);
+    }
+
+    public function test_an_invalid_e_mail_address_is_refused(): void
+    {
+        $this->createOperator('not-an-e-mail-address', self::PASSWORD)
+            ->expectsOutputToContain('"not-an-e-mail-address" is not a valid e-mail address.')
+            ->assertFailed();
+
+        $this->assertDatabaseCount('trading_operators', 0);
+    }
+
     public function test_a_second_operator_account_is_refused(): void
     {
         $this->createOperator(self::EMAIL, self::PASSWORD)->assertSuccessful();
@@ -80,6 +111,8 @@ final class OperatorAccountCommandsTest extends TestCase
             $output,
         );
         $this->assertStringContainsString('&digits=6&period=30', $output);
+        $this->assertStringContainsString('TOTP is enrolled. Add the secret to an authenticator app now: it is not shown again.', $output);
+        $this->assertStringContainsString("\nURI: otpauth://totp/", $output);
 
         $storedSecret = (string) DB::table('trading_operators')->value('totp_secret');
         $this->assertStringNotContainsString($secret, $storedSecret);
@@ -97,6 +130,13 @@ final class OperatorAccountCommandsTest extends TestCase
         $secondSecret = $this->storedTotpSecret();
         $this->assertNotSame($firstSecret, $secondSecret);
         $this->assertStringContainsString('Secret: '.$secondSecret, $output);
+    }
+
+    public function test_totp_enrolment_for_an_unknown_e_mail_address_is_refused(): void
+    {
+        $this->assertSame(1, Artisan::call('trading:enrol-operator-totp', ['email' => self::EMAIL]));
+
+        $this->assertStringContainsString('No operator account has the e-mail address "operator@example.test".', Artisan::output());
     }
 
     private function createOperator(string $email, string $password): PendingCommand
