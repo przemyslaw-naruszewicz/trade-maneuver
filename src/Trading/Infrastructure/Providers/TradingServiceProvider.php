@@ -35,6 +35,9 @@ use TradeManeuver\Trading\Infrastructure\Persistence\LaravelTransactionManager;
 use TradeManeuver\Trading\Infrastructure\TradeSignal\TradeSignalRepository;
 use TradeManeuver\Trading\Infrastructure\Workflow\TradeSignalEvaluationStore;
 use TradeManeuver\Trading\Ui\ConsoleCommands\CreateInvestmentConfigurationCommand;
+use TradeManeuver\Trading\Ui\ConsoleCommands\CreateOperatorCommand;
+use TradeManeuver\Trading\Ui\ConsoleCommands\EnrolOperatorTotpCommand;
+use TradeManeuver\Trading\Ui\ConsoleCommands\ResetOperatorPasswordCommand;
 use TradeManeuver\Trading\Ui\Messaging\ConsumeTradeSignalsCommand;
 
 final class TradingServiceProvider extends ServiceProvider
@@ -104,7 +107,13 @@ final class TradingServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(dirname(__DIR__).'/Resources/Migrations');
 
         if ($this->app->runningInConsole()) {
-            $this->commands([CreateInvestmentConfigurationCommand::class, ConsumeTradeSignalsCommand::class]);
+            $this->commands([
+                CreateInvestmentConfigurationCommand::class,
+                ConsumeTradeSignalsCommand::class,
+                CreateOperatorCommand::class,
+                ResetOperatorPasswordCommand::class,
+                EnrolOperatorTotpCommand::class,
+            ]);
         }
     }
 }
