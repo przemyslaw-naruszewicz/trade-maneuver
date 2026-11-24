@@ -14,6 +14,7 @@ use TradeManeuver\Trading\Domain\Operator\Repository\OperatorRepositoryInterface
 use TradeManeuver\Trading\Domain\Operator\ValueObject\OperatorEmail;
 use TradeManeuver\Trading\Domain\Operator\ValueObject\OperatorId;
 use TradeManeuver\Trading\Domain\Operator\ValueObject\PasswordHash;
+use TradeManeuver\Trading\Domain\Operator\ValueObject\TotpSecret;
 use TradeManeuver\Trading\Infrastructure\Operator\Eloquent\OperatorModel;
 
 final class OperatorRepository implements OperatorRepositoryInterface
@@ -31,6 +32,7 @@ final class OperatorRepository implements OperatorRepositoryInterface
         $model->id = $operator->id()->toString();
         $model->email = $state->email->toString();
         $model->password = $state->passwordHash->toString();
+        $model->totp_secret = $state->totpSecret?->toString();
 
         try {
             $model->save();
@@ -54,16 +56,21 @@ final class OperatorRepository implements OperatorRepositoryInterface
     {
         $state = $operator->state();
 
-        OperatorModel::query()->whereKey($operator->id()->toString())->update([
-            'password' => $state->passwordHash->toString(),
-        ]);
+        $model = OperatorModel::query()->findOrFail($operator->id()->toString());
+        $model->password = $state->passwordHash->toString();
+        $model->totp_secret = $state->totpSecret?->toString();
+        $model->save();
     }
 
     private function reconstitute(OperatorModel $model): Operator
     {
         return Operator::reconstitute(
             new OperatorId($model->id),
-            new OperatorStateDto(new OperatorEmail($model->email), new PasswordHash($model->password)),
+            new OperatorStateDto(
+                new OperatorEmail($model->email),
+                new PasswordHash($model->password),
+                $model->totp_secret === null ? null : new TotpSecret($model->totp_secret),
+            ),
         );
     }
 }

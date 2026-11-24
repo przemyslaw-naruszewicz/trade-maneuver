@@ -8,6 +8,7 @@ use TradeManeuver\Trading\Domain\Operator\Dto\OperatorStateDto;
 use TradeManeuver\Trading\Domain\Operator\ValueObject\OperatorEmail;
 use TradeManeuver\Trading\Domain\Operator\ValueObject\OperatorId;
 use TradeManeuver\Trading\Domain\Operator\ValueObject\PasswordHash;
+use TradeManeuver\Trading\Domain\Operator\ValueObject\TotpSecret;
 
 /**
  * The account of the single operator who supervises Trade Maneuver through the GUI.
@@ -18,16 +19,17 @@ final class Operator
         private readonly OperatorId $id,
         private readonly OperatorEmail $email,
         private PasswordHash $passwordHash,
+        private ?TotpSecret $totpSecret,
     ) {}
 
     public static function create(OperatorId $id, OperatorEmail $email, PasswordHash $passwordHash): self
     {
-        return new self($id, $email, $passwordHash);
+        return new self($id, $email, $passwordHash, null);
     }
 
     public static function reconstitute(OperatorId $id, OperatorStateDto $state): self
     {
-        return new self($id, $state->email, $state->passwordHash);
+        return new self($id, $state->email, $state->passwordHash, $state->totpSecret);
     }
 
     public function id(): OperatorId
@@ -40,8 +42,21 @@ final class Operator
         $this->passwordHash = $passwordHash;
     }
 
+    /**
+     * Enrols TOTP with a new secret, or replaces the secret of an earlier enrolment.
+     */
+    public function enrolTotp(TotpSecret $secret): void
+    {
+        $this->totpSecret = $secret;
+    }
+
+    public function email(): OperatorEmail
+    {
+        return $this->email;
+    }
+
     public function state(): OperatorStateDto
     {
-        return new OperatorStateDto($this->email, $this->passwordHash);
+        return new OperatorStateDto($this->email, $this->passwordHash, $this->totpSecret);
     }
 }

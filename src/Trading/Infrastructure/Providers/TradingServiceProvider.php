@@ -16,6 +16,7 @@ use TradeManeuver\Trading\Application\Port\BrokerGatewayInterface;
 use TradeManeuver\Trading\Application\Port\InboxInterface;
 use TradeManeuver\Trading\Application\Port\IntegrationEventPublisherInterface;
 use TradeManeuver\Trading\Application\Port\PasswordHasherInterface;
+use TradeManeuver\Trading\Application\Port\TotpAuthenticatorInterface;
 use TradeManeuver\Trading\Application\Port\TradeSignalEvaluationQueueInterface;
 use TradeManeuver\Trading\Application\Port\TransactionManagerInterface;
 use TradeManeuver\Trading\Application\Workflow\TradeSignalEvaluation\TradeSignalEvaluationStoreInterface;
@@ -32,6 +33,7 @@ use TradeManeuver\Trading\Infrastructure\Messaging\Jobs\QueuedTradeSignalEvaluat
 use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\OutboxIntegrationEventPublisher;
 use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\SignalOutcomePublisherInterface;
 use TradeManeuver\Trading\Infrastructure\Messaging\RabbitMq\RabbitMqSignalOutcomePublisher;
+use TradeManeuver\Trading\Infrastructure\Operator\Google2FaTotpAuthenticator;
 use TradeManeuver\Trading\Infrastructure\Operator\LaravelPasswordHasher;
 use TradeManeuver\Trading\Infrastructure\Operator\OperatorRepository;
 use TradeManeuver\Trading\Infrastructure\Order\OrderRepository;
@@ -55,6 +57,7 @@ final class TradingServiceProvider extends ServiceProvider
         $this->app->bind(OrderRepositoryInterface::class, OrderRepository::class);
         $this->app->bind(OperatorRepositoryInterface::class, OperatorRepository::class);
         $this->app->bind(PasswordHasherInterface::class, LaravelPasswordHasher::class);
+        $this->app->bind(TotpAuthenticatorInterface::class, Google2FaTotpAuthenticator::class);
         $this->app->bind(ClockInterface::class, fn (): FactoryImmutable => FactoryImmutable::getDefaultInstance());
         $this->app->bind(
             AnalyticsApplicationRegistryInterface::class,

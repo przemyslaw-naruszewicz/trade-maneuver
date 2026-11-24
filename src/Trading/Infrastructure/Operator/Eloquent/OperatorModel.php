@@ -12,6 +12,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  * @property string $id
  * @property string $email
  * @property string $password
+ * @property string|null $totp_secret
  */
 final class OperatorModel extends Authenticatable
 {
@@ -24,5 +25,15 @@ final class OperatorModel extends Authenticatable
     protected $keyType = 'string';
 
     /** @var list<string> */
-    protected $hidden = ['password'];
+    protected $hidden = ['password', 'totp_secret'];
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'totp_secret' => 'encrypted',
+        ];
+    }
 }
