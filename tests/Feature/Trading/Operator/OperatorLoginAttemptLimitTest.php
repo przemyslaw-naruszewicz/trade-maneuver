@@ -56,6 +56,23 @@ final class OperatorLoginAttemptLimitTest extends TestCase
         $this->submitPassword()->assertSessionHasErrors(['email' => $this->blockedMessage()]);
     }
 
+    public function test_the_fifth_failed_code_within_a_minute_is_checked_and_the_sixth_attempt_is_blocked(): void
+    {
+        $this->submitPassword()->assertRedirect(route('login.totp'));
+        for ($attempt = 1; $attempt <= 5; $attempt++) {
+            $this->submitTotpCode($this->wrongTotpCode())->assertSessionHasErrors(['code' => self::WRONG_CODE]);
+        }
+
+        $this->submitTotpCode($this->currentTotpCode())
+            ->assertRedirect(route('login.totp'))
+            ->assertSessionHasErrors(['code' => $this->blockedMessage()]);
+        $this->assertGuest();
+
+        $this->travel(61)->seconds();
+        $this->submitTotpCode($this->currentTotpCode())->assertRedirect(route('panel.start'));
+        $this->assertAuthenticated();
+    }
+
     private function blockedMessage(): string
     {
         return 'Too many failed attempts. Try again in a minute.';
