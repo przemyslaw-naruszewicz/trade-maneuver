@@ -15,10 +15,12 @@ use TradeManeuver\Trading\Application\Port\AuditTrailInterface;
 use TradeManeuver\Trading\Application\Port\BrokerGatewayInterface;
 use TradeManeuver\Trading\Application\Port\InboxInterface;
 use TradeManeuver\Trading\Application\Port\IntegrationEventPublisherInterface;
+use TradeManeuver\Trading\Application\Port\PasswordHasherInterface;
 use TradeManeuver\Trading\Application\Port\TradeSignalEvaluationQueueInterface;
 use TradeManeuver\Trading\Application\Port\TransactionManagerInterface;
 use TradeManeuver\Trading\Application\Workflow\TradeSignalEvaluation\TradeSignalEvaluationStoreInterface;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Repository\InvestmentConfigurationRepositoryInterface;
+use TradeManeuver\Trading\Domain\Operator\Repository\OperatorRepositoryInterface;
 use TradeManeuver\Trading\Domain\Order\Repository\OrderRepositoryInterface;
 use TradeManeuver\Trading\Domain\TradeSignal\Repository\TradeSignalRepositoryInterface;
 use TradeManeuver\Trading\Infrastructure\AnalyticsApplication\ConfiguredAnalyticsApplicationRegistry;
@@ -30,6 +32,8 @@ use TradeManeuver\Trading\Infrastructure\Messaging\Jobs\QueuedTradeSignalEvaluat
 use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\OutboxIntegrationEventPublisher;
 use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\SignalOutcomePublisherInterface;
 use TradeManeuver\Trading\Infrastructure\Messaging\RabbitMq\RabbitMqSignalOutcomePublisher;
+use TradeManeuver\Trading\Infrastructure\Operator\LaravelPasswordHasher;
+use TradeManeuver\Trading\Infrastructure\Operator\OperatorRepository;
 use TradeManeuver\Trading\Infrastructure\Order\OrderRepository;
 use TradeManeuver\Trading\Infrastructure\Persistence\LaravelTransactionManager;
 use TradeManeuver\Trading\Infrastructure\TradeSignal\TradeSignalRepository;
@@ -49,6 +53,8 @@ final class TradingServiceProvider extends ServiceProvider
         $this->app->bind(InvestmentConfigurationRepositoryInterface::class, InvestmentConfigurationRepository::class);
         $this->app->bind(TradeSignalRepositoryInterface::class, TradeSignalRepository::class);
         $this->app->bind(OrderRepositoryInterface::class, OrderRepository::class);
+        $this->app->bind(OperatorRepositoryInterface::class, OperatorRepository::class);
+        $this->app->bind(PasswordHasherInterface::class, LaravelPasswordHasher::class);
         $this->app->bind(ClockInterface::class, fn (): FactoryImmutable => FactoryImmutable::getDefaultInstance());
         $this->app->bind(
             AnalyticsApplicationRegistryInterface::class,

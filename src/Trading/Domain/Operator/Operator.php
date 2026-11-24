@@ -1,0 +1,42 @@
+<?php
+
+declare(strict_types=1);
+
+namespace TradeManeuver\Trading\Domain\Operator;
+
+use TradeManeuver\Trading\Domain\Operator\Dto\OperatorStateDto;
+use TradeManeuver\Trading\Domain\Operator\ValueObject\OperatorEmail;
+use TradeManeuver\Trading\Domain\Operator\ValueObject\OperatorId;
+use TradeManeuver\Trading\Domain\Operator\ValueObject\PasswordHash;
+
+/**
+ * The account of the single operator who supervises Trade Maneuver through the GUI.
+ */
+final class Operator
+{
+    private function __construct(
+        private readonly OperatorId $id,
+        private readonly OperatorEmail $email,
+        private readonly PasswordHash $passwordHash,
+    ) {}
+
+    public static function create(OperatorId $id, OperatorEmail $email, PasswordHash $passwordHash): self
+    {
+        return new self($id, $email, $passwordHash);
+    }
+
+    public static function reconstitute(OperatorId $id, OperatorStateDto $state): self
+    {
+        return new self($id, $state->email, $state->passwordHash);
+    }
+
+    public function id(): OperatorId
+    {
+        return $this->id;
+    }
+
+    public function state(): OperatorStateDto
+    {
+        return new OperatorStateDto($this->email, $this->passwordHash);
+    }
+}
