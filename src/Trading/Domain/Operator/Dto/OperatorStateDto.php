@@ -7,6 +7,7 @@ namespace TradeManeuver\Trading\Domain\Operator\Dto;
 use TradeManeuver\Trading\Domain\Operator\ValueObject\OperatorEmail;
 use TradeManeuver\Trading\Domain\Operator\ValueObject\PasswordHash;
 use TradeManeuver\Trading\Domain\Operator\ValueObject\TotpSecret;
+use TradeManeuver\Trading\Domain\Operator\ValueObject\TotpTimestep;
 
 final readonly class OperatorStateDto
 {
@@ -14,5 +15,6 @@ final readonly class OperatorStateDto
         public OperatorEmail $email,
         public PasswordHash $passwordHash,
         public ?TotpSecret $totpSecret,
+        public ?TotpTimestep $lastAcceptedTotpTimestep,
     ) {}
 }

@@ -13,6 +13,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  * @property string $email
  * @property string $password
  * @property string|null $totp_secret
+ * @property int|null $last_accepted_totp_timestep
  */
 final class OperatorModel extends Authenticatable
 {
@@ -34,6 +35,7 @@ final class OperatorModel extends Authenticatable
     {
         return [
             'totp_secret' => 'encrypted',
+            'last_accepted_totp_timestep' => 'integer',
         ];
     }
 }

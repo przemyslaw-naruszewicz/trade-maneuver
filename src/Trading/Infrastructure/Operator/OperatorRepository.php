@@ -15,6 +15,7 @@ use TradeManeuver\Trading\Domain\Operator\ValueObject\OperatorEmail;
 use TradeManeuver\Trading\Domain\Operator\ValueObject\OperatorId;
 use TradeManeuver\Trading\Domain\Operator\ValueObject\PasswordHash;
 use TradeManeuver\Trading\Domain\Operator\ValueObject\TotpSecret;
+use TradeManeuver\Trading\Domain\Operator\ValueObject\TotpTimestep;
 use TradeManeuver\Trading\Infrastructure\Operator\Eloquent\OperatorModel;
 
 final class OperatorRepository implements OperatorRepositoryInterface
@@ -69,6 +70,7 @@ final class OperatorRepository implements OperatorRepositoryInterface
         $model = OperatorModel::query()->findOrFail($operator->id()->toString());
         $model->password = $state->passwordHash->toString();
         $model->totp_secret = $state->totpSecret?->toString();
+        $model->last_accepted_totp_timestep = $state->lastAcceptedTotpTimestep?->value();
         $model->save();
     }
 
@@ -80,6 +82,7 @@ final class OperatorRepository implements OperatorRepositoryInterface
                 new OperatorEmail($model->email),
                 new PasswordHash($model->password),
                 $model->totp_secret === null ? null : new TotpSecret($model->totp_secret),
+                $model->last_accepted_totp_timestep === null ? null : new TotpTimestep($model->last_accepted_totp_timestep),
             ),
         );
     }

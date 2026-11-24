@@ -7,11 +7,12 @@ namespace TradeManeuver\Trading\Application\Operator\Command\ConfirmOperatorTotp
 use TradeManeuver\Trading\Application\Operator\Exception\InvalidTotpCodeException;
 use TradeManeuver\Trading\Application\Port\TotpAuthenticatorInterface;
 use TradeManeuver\Trading\Application\Port\TransactionManagerInterface;
+use TradeManeuver\Trading\Domain\Operator\Exception\TotpCodeAlreadyUsedException;
 use TradeManeuver\Trading\Domain\Operator\Repository\OperatorRepositoryInterface;
 use TradeManeuver\Trading\Domain\Operator\ValueObject\OperatorId;
 
 /**
- * Confirms the second login step: the code must match the operator's TOTP secret.
+ * Confirms the second login step: the code must match the operator's TOTP secret and must not have been used.
  */
 final readonly class ConfirmOperatorTotpCodeCommandHandler
 {
@@ -29,11 +30,20 @@ final readonly class ConfirmOperatorTotpCodeCommandHandler
         $operatorId = new OperatorId($command->operatorId);
 
         $this->transactionManager->transactional(function () use ($operatorId, $command): void {
+            // The lock makes a concurrent login with the same code wait and then see it as used.
             $operator = $this->operators->getLocked($operatorId);
             $secret = $operator->totpSecret();
-            if ($secret === null || $this->totpAuthenticator->matchingTimestep($secret, $command->code) === null) {
+            $timestep = $secret === null ? null : $this->totpAuthenticator->matchingTimestep($secret, $command->code);
+            if ($timestep === null) {
                 throw InvalidTotpCodeException::create();
             }
+
+            try {
+                $operator->acceptTotpCodeAt($timestep);
+            } catch (TotpCodeAlreadyUsedException) {
+                throw InvalidTotpCodeException::create();
+            }
+            $this->operators->save($operator);
         });
     }
 }
