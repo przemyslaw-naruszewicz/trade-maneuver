@@ -26,10 +26,13 @@ trait OperatorAccounts
     private string $totpSecret = '';
 
     /**
-     * Skips the wait that keeps password answers equally long, so that tests with many attempts stay fast.
+     * Renders pages against the committed test build, so that tests do not depend on a local frontend build or a
+     * running Vite dev server. Skips the wait that keeps password answers equally long, so that tests with many
+     * attempts stay fast.
      */
     protected function setUpOperatorAccounts(): void
     {
+        $this->app->usePublicPath(base_path('tests/Fixtures/vite-build'));
         Sleep::fake();
     }
 

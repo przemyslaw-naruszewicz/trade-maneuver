@@ -21,7 +21,6 @@ final class OwnOriginAssetsTest extends TestCase
     {
         parent::setUp();
 
-        $this->app->usePublicPath(base_path('tests/Fixtures/vite-build'));
         $this->createEnrolledOperator();
     }
 
