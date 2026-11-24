@@ -42,7 +42,7 @@ final readonly class OperatorTotpChallengeController
             return redirect()->route('login');
         }
 
-        if ($this->throttle->isBlocked($challenge->email)) {
+        if ($this->throttle->isBlocked(OperatorLoginStep::Totp, $challenge->email)) {
             $this->logger->warning('Operator login blocked at the TOTP step after too many failed attempts.', [
                 'operator' => $challenge->operatorId,
                 'ip' => $request->ip(),
@@ -54,7 +54,7 @@ final readonly class OperatorTotpChallengeController
         try {
             $this->confirmTotpCode->handle(new ConfirmOperatorTotpCodeCommand($challenge->operatorId, $request->code()));
         } catch (InvalidTotpCodeException $exception) {
-            $this->throttle->recordFailure($challenge->email);
+            $this->throttle->recordFailure(OperatorLoginStep::Totp, $challenge->email);
             $this->logger->warning('Operator login failed at the TOTP step.', [
                 'operator' => $challenge->operatorId,
                 'ip' => $request->ip(),
@@ -63,7 +63,7 @@ final readonly class OperatorTotpChallengeController
             return redirect()->route('login.totp')->withErrors(['code' => $exception->getMessage()]);
         }
 
-        $this->throttle->clear($challenge->email);
+        $this->throttle->clear(OperatorLoginStep::Totp, $challenge->email);
         PendingTotpChallenge::end($request->session());
         $this->auth->guard()->loginUsingId($challenge->operatorId);
         $request->session()->regenerate();

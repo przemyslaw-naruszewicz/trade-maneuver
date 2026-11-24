@@ -34,7 +34,7 @@ final readonly class OperatorSignInController
 
     public function store(SubmitOperatorPasswordRequest $request): RedirectResponse
     {
-        if ($this->throttle->isBlocked($request->email())) {
+        if ($this->throttle->isBlocked(OperatorLoginStep::Password, $request->email())) {
             $this->logger->warning('Operator login blocked at the password step after too many failed attempts.', [
                 'email' => $request->email(),
                 'ip' => $request->ip(),
@@ -51,7 +51,7 @@ final readonly class OperatorSignInController
         );
 
         if ($operator === null) {
-            $this->throttle->recordFailure($request->email());
+            $this->throttle->recordFailure(OperatorLoginStep::Password, $request->email());
             $this->logger->warning('Operator login failed at the password step.', [
                 'email' => $request->email(),
                 'ip' => $request->ip(),
@@ -62,7 +62,7 @@ final readonly class OperatorSignInController
                 ->onlyInput('email');
         }
 
-        $this->throttle->clear($request->email());
+        $this->throttle->clear(OperatorLoginStep::Password, $request->email());
         $request->session()->regenerate();
         PendingTotpChallenge::start($request->session(), (string) $operator->getAuthIdentifier(), $request->email());
 

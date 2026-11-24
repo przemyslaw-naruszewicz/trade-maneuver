@@ -7,8 +7,8 @@ namespace TradeManeuver\Trading\Ui\Http\Web;
 use Illuminate\Cache\RateLimiter;
 
 /**
- * Limits failed login attempts per operator account: once the limit is reached within a minute, further attempts
- * are blocked without being checked until the minute has passed.
+ * Limits failed login attempts per operator account and login step: once a step reaches the limit within a minute,
+ * its further attempts are blocked without being checked until the minute has passed. The other step stays open.
  */
 final readonly class OperatorLoginThrottle
 {
@@ -19,23 +19,23 @@ final readonly class OperatorLoginThrottle
         private int $maxFailedAttemptsPerMinute,
     ) {}
 
-    public function isBlocked(string $account): bool
+    public function isBlocked(OperatorLoginStep $step, string $account): bool
     {
-        return $this->rateLimiter->tooManyAttempts($this->key($account), $this->maxFailedAttemptsPerMinute);
+        return $this->rateLimiter->tooManyAttempts($this->key($step, $account), $this->maxFailedAttemptsPerMinute);
     }
 
-    public function recordFailure(string $account): void
+    public function recordFailure(OperatorLoginStep $step, string $account): void
     {
-        $this->rateLimiter->hit($this->key($account), self::DECAY_SECONDS);
+        $this->rateLimiter->hit($this->key($step, $account), self::DECAY_SECONDS);
     }
 
-    public function clear(string $account): void
+    public function clear(OperatorLoginStep $step, string $account): void
     {
-        $this->rateLimiter->clear($this->key($account));
+        $this->rateLimiter->clear($this->key($step, $account));
     }
 
-    private function key(string $account): string
+    private function key(OperatorLoginStep $step, string $account): string
     {
-        return 'trading:operator-login:'.$account;
+        return 'trading:operator-login:'.$step->value.':'.$account;
     }
 }
