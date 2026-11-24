@@ -32,8 +32,8 @@ final readonly class Google2FaTotpAuthenticator implements TotpAuthenticatorInte
     }
 
     /**
-     * Given an earlier time step, the library returns the matching step instead of true. Step 0 excludes no real
-     * step, so changing it to -1 or 1 is an equivalent mutant.
+     * Given a last accepted time step, the library returns the matching step instead of true. Step 0 excludes no
+     * real step, because steps count from 1970, so the replay check stays in the domain.
      *
      * @infection-ignore-all
      */
