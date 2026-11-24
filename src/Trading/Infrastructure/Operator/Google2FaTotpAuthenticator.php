@@ -19,8 +19,6 @@ final readonly class Google2FaTotpAuthenticator implements TotpAuthenticatorInte
 
     private const int TOLERANCE_IN_STEPS = 1;
 
-    private const string CODE_PATTERN = '/^\d{6}$/D';
-
     public function __construct(private Google2FA $google2fa) {}
 
     public function generateSecret(): TotpSecret
@@ -35,10 +33,6 @@ final readonly class Google2FaTotpAuthenticator implements TotpAuthenticatorInte
 
     public function matchingTimestep(TotpSecret $secret, #[\SensitiveParameter] string $code): ?TotpTimestep
     {
-        if (preg_match(self::CODE_PATTERN, $code) !== 1) {
-            return null;
-        }
-
         // With an earlier time step the library returns the matching step instead of true; 0 excludes no real step.
         $timestep = $this->google2fa->verifyKeyNewer($secret->toString(), $code, 0, self::TOLERANCE_IN_STEPS);
 
