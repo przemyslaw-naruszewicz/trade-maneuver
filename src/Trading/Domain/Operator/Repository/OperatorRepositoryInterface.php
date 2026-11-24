@@ -26,6 +26,13 @@ interface OperatorRepositoryInterface
      *
      * @throws OperatorDoesNotExistException
      */
+    public function getLocked(OperatorId $id): Operator;
+
+    /**
+     * Loads the operator account and locks it until the transaction ends, so that concurrent writers wait.
+     *
+     * @throws OperatorDoesNotExistException
+     */
     public function getLockedByEmail(OperatorEmail $email): Operator;
 
     public function save(Operator $operator): void;

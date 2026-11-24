@@ -42,6 +42,16 @@ final class OperatorRepository implements OperatorRepositoryInterface
         }
     }
 
+    public function getLocked(OperatorId $id): Operator
+    {
+        $model = OperatorModel::query()->lockForUpdate()->find($id->toString());
+        if ($model === null) {
+            throw OperatorDoesNotExistException::withId($id);
+        }
+
+        return $this->reconstitute($model);
+    }
+
     public function getLockedByEmail(OperatorEmail $email): Operator
     {
         $model = OperatorModel::query()->lockForUpdate()->where('email', $email->toString())->first();

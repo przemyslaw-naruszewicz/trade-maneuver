@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace TradeManeuver\Trading\Infrastructure\Providers;
 
 use Carbon\FactoryImmutable;
+use Illuminate\Auth\AuthManager;
+use Illuminate\Auth\EloquentUserProvider;
 use Illuminate\Contracts\Bus\Dispatcher;
+use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Database\ConnectionInterface;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 use PhpAmqpLib\Connection\AMQPConnectionConfig;
@@ -34,6 +38,7 @@ use TradeManeuver\Trading\Infrastructure\Messaging\Jobs\QueuedTradeSignalEvaluat
 use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\OutboxIntegrationEventPublisher;
 use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\SignalOutcomePublisherInterface;
 use TradeManeuver\Trading\Infrastructure\Messaging\RabbitMq\RabbitMqSignalOutcomePublisher;
+use TradeManeuver\Trading\Infrastructure\Operator\Eloquent\OperatorModel;
 use TradeManeuver\Trading\Infrastructure\Operator\Google2FaTotpAuthenticator;
 use TradeManeuver\Trading\Infrastructure\Operator\LaravelPasswordHasher;
 use TradeManeuver\Trading\Infrastructure\Operator\OperatorRepository;
@@ -117,7 +122,12 @@ final class TradingServiceProvider extends ServiceProvider
     {
         $this->loadMigrationsFrom(dirname(__DIR__).'/Resources/Migrations');
         $this->loadRoutesFrom(dirname(__DIR__, 2).'/Ui/Http/routes.php');
+        Blade::anonymousComponentPath(resource_path('views/trading/components'), 'trading');
         Livewire::component('trading.start', Start::class);
+        $this->app->make(AuthManager::class)->provider(
+            'trading-operators',
+            fn ($app): EloquentUserProvider => new EloquentUserProvider($app->make(Hasher::class), OperatorModel::class),
+        );
 
         if ($this->app->runningInConsole()) {
             $this->commands([

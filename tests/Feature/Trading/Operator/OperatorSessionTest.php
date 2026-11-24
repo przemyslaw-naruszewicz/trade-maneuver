@@ -7,6 +7,7 @@ namespace Tests\Feature\Trading\Operator;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Feature\Trading\Operator\Support\OperatorAccounts;
+use Tests\Feature\Trading\Operator\Support\RequestForgeryPreventedInTests;
 use Tests\TestCase;
 
 final class OperatorSessionTest extends TestCase
@@ -78,12 +79,6 @@ final class OperatorSessionTest extends TestCase
      */
     private function checkCsrfTokensAsOutsideTests(): void
     {
-        $this->app->bind(PreventRequestForgery::class, fn ($app) => new class($app, $app['encrypter']) extends PreventRequestForgery
-        {
-            protected function runningUnitTests(): bool
-            {
-                return false;
-            }
-        });
+        $this->app->bind(PreventRequestForgery::class, RequestForgeryPreventedInTests::class);
     }
 }

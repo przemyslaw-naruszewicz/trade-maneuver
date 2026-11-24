@@ -1,6 +1,6 @@
 import { defineConfig, loadEnv } from 'vite';
 import laravel from 'laravel-vite-plugin';
-import { bunny } from 'laravel-vite-plugin/fonts';
+import { local } from 'laravel-vite-plugin/fonts';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig(({ mode }) => {
@@ -13,9 +13,29 @@ export default defineConfig(({ mode }) => {
             laravel({
                 input: ['resources/css/app.css', 'resources/js/app.js'],
                 refresh: true,
+                // The application serves its own copies of the fonts; neither the build nor the browser fetches them.
                 fonts: [
-                    bunny('Instrument Sans', {
-                        weights: [400, 500, 600],
+                    local('Jost', {
+                        variants: [
+                            { src: 'resources/fonts/jost/Jost-300-Light.otf', weight: 300 },
+                            { src: 'resources/fonts/jost/Jost-400-Book.otf', weight: 400 },
+                            { src: 'resources/fonts/jost/Jost-500-Medium.otf', weight: 500 },
+                        ],
+                        optimizedFallbacks: false,
+                    }),
+                    local('IBM Plex Sans', {
+                        variants: [
+                            { src: 'resources/fonts/ibm-plex-sans/IBMPlexSans-Regular.woff2', weight: 400 },
+                            { src: 'resources/fonts/ibm-plex-sans/IBMPlexSans-Medium.woff2', weight: 500 },
+                        ],
+                        optimizedFallbacks: false,
+                    }),
+                    local('IBM Plex Mono', {
+                        variants: [
+                            { src: 'resources/fonts/ibm-plex-mono/IBMPlexMono-Regular.woff2', weight: 400 },
+                            { src: 'resources/fonts/ibm-plex-mono/IBMPlexMono-Medium.woff2', weight: 500 },
+                        ],
+                        optimizedFallbacks: false,
                     }),
                 ],
             }),

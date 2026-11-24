@@ -6,6 +6,7 @@ namespace Tests\Feature\Trading\Operator\Support;
 
 use Illuminate\Testing\TestResponse;
 use PragmaRX\Google2FA\Google2FA;
+use Symfony\Component\HttpFoundation\Response;
 use TradeManeuver\Trading\Application\Operator\Command\CreateOperator\CreateOperatorCommand;
 use TradeManeuver\Trading\Application\Operator\Command\CreateOperator\CreateOperatorCommandHandler;
 use TradeManeuver\Trading\Application\Operator\Command\EnrolOperatorTotp\EnrolOperatorTotpCommand;
@@ -62,11 +63,17 @@ trait OperatorAccounts
         return OperatorModel::query()->where('email', self::OPERATOR_EMAIL)->firstOrFail();
     }
 
+    /**
+     * @return TestResponse<Response>
+     */
     private function submitPassword(string $password = self::OPERATOR_PASSWORD, string $email = self::OPERATOR_EMAIL): TestResponse
     {
         return $this->post(route('login.store'), ['email' => $email, 'password' => $password]);
     }
 
+    /**
+     * @return TestResponse<Response>
+     */
     private function submitTotpCode(string $code): TestResponse
     {
         return $this->post(route('login.totp.store'), ['code' => $code]);

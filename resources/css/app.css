@@ -4,7 +4,171 @@
 @source '../../storage/framework/views/*.php';
 @source not '../../docs/gui-design';
 
-@theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+/*
+ * The panel's design tokens for the light and the dark theme, and the shared components that the screens use.
+ * The tokens are copied from the GUI design mockup; a screen adds a component when it first needs it.
+ */
+:root,
+[data-theme='light'] {
+    --paper: #f7f6f2;
+    --surface: #ffffff;
+    --sunken: #eeede8;
+    --ink: #15181c;
+    --ink-muted: #555a61;
+    --ink-faint: #62676e;
+    --line: #dad9d3;
+    --line-strong: #15181c;
+    --accent: #b3261e;
+    --accent-mark: #da3b2e;
+    --accent-tint: #fbeeec;
+    --on-accent: #ffffff;
+    --band: #15181c;
+    --on-band: #f7f6f2;
+}
+
+[data-theme='dark'] {
+    --paper: #0d0f12;
+    --surface: #16191d;
+    --sunken: #1d2126;
+    --ink: #e9e8e4;
+    --ink-muted: #a2a7ae;
+    --ink-faint: #8e939a;
+    --line: #2a2f35;
+    --line-strong: #e9e8e4;
+    --accent: #f2695b;
+    --accent-mark: #f2695b;
+    --accent-tint: #2c1513;
+    --on-accent: #0d0f12;
+    --band: #1d2126;
+    --on-band: #e9e8e4;
+}
+
+@theme inline {
+    --color-*: initial;
+    --color-paper: var(--paper);
+    --color-surface: var(--surface);
+    --color-sunken: var(--sunken);
+    --color-ink: var(--ink);
+    --color-ink-muted: var(--ink-muted);
+    --color-ink-faint: var(--ink-faint);
+    --color-line: var(--line);
+    --color-line-strong: var(--line-strong);
+    --color-accent: var(--accent);
+    --color-accent-mark: var(--accent-mark);
+    --color-accent-tint: var(--accent-tint);
+    --color-on-accent: var(--on-accent);
+    --color-band: var(--band);
+    --color-on-band: var(--on-band);
+
+    --font-display: 'Jost', ui-sans-serif, system-ui, sans-serif;
+    --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    --text-xs: 0.8125rem;
+    --text-xs--line-height: 1.25rem;
+    --text-sm: 0.9375rem;
+    --text-sm--line-height: 1.5rem;
+}
+
+@layer base {
+    html {
+        font-kerning: normal;
+        text-rendering: optimizeLegibility;
+    }
+}
+
+@layer components {
+    /* Panel shell */
+    .sim-band {
+        @apply sticky top-0 z-20 flex flex-wrap items-center gap-x-8 gap-y-1 bg-band px-4 py-2 text-xs font-medium text-on-band lg:px-8;
+    }
+
+    .sim-mark {
+        @apply size-2 shrink-0 bg-accent-mark;
+    }
+
+    .shell-aside {
+        @apply flex shrink-0 grow basis-60 flex-col gap-8 border-b border-line px-4 py-6 lg:sticky lg:top-9 lg:h-[calc(100vh-2.25rem)] lg:self-start lg:overflow-y-auto lg:border-r lg:border-b-0 lg:px-8 lg:py-8;
+    }
+
+    .shell-main {
+        @apply max-w-full min-w-0 grow-[999] basis-[35rem] px-4 py-8 lg:px-12 lg:py-12;
+    }
+
+    .brand {
+        @apply flex min-h-11 items-center gap-3;
+    }
+
+    .brand-name {
+        @apply inline-grid gap-1 font-display text-xl leading-none font-medium tracking-tight;
+    }
+
+    .brand-rule {
+        @apply block h-px bg-accent-mark;
+    }
+
+    .nav-link {
+        @apply flex min-h-11 items-center gap-3 border-b border-line text-sm text-ink-muted hover:text-ink;
+    }
+
+    .nav-link[aria-current='page'] {
+        @apply border-line-strong font-medium text-ink;
+    }
+
+    .nav-link[aria-current='page']::before {
+        @apply size-1.5 shrink-0 bg-accent-mark;
+        content: '';
+    }
+
+    /* Typography roles */
+    .page-header {
+        @apply border-b-4 border-double border-line-strong pb-8;
+    }
+
+    .page-title {
+        @apply font-display text-6xl leading-[0.98] tracking-tight text-balance lg:text-7xl;
+    }
+
+    .page-lede {
+        @apply mt-4 max-w-2xl text-lg text-pretty text-ink-muted lg:text-xl;
+    }
+
+    /* Buttons */
+    .btn {
+        @apply inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 border px-4 text-sm font-medium whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mark disabled:cursor-not-allowed;
+    }
+
+    .btn-primary {
+        @apply border-accent bg-accent text-on-accent hover:border-ink hover:bg-ink hover:text-paper disabled:border-line disabled:bg-sunken disabled:text-ink-faint;
+    }
+
+    .btn-quiet {
+        @apply border-transparent bg-transparent px-0 text-ink-muted underline-offset-4 hover:text-ink hover:underline;
+    }
+
+    /* Form fields */
+    .field-label {
+        @apply mb-2 block text-sm font-medium;
+    }
+
+    .field-hint {
+        @apply mt-2 text-sm text-ink-muted;
+    }
+
+    .field-error {
+        @apply mt-2 flex items-start gap-2 text-sm font-medium text-accent;
+    }
+
+    .field-error::before {
+        @apply mt-2 size-2 shrink-0 bg-accent-mark;
+        content: '';
+    }
+
+    .input {
+        @apply min-h-11 w-full border border-line-strong bg-surface px-3 text-sm text-ink tabular-nums placeholder:text-ink-faint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mark;
+    }
+
+    .input-invalid {
+        @apply border-2 border-accent;
+    }
 }

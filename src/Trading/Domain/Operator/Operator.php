@@ -50,6 +50,14 @@ final class Operator
         $this->totpSecret = $secret;
     }
 
+    /**
+     * The secret to check a TOTP code against, or null before TOTP is enrolled.
+     */
+    public function totpSecret(): ?TotpSecret
+    {
+        return $this->totpSecret;
+    }
+
     public function email(): OperatorEmail
     {
         return $this->email;

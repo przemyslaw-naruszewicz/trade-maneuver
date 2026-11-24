@@ -59,25 +59,39 @@ final class OwnOriginAssetsTest extends TestCase
      */
     private function references(HTMLDocument $page): array
     {
+        return [...$this->elementReferences($page), ...$this->styleReferences($page)];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function elementReferences(HTMLDocument $page): array
+    {
         $references = [];
-        foreach ($page->querySelectorAll('[src], link[href], [srcset]') as $element) {
-            foreach (['src', 'href', 'srcset'] as $attribute) {
-                if ($element->hasAttribute($attribute)) {
-                    $references[] = (string) $element->getAttribute($attribute);
-                }
+        foreach (['[src]' => 'src', 'link[href]' => 'href', '[srcset]' => 'srcset'] as $selector => $attribute) {
+            foreach ($page->querySelectorAll($selector) as $element) {
+                $references[] = (string) $element->getAttribute($attribute);
             }
         }
 
+        return $references;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function styleReferences(HTMLDocument $page): array
+    {
         $styles = '';
-        foreach ($page->querySelectorAll('style, [style]') as $element) {
-            $styles .= $element->tagName === 'STYLE' ? $element->textContent : $element->getAttribute('style');
+        foreach ($page->querySelectorAll('style') as $element) {
+            $styles .= $element->textContent;
+        }
+        foreach ($page->querySelectorAll('[style]') as $element) {
+            $styles .= $element->getAttribute('style');
         }
         preg_match_all('/url\(\s*[\'"]?([^\'")]+)/', $styles, $matches);
-        foreach ($matches[1] as $url) {
-            $references[] = $url;
-        }
 
-        return $references;
+        return $matches[1];
     }
 
     private function isOnTheApplicationOrigin(string $reference): bool
