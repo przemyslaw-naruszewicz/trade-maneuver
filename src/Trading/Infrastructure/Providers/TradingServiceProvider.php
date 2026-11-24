@@ -8,6 +8,7 @@ use Carbon\FactoryImmutable;
 use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\ServiceProvider;
+use Livewire\Livewire;
 use PhpAmqpLib\Connection\AMQPConnectionConfig;
 use Psr\Clock\ClockInterface;
 use TradeManeuver\Trading\Application\Port\AnalyticsApplicationRegistryInterface;
@@ -44,6 +45,7 @@ use TradeManeuver\Trading\Ui\ConsoleCommands\CreateInvestmentConfigurationComman
 use TradeManeuver\Trading\Ui\ConsoleCommands\CreateOperatorCommand;
 use TradeManeuver\Trading\Ui\ConsoleCommands\EnrolOperatorTotpCommand;
 use TradeManeuver\Trading\Ui\ConsoleCommands\ResetOperatorPasswordCommand;
+use TradeManeuver\Trading\Ui\Livewire\Start;
 use TradeManeuver\Trading\Ui\Messaging\ConsumeTradeSignalsCommand;
 
 final class TradingServiceProvider extends ServiceProvider
@@ -114,6 +116,8 @@ final class TradingServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->loadMigrationsFrom(dirname(__DIR__).'/Resources/Migrations');
+        $this->loadRoutesFrom(dirname(__DIR__, 2).'/Ui/Http/routes.php');
+        Livewire::component('trading.start', Start::class);
 
         if ($this->app->runningInConsole()) {
             $this->commands([

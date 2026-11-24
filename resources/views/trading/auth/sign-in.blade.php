@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Sign in</title></head>
+<body>
+<form method="post" action="{{ route('login.store') }}">
+    @csrf
+    <input name="email" type="email">
+    <input name="password" type="password">
+    <button type="submit">Continue</button>
+</form>
+</body>
+</html>

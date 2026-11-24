@@ -1,7 +1,3 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-
-Route::get('/', function () {
-    return view('welcome');
-});
+// The Trading context registers its GUI routes from src/Trading/Ui/Http/routes.php.
