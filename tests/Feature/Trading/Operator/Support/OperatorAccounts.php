@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Trading\Operator\Support;
 
+use Illuminate\Support\Sleep;
 use Illuminate\Testing\TestResponse;
 use PragmaRX\Google2FA\Google2FA;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,6 +24,14 @@ trait OperatorAccounts
     private const string OPERATOR_PASSWORD = 'a-local-operator-password';
 
     private string $totpSecret = '';
+
+    /**
+     * Skips the wait that keeps password answers equally long, so that tests with many attempts stay fast.
+     */
+    protected function setUpOperatorAccounts(): void
+    {
+        Sleep::fake();
+    }
 
     private function createEnrolledOperator(): void
     {

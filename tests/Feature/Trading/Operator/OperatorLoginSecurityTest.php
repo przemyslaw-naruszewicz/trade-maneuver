@@ -128,7 +128,9 @@ final class OperatorLoginSecurityTest extends TestCase
 
         $this->post(route('logout'));
 
-        $this->assertNotSame($tokenBeforeLogout, session()->token());
+        $tokenAfterLogout = session()->get('_token');
+        $this->assertIsString($tokenAfterLogout);
+        $this->assertNotSame($tokenBeforeLogout, $tokenAfterLogout);
     }
 
     /**
