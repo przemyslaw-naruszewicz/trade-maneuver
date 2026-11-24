@@ -7,6 +7,7 @@ namespace TradeManeuver\Trading\Infrastructure\Providers;
 use Carbon\FactoryImmutable;
 use Illuminate\Auth\AuthManager;
 use Illuminate\Auth\EloquentUserProvider;
+use Illuminate\Cache\RateLimiter;
 use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Database\ConnectionInterface;
@@ -50,6 +51,7 @@ use TradeManeuver\Trading\Ui\ConsoleCommands\CreateInvestmentConfigurationComman
 use TradeManeuver\Trading\Ui\ConsoleCommands\CreateOperatorCommand;
 use TradeManeuver\Trading\Ui\ConsoleCommands\EnrolOperatorTotpCommand;
 use TradeManeuver\Trading\Ui\ConsoleCommands\ResetOperatorPasswordCommand;
+use TradeManeuver\Trading\Ui\Http\Web\OperatorLoginThrottle;
 use TradeManeuver\Trading\Ui\Livewire\Start;
 use TradeManeuver\Trading\Ui\Messaging\ConsumeTradeSignalsCommand;
 
@@ -65,6 +67,10 @@ final class TradingServiceProvider extends ServiceProvider
         $this->app->bind(OperatorRepositoryInterface::class, OperatorRepository::class);
         $this->app->bind(PasswordHasherInterface::class, LaravelPasswordHasher::class);
         $this->app->bind(TotpAuthenticatorInterface::class, Google2FaTotpAuthenticator::class);
+        $this->app->bind(OperatorLoginThrottle::class, fn ($app): OperatorLoginThrottle => new OperatorLoginThrottle(
+            $app->make(RateLimiter::class),
+            (int) $app->make('config')->get('trading.operator_login.max_failed_attempts_per_minute'),
+        ));
         $this->app->bind(ClockInterface::class, fn (): FactoryImmutable => FactoryImmutable::getDefaultInstance());
         $this->app->bind(
             AnalyticsApplicationRegistryInterface::class,

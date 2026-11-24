@@ -16,6 +16,10 @@ foreach (explode(',', (string) env('TRADING_ANALYTICS_APPLICATIONS', '')) as $en
 
 return [
     'analytics_applications' => $analyticsApplications,
+    // Failed login attempts allowed per minute for the operator account, counted separately for each login step.
+    'operator_login' => [
+        'max_failed_attempts_per_minute' => (int) env('TRADING_OPERATOR_LOGIN_MAX_FAILED_ATTEMPTS_PER_MINUTE', 5),
+    ],
     // The connection of Trade Maneuver's own RabbitMQ user; docker/rabbitmq holds the topology and the users.
     'rabbitmq' => [
         'host' => (string) env('RABBITMQ_HOST', 'rabbitmq'),
