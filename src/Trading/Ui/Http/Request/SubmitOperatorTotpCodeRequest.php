@@ -14,15 +14,12 @@ final class SubmitOperatorTotpCodeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code' => ['required', 'string', 'max:16'],
+            'code' => ['required', 'string', 'max:6'],
         ];
     }
 
-    /**
-     * The code without the spaces an authenticator app may show between its digit groups.
-     */
     public function code(): string
     {
-        return str_replace(' ', '', $this->string('code')->toString());
+        return $this->string('code')->toString();
     }
 }

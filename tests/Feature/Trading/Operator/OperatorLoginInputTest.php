@@ -62,7 +62,7 @@ final class OperatorLoginInputTest extends TestCase
     {
         yield 'no code' => [[], 'The code field is required.'];
         yield 'a code that is not a string' => [['code' => ['123456']], 'The code field must be a string.'];
-        yield 'a code over 16 characters' => [['code' => str_repeat('1', 17)], 'The code field must not be greater than 16 characters.'];
+        yield 'a code over 6 characters' => [['code' => str_repeat('1', 7)], 'The code field must not be greater than 6 characters.'];
     }
 
     /**

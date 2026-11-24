@@ -89,14 +89,6 @@ final class OperatorLoginSecurityTest extends TestCase
         $this->submitPassword(email: '  Operator@Example.TEST ')->assertRedirect(route('login.totp'));
     }
 
-    public function test_a_code_with_spaces_between_its_digits_is_accepted(): void
-    {
-        $code = $this->currentTotpCode();
-        $this->submitPassword();
-
-        $this->submitTotpCode(substr($code, 0, 3).' '.substr($code, 3))->assertRedirect(route('panel.start'));
-    }
-
     public function test_a_correct_password_clears_the_failed_password_attempts(): void
     {
         for ($round = 1; $round <= 2; $round++) {
