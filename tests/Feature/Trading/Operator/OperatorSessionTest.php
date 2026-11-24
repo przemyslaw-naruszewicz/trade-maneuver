@@ -59,6 +59,20 @@ final class OperatorSessionTest extends TestCase
         ])->assertRedirect(route('login.totp'));
     }
 
+    public function test_logout_invalidates_the_session(): void
+    {
+        $this->actingAs($this->operatorModel())->withSession(['panel.marker' => 'kept until logout']);
+        $this->get(route('panel.start'))->assertOk();
+        $sessionBeforeLogout = session()->getId();
+
+        $this->post(route('logout'))->assertRedirect(route('login'));
+
+        $this->assertGuest();
+        $this->assertNotSame($sessionBeforeLogout, session()->getId());
+        $this->assertFalse(session()->has('panel.marker'));
+        $this->get(route('panel.start'))->assertRedirect(route('login'));
+    }
+
     /**
      * The middleware skips the check while unit tests run; this keeps the check on.
      */
