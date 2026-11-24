@@ -17,7 +17,7 @@ final class Operator
     private function __construct(
         private readonly OperatorId $id,
         private readonly OperatorEmail $email,
-        private readonly PasswordHash $passwordHash,
+        private PasswordHash $passwordHash,
     ) {}
 
     public static function create(OperatorId $id, OperatorEmail $email, PasswordHash $passwordHash): self
@@ -33,6 +33,11 @@ final class Operator
     public function id(): OperatorId
     {
         return $this->id;
+    }
+
+    public function changePassword(PasswordHash $passwordHash): void
+    {
+        $this->passwordHash = $passwordHash;
     }
 
     public function state(): OperatorStateDto
