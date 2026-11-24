@@ -64,7 +64,7 @@ final readonly class OperatorSignInController
 
         $this->throttle->clear($request->email());
         $request->session()->regenerate();
-        PendingTotpChallenge::start($request->session(), (string) $operator->getAuthIdentifier());
+        PendingTotpChallenge::start($request->session(), (string) $operator->getAuthIdentifier(), $request->email());
 
         return redirect()->route('login.totp');
     }
