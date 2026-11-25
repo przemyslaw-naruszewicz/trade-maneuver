@@ -38,6 +38,16 @@ final class OperatorLoginTest extends TestCase
         $this->get(route('panel.start'))->assertOk();
     }
 
+    public function test_the_operator_logs_in_with_sessions_stored_in_the_database(): void
+    {
+        config(['session.driver' => 'database']);
+
+        $this->submitPassword()->assertRedirect(route('login.totp'));
+        $this->submitTotpCode($this->currentTotpCode())->assertRedirect(route('panel.start'));
+
+        $this->assertDatabaseHas('sessions', ['user_id' => $this->operatorModel()->getKey()]);
+    }
+
     public function test_a_wrong_password_is_refused_without_a_totp_challenge(): void
     {
         $this->from(route('login'))->submitPassword('a-wrong-password')
