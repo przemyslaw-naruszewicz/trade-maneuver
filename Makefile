@@ -1,4 +1,4 @@
-.PHONY: setup up down logs shell migrate test build format ci ci-lint scan-images diagrams
+.PHONY: setup up down logs shell migrate test build format ci ci-lint e2e scan-images diagrams
 
 setup:
 	./bin/setup
@@ -33,6 +33,9 @@ ci:
 
 ci-lint:
 	sh bin/lint-ci
+
+e2e:
+	sh bin/e2e
 
 scan-images:
 	sh bin/scan-images
