@@ -46,6 +46,7 @@ Run `make ci` (or `sh bin/ci`) from the host. It builds the PHP image with PCOV,
 | PHPUnit | `phpunit.xml` |
 | Behat | `behat.php` |
 | Infection | `infection.json5` |
+| Browser tests with Playwright, `make e2e`, in the `e2e` job; see [Browser tests](#browser-tests) | `tests/Browser/playwright.config.js`, `bin/e2e`, the `e2e` profile in `compose.yaml` |
 | Trivy image scan, `make scan-images`: known critical and high vulnerabilities in the OS packages of every image from `docker compose config --images`, when a fixed version exists | `bin/scan-images`, `.trivyignore.yaml` when an exception exists |
 
 [The architecture](architecture.md#dependency-rules) states the rules that Deptrac, PHPat, and the PHPStan disallowed-calls entries enforce.
@@ -74,3 +75,26 @@ vulnerabilities:
     purls:
       - <package-url>
 ```
+
+### Browser tests
+
+`make e2e` (or `sh bin/e2e`) runs the Playwright tests in `tests/Browser/` in Chromium, against the application in the `e2e` Compose profile. The profile has its own services: `e2e-app` runs PHP-FPM from the same image and code as `app`, `e2e-nginx` serves it through the same nginx template with `PHP_FPM_HOST=e2e-app`, `e2e-node` builds the frontend, and `e2e-playwright` runs the tests in the official Playwright image. They use the existing PostgreSQL service with the database `trade_maneuver_e2e` and the RabbitMQ vhost `trade-maneuver-testing`.
+
+`bin/e2e` builds the PHP image unless `CI_SKIP_BUILD=1`, installs the locked Composer dependencies, runs `npm ci` and `npm run build` in `e2e-node`, starts `e2e-app` and `e2e-nginx`, drops and recreates `trade_maneuver_e2e` with `psql`, migrates it, runs the tests, and removes the e2e services, also after a failure. Arguments go to Playwright, for example `sh bin/e2e --grep health`.
+
+The development environment stays as it is:
+
+- `e2e-node` keeps `node_modules` in the named volume `e2e_node_modules` and its npm cache in `storage/framework/cache/npm`, so the development Vite server keeps the working tree's `node_modules`. The build writes `public/build`, as `make build` does.
+- `e2e-app` sets the test `APP_KEY`, its own database, `APP_CONFIG_CACHE` in `/tmp`, database sessions and cache, and the `sync` queue, whatever `.env` says. `APP_VITE_HOT_FILE` points Laravel's Vite hot file at a path that does not exist, so it serves the production build even while the development Vite server runs and `public/hot` exists.
+- `bin/e2e` names the e2e services in each `docker compose` call, so it neither recreates nor removes the development services.
+
+Reports go to `storage/quality/playwright/`: the HTML report in `report/`, traces and failure screenshots in `test-results/`, and the expected images of the mockup comparisons in `snapshots/`. Each run clears the directory.
+
+A failed mockup comparison names the page under test, the mockup page, the whole page or the compared element, and the theme. Open `storage/quality/playwright/report/index.html` in a browser, or the `playwright-report` artifact of a failed CI run: the failed test shows the mockup's screenshot as Expected, the page under test as Actual, and a Diff image with the differing pixels marked in red. The expected image comes from the mockup, so the helper fails a run with `--update-snapshots`, which would replace it.
+
+GitHub Actions runs `make e2e` in the `e2e` job, on the same events as `quality` and in parallel with it. The job builds the PHP image with the same build cache, caches Composer downloads as `quality` does and npm downloads by `package-lock.json`, and uploads `storage/quality/playwright/` as the `playwright-report` artifact for seven days when it fails.
+
+The Playwright image in `compose.yaml` and `@playwright/test` in `package.json` have the same exact version. Update them together in one PR: run `docker compose exec node npm install --save-dev --save-exact @playwright/test@<version>`, and set the image to the tag `v<version>-noble` with the digest that `docker buildx imagetools inspect mcr.microsoft.com/playwright:v<version>-noble` shows. A new version can change how pages render, and the PR's browser tests show the effect.
+
+`make scan-images` does not scan the Playwright image. It runs only for tests and only reaches the local application. Under the `e2e` profile, it stays out of `docker compose config --images`.
+

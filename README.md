@@ -69,6 +69,7 @@ make build                    # build frontend assets
 make format                   # Laravel Pint
 make ci                       # complete local CI pipeline in Docker
 make ci-lint                  # validate workflows, shell scripts and Compose
+make e2e                      # browser tests in a separate environment
 ```
 
 Without Make, run Artisan and Composer through `docker compose exec app` and npm through `docker compose exec node`. [The development reference](docs/development.md) covers the environment, PostgreSQL, RabbitMQ, failure recovery, and the CI quality checks in more detail.
@@ -137,7 +138,7 @@ docker compose exec app php artisan demo-analytics:read-signal-outcomes
 
 ## Quality checks
 
-Before opening a pull request, run `git fetch` so that `origin/main` is current, then `CI_WITH_MUTATION=diff make ci` for the pull-request checks. Run `make scan-images` as well, because CI runs the image scan in its own job outside `make ci`. `make ci` alone runs the complete pipeline, including the full Infection run. For CI configuration changes, follow the [three-step verification process](SDLC.md#changes-to-ci-configuration). [The development reference](docs/development.md#ci-quality-checks) lists the checks, their configuration, the Infection variants, and the reports.
+Before opening a pull request, run `git fetch` so that `origin/main` is current, then `CI_WITH_MUTATION=diff make ci` for the pull-request checks. Run `make scan-images` as well, because CI runs the image scan in its own job outside `make ci`, and run `make e2e` when the pull request changes the GUI. `make ci` alone runs the complete pipeline, including the full Infection run. For CI configuration changes, follow the [three-step verification process](SDLC.md#changes-to-ci-configuration). [The development reference](docs/development.md#ci-quality-checks) lists the checks, their configuration, the Infection variants, and the reports.
 
 ## Backlog and contributions
 
