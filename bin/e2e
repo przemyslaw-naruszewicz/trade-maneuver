@@ -34,6 +34,9 @@ docker compose run --rm -T --no-deps --user 0:0 e2e-node \
     chown "$LOCAL_UID:$LOCAL_GID" /var/www/html/node_modules
 docker compose run --rm -T --no-deps e2e-node npm ci --no-audit --no-fund
 docker compose run --rm -T --no-deps e2e-node npm run build
+# nginx workers run as the nginx user, which cannot read files that the working
+# tree's default ACL keeps to their owner.
+docker compose run --rm -T --no-deps e2e-node chmod -R a+rX public/build
 
 docker compose up -d --wait e2e-app e2e-nginx
 # The guard in AppServiceProvider allows migrate:fresh only on the test database.
@@ -43,6 +46,8 @@ docker compose exec -T postgres sh -c 'psql --username "$POSTGRES_USER" --dbname
     --command="DROP DATABASE IF EXISTS trade_maneuver_e2e WITH (FORCE)" \
     --command="CREATE DATABASE trade_maneuver_e2e"'
 docker compose exec -T e2e-app php artisan migrate --no-interaction
+docker compose exec -T e2e-app php artisan db:seed --no-interaction \
+    --class='TradeManeuver\Trading\Infrastructure\Operator\BrowserTestOperatorSeeder'
 
 rm -rf "$report_dir"
 mkdir -p "$report_dir"
