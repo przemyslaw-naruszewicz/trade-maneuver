@@ -22,7 +22,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // migrate:fresh, migrate:refresh, migrate:reset, migrate:rollback and db:wipe run only against the test database.
-        $database = config('database.connections.'.config('database.default').'.database');
+        // The connection's configuration includes the database that DB_URL names.
+        $database = DB::connection()->getConfig('database');
         DB::prohibitDestructiveCommands($database !== 'trade_maneuver_testing');
 
         $viteHotFile = config('app.vite_hot_file');
