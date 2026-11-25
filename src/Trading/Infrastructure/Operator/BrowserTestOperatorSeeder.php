@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace TradeManeuver\Trading\Infrastructure\Operator;
 
+use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Seeder;
+use RuntimeException;
 use TradeManeuver\Trading\Application\Operator\Command\CreateOperator\CreateOperatorCommand;
 use TradeManeuver\Trading\Application\Operator\Command\CreateOperator\CreateOperatorCommandHandler;
 use TradeManeuver\Trading\Application\Port\TransactionManagerInterface;
@@ -24,11 +26,22 @@ final class BrowserTestOperatorSeeder extends Seeder
 
     private const string TOTP_SECRET = 'DEMODEMODEMODEMODEMODEMODEMODEMO';
 
+    /** The account's password and TOTP secret are in the repository, so it exists only in test databases. */
+    private const array ALLOWED_DATABASES = ['trade_maneuver_e2e', 'trade_maneuver_testing'];
+
     public function run(
+        Repository $config,
         CreateOperatorCommandHandler $createOperator,
         OperatorRepositoryInterface $operators,
         TransactionManagerInterface $transactionManager,
     ): void {
+        $database = $config->get('database.connections.'.$config->get('database.default').'.database');
+        if (! in_array($database, self::ALLOWED_DATABASES, true)) {
+            throw new RuntimeException(
+                'The browser-test operator account is seeded only into '.implode(' or ', self::ALLOWED_DATABASES).'.',
+            );
+        }
+
         $createOperator->handle(new CreateOperatorCommand(self::EMAIL, self::PASSWORD));
 
         $transactionManager->transactional(function () use ($operators): void {
