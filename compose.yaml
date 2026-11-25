@@ -211,6 +211,8 @@ services:
     environment:
       HOME: /tmp
       E2E_BASE_URL: http://e2e-nginx
+      # GitHub Actions sets CI, so that a test left with test.only fails the run.
+      CI: ${CI:-}
     volumes:
       - .:/var/www/html
       - e2e_node_modules:/var/www/html/node_modules

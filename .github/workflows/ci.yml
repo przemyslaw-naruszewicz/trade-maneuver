@@ -69,6 +69,63 @@ jobs:
         if: always()
         run: docker compose down --remove-orphans
 
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Cache Composer downloads
+        uses: actions/cache@v5
+        with:
+          path: storage/framework/cache/composer
+          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Cache npm downloads
+        uses: actions/cache@v5
+        with:
+          path: storage/framework/cache/npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build PHP image
+        uses: docker/build-push-action@v7
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: 'false'
+        with:
+          context: .
+          file: docker/php/Dockerfile
+          load: true
+          tags: trade-maneuver-php:dev
+          cache-from: type=gha,scope=php
+          cache-to: type=gha,scope=php,mode=max,ignore-error=true,timeout=2m
+
+      - name: Run browser tests
+        env:
+          CI_SKIP_BUILD: '1'
+        run: make e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: storage/quality/playwright/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Stop CI services
+        if: always()
+        run: docker compose down --remove-orphans
+
   image-scan:
     runs-on: ubuntu-latest
     timeout-minutes: 20
