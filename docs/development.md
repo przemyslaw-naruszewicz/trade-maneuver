@@ -80,7 +80,7 @@ vulnerabilities:
 
 `make e2e` (or `sh bin/e2e`) runs the Playwright tests in `tests/Browser/` in Chromium, against the application in the `e2e` Compose profile. The profile has its own services: `e2e-app` runs PHP-FPM from the same image and code as `app`, `e2e-nginx` serves it through the same nginx template with `PHP_FPM_HOST=e2e-app`, `e2e-node` builds the frontend, and `e2e-playwright` runs the tests in the official Playwright image. They use the existing PostgreSQL service with the database `trade_maneuver_e2e` and the RabbitMQ vhost `trade-maneuver-testing`.
 
-`bin/e2e` builds the PHP image unless `CI_SKIP_BUILD=1`, installs the locked Composer dependencies, runs `npm ci` and `npm run build` in `e2e-node`, starts `e2e-app` and `e2e-nginx`, drops and recreates `trade_maneuver_e2e` with `psql`, migrates it, runs the tests, and removes the e2e services, also after a failure. Arguments go to Playwright, for example `sh bin/e2e --grep health`.
+`bin/e2e` builds the PHP image unless `CI_SKIP_BUILD=1`, installs the locked Composer dependencies, runs `npm ci` and `npm run build` in `e2e-node`, makes the build readable for the nginx workers, starts `e2e-app` and `e2e-nginx`, drops and recreates `trade_maneuver_e2e` with `psql`, migrates it, seeds the browser-test operator account `operator@example.test` with `BrowserTestOperatorSeeder`, runs the tests, and removes the e2e services, also after a failure. Arguments go to Playwright, for example `sh bin/e2e --grep health`.
 
 The development environment stays as it is:
 

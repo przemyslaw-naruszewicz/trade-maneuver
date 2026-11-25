@@ -1,0 +1,134 @@
+{
+  "version": 1,
+  "style": {
+    "file": "assets/fonts-DhysdCHj.css",
+    "familyStyles": {
+      "jost": "@font-face {\n  font-family: \"Jost\";\n  font-style: normal;\n  font-weight: 300;\n  font-display: swap;\n  src: url(\"/build/assets/jost-300-normal-BK37X6g5.otf\") format(\"opentype\");\n}\n\n@font-face {\n  font-family: \"Jost\";\n  font-style: normal;\n  font-weight: 400;\n  font-display: swap;\n  src: url(\"/build/assets/jost-400-normal-CDwwXZmh.otf\") format(\"opentype\");\n}\n\n@font-face {\n  font-family: \"Jost\";\n  font-style: normal;\n  font-weight: 500;\n  font-display: swap;\n  src: url(\"/build/assets/jost-500-normal-MqDTw6XA.otf\") format(\"opentype\");\n}\n\n.font-jost {\n  font-family: var(--font-jost);\n}",
+      "ibm-plex-sans": "@font-face {\n  font-family: \"IBM Plex Sans\";\n  font-style: normal;\n  font-weight: 400;\n  font-display: swap;\n  src: url(\"/build/assets/ibm-plex-sans-400-normal-B_s_wmKv.woff2\") format(\"woff2\");\n}\n\n@font-face {\n  font-family: \"IBM Plex Sans\";\n  font-style: normal;\n  font-weight: 500;\n  font-display: swap;\n  src: url(\"/build/assets/ibm-plex-sans-500-normal-DlylhkIy.woff2\") format(\"woff2\");\n}\n\n.font-ibm-plex-sans {\n  font-family: var(--font-ibm-plex-sans);\n}",
+      "ibm-plex-mono": "@font-face {\n  font-family: \"IBM Plex Mono\";\n  font-style: normal;\n  font-weight: 400;\n  font-display: swap;\n  src: url(\"/build/assets/ibm-plex-mono-400-normal-Du0PCiXT.woff2\") format(\"woff2\");\n}\n\n@font-face {\n  font-family: \"IBM Plex Mono\";\n  font-style: normal;\n  font-weight: 500;\n  font-display: swap;\n  src: url(\"/build/assets/ibm-plex-mono-500-normal-CiYsa3y2.woff2\") format(\"woff2\");\n}\n\n.font-ibm-plex-mono {\n  font-family: var(--font-ibm-plex-mono);\n}"
+    },
+    "variables": {
+      "jost": "--font-jost: \"Jost\";",
+      "ibm-plex-sans": "--font-ibm-plex-sans: \"IBM Plex Sans\";",
+      "ibm-plex-mono": "--font-ibm-plex-mono: \"IBM Plex Mono\";"
+    }
+  },
+  "preloads": [
+    {
+      "alias": "ibm-plex-sans",
+      "family": "IBM Plex Sans",
+      "weight": 400,
+      "style": "normal",
+      "file": "assets/ibm-plex-sans-400-normal-B_s_wmKv.woff2",
+      "as": "font",
+      "type": "font/woff2",
+      "crossorigin": "anonymous"
+    },
+    {
+      "alias": "ibm-plex-sans",
+      "family": "IBM Plex Sans",
+      "weight": 500,
+      "style": "normal",
+      "file": "assets/ibm-plex-sans-500-normal-DlylhkIy.woff2",
+      "as": "font",
+      "type": "font/woff2",
+      "crossorigin": "anonymous"
+    },
+    {
+      "alias": "ibm-plex-mono",
+      "family": "IBM Plex Mono",
+      "weight": 400,
+      "style": "normal",
+      "file": "assets/ibm-plex-mono-400-normal-Du0PCiXT.woff2",
+      "as": "font",
+      "type": "font/woff2",
+      "crossorigin": "anonymous"
+    },
+    {
+      "alias": "ibm-plex-mono",
+      "family": "IBM Plex Mono",
+      "weight": 500,
+      "style": "normal",
+      "file": "assets/ibm-plex-mono-500-normal-CiYsa3y2.woff2",
+      "as": "font",
+      "type": "font/woff2",
+      "crossorigin": "anonymous"
+    }
+  ],
+  "families": {
+    "jost": {
+      "family": "Jost",
+      "variable": "--font-jost",
+      "variants": {
+        "300:normal": {
+          "files": [
+            {
+              "file": "assets/jost-300-normal-BK37X6g5.otf",
+              "format": "otf"
+            }
+          ]
+        },
+        "400:normal": {
+          "files": [
+            {
+              "file": "assets/jost-400-normal-CDwwXZmh.otf",
+              "format": "otf"
+            }
+          ]
+        },
+        "500:normal": {
+          "files": [
+            {
+              "file": "assets/jost-500-normal-MqDTw6XA.otf",
+              "format": "otf"
+            }
+          ]
+        }
+      }
+    },
+    "ibm-plex-sans": {
+      "family": "IBM Plex Sans",
+      "variable": "--font-ibm-plex-sans",
+      "variants": {
+        "400:normal": {
+          "files": [
+            {
+              "file": "assets/ibm-plex-sans-400-normal-B_s_wmKv.woff2",
+              "format": "woff2"
+            }
+          ]
+        },
+        "500:normal": {
+          "files": [
+            {
+              "file": "assets/ibm-plex-sans-500-normal-DlylhkIy.woff2",
+              "format": "woff2"
+            }
+          ]
+        }
+      }
+    },
+    "ibm-plex-mono": {
+      "family": "IBM Plex Mono",
+      "variable": "--font-ibm-plex-mono",
+      "variants": {
+        "400:normal": {
+          "files": [
+            {
+              "file": "assets/ibm-plex-mono-400-normal-Du0PCiXT.woff2",
+              "format": "woff2"
+            }
+          ]
+        },
+        "500:normal": {
+          "files": [
+            {
+              "file": "assets/ibm-plex-mono-500-normal-CiYsa3y2.woff2",
+              "format": "woff2"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

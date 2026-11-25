@@ -1,1 +1,21 @@
-//
+// The theme switch changes the theme and remembers the choice in this browser only. The document component
+// applies a stored choice before the first paint.
+const themeStorageKey = 'trade-maneuver-theme';
+
+function storeTheme(theme) {
+    try {
+        localStorage.setItem(themeStorageKey, theme);
+    } catch {
+        // The switch still works for this page when the browser blocks storage.
+    }
+}
+
+document.querySelectorAll('[data-theme-toggle]').forEach((toggle) => {
+    toggle.addEventListener('click', () => {
+        const root = document.documentElement;
+        const theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+
+        root.dataset.theme = theme;
+        storeTheme(theme);
+    });
+});

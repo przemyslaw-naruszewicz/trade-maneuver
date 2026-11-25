@@ -10,7 +10,9 @@
         "brick/money": "^0.15.2",
         "laravel/framework": "^13.17",
         "laravel/tinker": "^3.0",
+        "livewire/livewire": "^4.4",
         "php-amqplib/php-amqplib": "^3.7",
+        "pragmarx/google2fa": "^9.1",
         "psr/clock": "^1.0",
         "psr/log": "^3.0"
     },

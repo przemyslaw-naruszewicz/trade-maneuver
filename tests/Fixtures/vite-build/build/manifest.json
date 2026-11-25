@@ -1,0 +1,49 @@
+{
+  "_fonts-DhysdCHj.css": {
+    "file": "assets/fonts-DhysdCHj.css",
+    "src": "_fonts-DhysdCHj.css"
+  },
+  "_ibm-plex-mono-400-normal-Du0PCiXT.woff2": {
+    "file": "assets/ibm-plex-mono-400-normal-Du0PCiXT.woff2",
+    "src": "_ibm-plex-mono-400-normal-Du0PCiXT.woff2"
+  },
+  "_ibm-plex-mono-500-normal-CiYsa3y2.woff2": {
+    "file": "assets/ibm-plex-mono-500-normal-CiYsa3y2.woff2",
+    "src": "_ibm-plex-mono-500-normal-CiYsa3y2.woff2"
+  },
+  "_ibm-plex-sans-400-normal-B_s_wmKv.woff2": {
+    "file": "assets/ibm-plex-sans-400-normal-B_s_wmKv.woff2",
+    "src": "_ibm-plex-sans-400-normal-B_s_wmKv.woff2"
+  },
+  "_ibm-plex-sans-500-normal-DlylhkIy.woff2": {
+    "file": "assets/ibm-plex-sans-500-normal-DlylhkIy.woff2",
+    "src": "_ibm-plex-sans-500-normal-DlylhkIy.woff2"
+  },
+  "_jost-300-normal-BK37X6g5.otf": {
+    "file": "assets/jost-300-normal-BK37X6g5.otf",
+    "src": "_jost-300-normal-BK37X6g5.otf"
+  },
+  "_jost-400-normal-CDwwXZmh.otf": {
+    "file": "assets/jost-400-normal-CDwwXZmh.otf",
+    "src": "_jost-400-normal-CDwwXZmh.otf"
+  },
+  "_jost-500-normal-MqDTw6XA.otf": {
+    "file": "assets/jost-500-normal-MqDTw6XA.otf",
+    "src": "_jost-500-normal-MqDTw6XA.otf"
+  },
+  "resources/css/app.css": {
+    "file": "assets/app-Dkw-ylCt.css",
+    "name": "app",
+    "names": [
+      "app.css"
+    ],
+    "src": "resources/css/app.css",
+    "isEntry": true
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-BvRk9kiK.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true
+  }
+}
