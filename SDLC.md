@@ -82,7 +82,7 @@ Before setting `approved`:
 - [ ] The outcome, scope, and exclusions are clear.
 - [ ] AC are testable and have a defined verification method. An AC verified by an automated test names its [test level](docs/testing-strategy.md#seams) and, where the behavior calculates or maps a value, gives concrete expected values taken from the requirements.
 - [ ] Dependencies, constraints, and significant risks are documented.
-- [ ] Every tool that an AC's verification method needs, such as a test runner or a test environment, is on `main` or comes from a task listed under "Blocked by". An `SDLC-` task delivers such a tool and leaves the checks of product behavior to the product tasks that use it.
+- [ ] Every tool that an AC's verification method needs, such as a test runner or a test environment, is on `main`, comes from a task listed under "Blocked by", or, in an `SDLC-` task, is the tool the task delivers. An `SDLC-` task delivers such a tool and leaves the checks of product behavior to the product tasks that use it.
 - [ ] The task includes all necessary decisions from the working specification, with a link to shared requirements in a repository document where applicable.
 - [ ] The task follows [task slicing](#task-slicing): it belongs to a milestone that ends in a result the running application can show, unless it is an `SDLC-` task.
 - [ ] A human has approved the complete final task content.
