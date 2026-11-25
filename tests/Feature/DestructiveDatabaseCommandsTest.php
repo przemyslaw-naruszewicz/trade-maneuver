@@ -42,6 +42,22 @@ final class DestructiveDatabaseCommandsTest extends TestCase
             ->assertFailed();
     }
 
+    /**
+     * The URL names PostgreSQL's maintenance database, which holds no project data, so a missing refusal changes
+     * nothing: the command runs with `--pretend`.
+     */
+    public function test_a_destructive_command_is_refused_on_another_database_named_by_the_database_url(): void
+    {
+        $this->bootWithConnectionSettings([
+            'database' => 'trade_maneuver_testing',
+            'url' => 'pgsql://trade_maneuver@postgres:5432/postgres',
+        ]);
+
+        $this->pretend('migrate:reset')
+            ->expectsOutputToContain('This command is prohibited from running in this environment.')
+            ->assertFailed();
+    }
+
     #[DataProvider('destructiveCommands')]
     public function test_a_destructive_command_runs_on_the_test_database(string $command): void
     {
@@ -62,7 +78,17 @@ final class DestructiveDatabaseCommandsTest extends TestCase
 
     private function bootWithDatabase(string $database): void
     {
-        config(['database.connections.'.config('database.default').'.database' => $database]);
+        $this->bootWithConnectionSettings(['database' => $database]);
+    }
+
+    /**
+     * @param  array<string, string>  $connectionSettings
+     */
+    private function bootWithConnectionSettings(array $connectionSettings): void
+    {
+        $connection = 'database.connections.'.config('database.default');
+        config([$connection => [...config($connection), ...$connectionSettings]]);
+        DB::purge();
         $provider = $this->app->getProvider(AppServiceProvider::class);
         $this->assertInstanceOf(AppServiceProvider::class, $provider);
         $provider->boot();
