@@ -30,6 +30,11 @@ export async function openMockup(page, mockupPage, theme) {
  */
 export async function expectToMatchMockup(page, mockupPage, { theme, selector }) {
     const testInfo = test.info();
+    // These modes would replace the mockup's screenshot with the page under test's, so the comparison would pass.
+    if (['all', 'changed'].includes(testInfo.config.updateSnapshots)) {
+        throw new Error('The mockup comparison takes its expected image from the mockup, so it cannot run with --update-snapshots.');
+    }
+
     const snapshotName = `${[mockupPage, theme, selector].filter(Boolean).join('-')}.png`;
     const mockup = await page.context().newPage();
     try {
