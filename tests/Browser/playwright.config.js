@@ -7,7 +7,7 @@ export default defineConfig({
     testDir: '.',
     outputDir: `${qualityDir}/test-results`,
     // The comparison helper writes each mockup screenshot here as the expected image, so none is committed.
-    snapshotPathTemplate: `${qualityDir}/snapshots/{testFilePath}/{arg}{ext}`,
+    snapshotPathTemplate: `${qualityDir}/snapshots/{testFilePath}/{testName}/{arg}{ext}`,
     forbidOnly: !!process.env.CI,
     reporter: [
         ['list'],
