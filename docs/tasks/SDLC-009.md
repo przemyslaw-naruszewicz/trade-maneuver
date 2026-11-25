@@ -1,6 +1,6 @@
 ---
 id: SDLC-009
-status: draft
+status: approved
 ---
 
 # SDLC-009: Browser tests with Playwright
