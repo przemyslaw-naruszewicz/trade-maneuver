@@ -11,10 +11,11 @@ Build a test pyramid with a broad base of fast PHPUnit unit tests, focused integ
 | Unit tests: broad base | PHPUnit | Domain behavior, invariants, value objects, and isolated application logic | Required |
 | Focused technical integration tests | PHPUnit | Repository mapping, PostgreSQL transactions, adapters, and messaging mechanisms | Required |
 | Business-flow integration scenarios | Behat and Gherkin | Real flows through the application and its local infrastructure | Required |
+| Browser tests | Playwright | JavaScript behavior and the look of GUI pages compared with the mockup, in Chromium against the local Compose environment | Required for GUI changes |
 | Contract tests at integration boundaries | Tool to be selected | Compatibility between this service, the analytics application, and other providers or consumers | Planned |
 | Small E2E suite: pyramid top | Tool to be selected | Critical journeys through a deployed system, including browser interaction where applicable | Planned |
 
-The planned contract/E2E tools are not installed. Infection uses mutation testing to check whether the tests at the covered levels of the pyramid detect changes in behavior.
+The planned contract tools and the E2E suite against a deployed system are not in place. Infection uses mutation testing to check whether the tests at the covered levels of the pyramid detect changes in behavior.
 
 ## Seams
 
@@ -23,6 +24,7 @@ A seam is the public interface a test works through: the test supplies input and
 - The application boundary of a bounded context: Behat scenarios and PHPUnit application tests.
 - The public behavior of an aggregate or value object: domain unit tests, without Laravel or a database.
 - An adapter or project tool at its own boundary, with its real infrastructure: focused integration and feature tests. Business rules stay at the two seams above.
+- The GUI of the locally running application in a real browser: browser tests.
 - Planned: the boundary between two systems for contract tests, and a deployed system's public interfaces for E2E tests.
 
 At the application boundary, substitute only ports to what the test cannot control, such as external systems and time. Everything the context owns runs for real.
@@ -96,6 +98,15 @@ Before delivering a write use case, verify that:
 - Treat code coverage and mutation results as supporting evidence, not proof of correctness. Establish explicit mutation thresholds in CI as the meaningful suite grows; do not claim guarantees solely from a percentage.
 - Pull-request check: PR CI runs Infection on changed lines with the configured thresholds. A surviving mutant on a changed line that PHPUnit covers fails the PR. A PR with no changes in the configured sources, or with changes that generate no mutations, passes.
 - Infection runs PHPUnit only, so it does not measure Behat scenarios. The pull-request check ignores lines PHPUnit does not run, because a line only Behat exercises would otherwise fail the PR as untested. Red commits are the evidence for those lines. A line no test exercises also passes this check; the independent review and the full run on `main`, which counts uncovered lines, cover that gap.
+
+## Browser tests with Playwright
+
+Browser tests check what PHP tests cannot: JavaScript behavior in a real browser and the look of a page compared with its page in the mockup in `docs/gui-design/`.
+
+- The tests live in `tests/Browser/` and run with `make e2e`, in Chromium in the official Playwright image, against the application in the `e2e` Compose profile with its own database. [The development reference](development.md#browser-tests) describes the environment.
+- A GUI task adds the browser tests of its screens. Keep business rules, validation, and response mapping in the PHP tests; a browser test checks what needs the browser.
+- Compare a page with the mockup through `expectToMatchMockup` in `tests/Browser/support/mockup.js`, as a whole page or as one element, in each theme the page has. At most 1% of the pixels may differ, so a small change, such as one wrong color in a small element, can pass. Behavior checks cover what the comparison misses.
+- The mockup sets the look, so a mockup change makes the comparison fail until the application follows it.
 
 ## Planned contract tests
 

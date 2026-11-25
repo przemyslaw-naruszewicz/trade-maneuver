@@ -1,0 +1,50 @@
+#!/bin/sh
+set -eu
+
+cd "$(dirname "$0")/.."
+
+# Every call names these services: a profile call without names would also
+# recreate or remove the development services, which have no profile.
+e2e_services='e2e-app e2e-nginx e2e-node e2e-playwright'
+report_dir=storage/quality/playwright
+
+if [ ! -f .env ]; then
+    cp .env.example .env
+fi
+
+if [ "${CI_SKIP_BUILD:-0}" != 1 ]; then
+    docker compose build app
+fi
+mount_owner=$(docker compose run --rm -T --no-deps --user 0:0 app stat -c '%u:%g' /var/www/html)
+export LOCAL_UID="${LOCAL_UID:-${mount_owner%:*}}"
+export LOCAL_GID="${LOCAL_GID:-${mount_owner#*:}}"
+
+remove_e2e_services() {
+    # shellcheck disable=SC2086 # $e2e_services is a list of service names.
+    docker compose --profile e2e rm --force --stop $e2e_services
+}
+trap remove_e2e_services EXIT
+
+docker compose run --rm -T --no-deps \
+    -e COMPOSER_CACHE_DIR=/var/www/html/storage/framework/cache/composer \
+    app composer install --no-interaction --prefer-dist --no-progress
+
+# Docker creates the named node_modules volume owned by root.
+docker compose run --rm -T --no-deps --user 0:0 e2e-node \
+    chown "$LOCAL_UID:$LOCAL_GID" /var/www/html/node_modules
+docker compose run --rm -T --no-deps e2e-node npm ci --no-audit --no-fund
+docker compose run --rm -T --no-deps e2e-node npm run build
+
+docker compose up -d --wait e2e-app e2e-nginx
+# The guard in AppServiceProvider allows migrate:fresh only on the test database.
+# shellcheck disable=SC2016 # The variables expand in the postgres container.
+docker compose exec -T postgres sh -c 'psql --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" \
+    --set=ON_ERROR_STOP=1 \
+    --command="DROP DATABASE IF EXISTS trade_maneuver_e2e WITH (FORCE)" \
+    --command="CREATE DATABASE trade_maneuver_e2e"'
+docker compose exec -T e2e-app php artisan migrate --no-interaction
+
+rm -rf "$report_dir"
+mkdir -p "$report_dir"
+docker compose run --rm -T --no-deps e2e-playwright \
+    node_modules/.bin/playwright test --config=tests/Browser/playwright.config.js "$@"

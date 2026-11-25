@@ -123,4 +123,18 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Vite Hot File
+    |--------------------------------------------------------------------------
+    |
+    | When set, Laravel looks for the Vite "hot" file at this path instead of
+    | public/hot. The browser tests point it at a path that does not exist,
+    | so their application serves the production build while the
+    | development Vite server runs.
+    |
+    */
+
+    'vite_hot_file' => env('APP_VITE_HOT_FILE'),
+
 ];
