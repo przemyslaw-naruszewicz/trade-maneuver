@@ -44,7 +44,7 @@ Out of scope:
 
 - The Playwright tests and their configuration live in `tests/Browser/`. They run in Chromium in the Playwright image, so a local run and CI render pages the same way.
 - The mockup in `docs/gui-design/` is mounted read-only into the Playwright service and opened from disk. Application code and its build still do not reference it (TM-010).
-- A comparison helper in `tests/Browser/` takes a mockup page and a page under test at a 1280×800 viewport, in the same theme, and passes when at most 1% of the pixels differ. It compares either the whole page or one element of each page, chosen by selector.
+- A comparison helper in `tests/Browser/` takes a mockup page and a page under test at a 1280×800 viewport, in the same theme, and passes when at most 1% of the pixels differ. It compares either the whole page or one element of each page, chosen by selector. It writes the mockup page's screenshot as the expected image and checks the page under test with Playwright's `toMatchSnapshot` and `maxDiffPixelRatio: 0.01`. The expected images go to `storage/quality/playwright/` through Playwright's snapshot path setting, so none is committed.
 - A smoke test opens `/up` of the e2e application in Chromium and expects status 200.
 - A smoke test compares a mockup page with itself through the helper, once as a whole page and once as one element, in both themes.
 - On failure, the test output names the differing pages, and the CI job uploads the Playwright report with the screenshots and their difference images as an artifact.
@@ -72,6 +72,7 @@ Out of scope:
 - The Playwright image is not scanned (owner decision, 2026-11-24). It runs only for tests, only reaches the local application, and never runs in production. It is a large Ubuntu image, so fixable findings in it would often block PRs or need lasting exceptions. Under the profile, it also stays out of `docker compose config --images`, which `make scan-images` scans.
 - The frontend build for the browser tests runs in its own Node.js service with a named volume for `node_modules` (owner decision, 2026-11-24), so the development Vite server keeps its dependencies.
 - `bin/e2e` is a script because no installed or Playwright tool covers its steps. Playwright's `webServer` option starts commands and waits for their URLs, but it runs inside the Playwright container, which has no access to Docker, so it cannot start the Compose services or reset the database. The script only calls `docker compose`, `npm`, `psql`, and `artisan`, as `bin/ci` does for CI.
+- The comparison helper builds on Playwright's own assertion. This is proposed in this change; the owner confirms it when approving. `toHaveScreenshot` and `toMatchSnapshot` compare with a stored expected image and cannot take a second live page, so the helper only writes the mockup's screenshot to that image's path first. The comparison, the difference images, and the report stay Playwright's, and no dependency is added. A spike on 2026-11-25 with Playwright 1.65.1 compared `sign-in.html` with itself as a whole page and as one element and passed, and with a temporary style changing its colors, it failed and the report held the expected, actual, and difference images.
 - The hot-file setting is no tool of our own: it is one call to Laravel's `Vite::useHotFile()`, which has no config option.
 
 ## Constraints
