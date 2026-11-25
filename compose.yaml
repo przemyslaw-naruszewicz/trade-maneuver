@@ -7,13 +7,26 @@ x-php: &php
   image: ${COMPOSE_PROJECT_NAME:-trade-maneuver}-php:dev
   working_dir: /var/www/html
   user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
-  environment:
+  environment: &php-environment
     HOME: /tmp
     COMPOSER_HOME: /tmp/composer
     XDG_CONFIG_HOME: /tmp/.config
   volumes:
     - .:/var/www/html
   init: true
+
+x-nginx: &nginx
+  image: nginx:1.30.7-alpine@sha256:caf4e1e032a20f9c3c5e28fc7f25ffd768ad8677b4975c54193075997b3a97e3
+  volumes:
+    - .:/var/www/html:ro
+    # The image writes the template to /etc/nginx/conf.d/default.conf with PHP_FPM_HOST filled in.
+    - ./docker/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+  healthcheck:
+    test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/up"]
+    interval: 10s
+    timeout: 5s
+    retries: 10
+    start_period: 10s
 
 services:
   app:
@@ -29,21 +42,14 @@ services:
       start_period: 10s
 
   nginx:
-    image: nginx:1.30.7-alpine@sha256:caf4e1e032a20f9c3c5e28fc7f25ffd768ad8677b4975c54193075997b3a97e3
+    <<: *nginx
     ports:
       - "127.0.0.1:${APP_PORT:-8080}:80"
-    volumes:
-      - .:/var/www/html:ro
-      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    environment:
+      PHP_FPM_HOST: app
     depends_on:
       app:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/up"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
 
   postgres:
     image: postgres:18.7-alpine@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71
@@ -114,7 +120,7 @@ services:
         condition: service_healthy
 
   node:
-    image: node:24.22.3-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5
+    image: &node-image node:24.22.3-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5
     working_dir: /var/www/html
     user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
     environment:
@@ -133,6 +139,85 @@ services:
       retries: 10
       start_period: 15s
 
+  # The e2e profile runs the browser tests of bin/e2e against its own database, trade_maneuver_e2e.
+  e2e-app:
+    <<: *php
+    profiles: [e2e]
+    environment:
+      <<: *php-environment
+      APP_ENV: testing
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      APP_CONFIG_CACHE: /tmp/trade-maneuver-e2e-config.php
+      # A path that does not exist, so the production build is served even while public/hot exists.
+      APP_VITE_HOT_FILE: /tmp/trade-maneuver-e2e-no-hot-file
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: trade_maneuver_e2e
+      DB_URL: ""
+      CACHE_STORE: database
+      SESSION_DRIVER: database
+      QUEUE_CONNECTION: sync
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_VHOST: trade-maneuver-testing
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@fsockopen('127.0.0.1', 9000) ? 0 : 1);"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+  e2e-nginx:
+    <<: *nginx
+    profiles: [e2e]
+    environment:
+      PHP_FPM_HOST: e2e-app
+    # A static file, so that only the browser test of /up checks the way to PHP.
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/robots.txt"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    depends_on:
+      e2e-app:
+        condition: service_healthy
+
+  e2e-node:
+    image: *node-image
+    profiles: [e2e]
+    working_dir: /var/www/html
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    environment:
+      HOME: /tmp
+      npm_config_cache: /var/www/html/storage/framework/cache/npm
+    volumes:
+      - .:/var/www/html
+      # The development node service keeps using the working tree's node_modules.
+      - e2e_node_modules:/var/www/html/node_modules
+    init: true
+
+  e2e-playwright:
+    # The tag matches the exact @playwright/test version in package.json.
+    image: mcr.microsoft.com/playwright:v1.65.1-noble@sha256:1507cbfc550a63a6b7396791ca4f00df17beb56342d2447b3f106c306f525579
+    profiles: [e2e]
+    working_dir: /var/www/html
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    environment:
+      HOME: /tmp
+      E2E_BASE_URL: http://e2e-nginx
+    volumes:
+      - .:/var/www/html
+      - e2e_node_modules:/var/www/html/node_modules
+      - ./docs/gui-design:/mockup:ro
+    init: true
+
 volumes:
   postgres_data:
   rabbitmq_data:
+  e2e_node_modules:

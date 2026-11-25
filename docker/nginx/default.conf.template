@@ -16,7 +16,7 @@ server {
 
     location = /index.php {
         include fastcgi_params;
-        set $php_upstream app:9000;
+        set $php_upstream ${PHP_FPM_HOST}:9000;
         fastcgi_pass $php_upstream;
         fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
         fastcgi_param DOCUMENT_ROOT $realpath_root;
