@@ -1,6 +1,6 @@
 ---
 id: SDLC-009
-status: approved
+status: done
 ---
 
 # SDLC-009: Browser tests with Playwright
@@ -92,15 +92,15 @@ Out of scope:
 
 ## Acceptance criteria
 
-- [ ] Feature test: with the hot-file config key set, a page rendered while `public/hot` exists references the production build; without the key, it references the Vite dev server.
-- [ ] Browser test: `/up` of the e2e application answers with status 200.
-- [ ] Browser test: a mockup page matches itself through the comparison helper, as a whole page and as one element, in both themes.
-- [ ] Break check: with a temporary listener of Laravel's `DiagnosingHealth` event that throws, the `/up` test fails and `make e2e` exits with a non-zero status.
-- [ ] Browser test: the comparison helper fails when Playwright runs with `--update-snapshots`.
-- [ ] Break check: with a temporary style on the page under test that changes the page background color and the compared element's color, both self-comparisons fail in both themes and the report shows the difference images.
-- [ ] Manual check: with the development environment running and `public/hot` present, `make e2e` passes, and afterwards the development containers are still running, the development Vite server still serves the pages, the development database is unchanged, and the working tree's `node_modules` has the same modification time as before.
-- [ ] CI check: the PR's GitHub Actions run shows the `e2e` job running in parallel with `quality` and passing.
-- [ ] Documentation check: testing-strategy.md, development.md, README, and architecture.md state the items in Documentation.
+- [x] Feature test: with the hot-file config key set, a page rendered while `public/hot` exists references the production build; without the key, it references the Vite dev server.
+- [x] Browser test: `/up` of the e2e application answers with status 200.
+- [x] Browser test: a mockup page matches itself through the comparison helper, as a whole page and as one element, in both themes.
+- [x] Break check: with a temporary listener of Laravel's `DiagnosingHealth` event that throws, the `/up` test fails and `make e2e` exits with a non-zero status.
+- [x] Browser test: the comparison helper fails when Playwright runs with `--update-snapshots`.
+- [x] Break check: with a temporary style on the page under test that changes the page background color and the compared element's color, both self-comparisons fail in both themes and the report shows the difference images.
+- [x] Manual check: with the development environment running and `public/hot` present, `make e2e` passes, and afterwards the development containers are still running, the development Vite server still serves the pages, the development database is unchanged, and the working tree's `node_modules` has the same modification time as before.
+- [x] CI check: the PR's GitHub Actions run shows the `e2e` job running in parallel with `quality` and passing.
+- [x] Documentation check: testing-strategy.md, development.md, README, and architecture.md state the items in Documentation.
 
 ## Dependencies
 
