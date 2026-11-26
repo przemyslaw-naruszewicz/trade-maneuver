@@ -105,6 +105,9 @@ Browser tests check what PHP tests cannot: JavaScript behavior in a real browser
 
 - The tests live in `tests/Browser/` and run with `make e2e`, in Chromium in the official Playwright image, against the application in the `e2e` Compose profile with its own database. [The development reference](development.md#browser-tests) describes the environment.
 - A GUI task adds the browser tests of its screens. Keep business rules, validation, and response mapping in the PHP tests; a browser test checks what needs the browser.
+- The look of a page and its JavaScript behavior get browser tests, not manual checks. A manual check covers only what the e2e environment cannot reproduce, such as a journey through another system, or a state that the seeded data cannot show, such as a mockup element that counts statuses of later tasks.
+- Browser tests get their data from seeders that `bin/e2e` runs after migrating the e2e database. A seeder lives in the Infrastructure layer of its context and creates the data through the application's use cases, so the data meets the same rules as in production. Where no use case fits, for example because it generates a random secret that the tests need to know, the seeder goes through the domain model.
+- Content that depends on the time of the run, such as a time left or the time of the last update, stays out of mockup comparisons. Assertions check it, with Playwright's clock where the browser counts time.
 - Compare a page with the mockup through `expectToMatchMockup` in `tests/Browser/support/mockup.js`, as a whole page or as one element, in each theme the page has. At most 1% of the pixels may differ, so a small change, such as one wrong color in a small element, can pass. Behavior checks cover what the comparison misses.
 - The mockup sets the look, so a mockup change makes the comparison fail until the application follows it.
 
