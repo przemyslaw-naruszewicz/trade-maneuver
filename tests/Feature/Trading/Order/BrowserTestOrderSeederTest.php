@@ -38,6 +38,7 @@ final class BrowserTestOrderSeederTest extends TestCase
         $this->assertSame('200.00', $investmentConfiguration->order_amount);
         $this->assertSame('0.50', $investmentConfiguration->limit_price_tolerance);
         $this->assertSame(['demo-analytics'], json_decode((string) $investmentConfiguration->authorized_analytics_applications, true, 512, JSON_THROW_ON_ERROR));
+        $this->assertDatabaseHas('trading_audit_records', ['entity_id' => $investmentConfiguration->id, 'actor' => 'seeder:'.BrowserTestOrderSeeder::class]);
     }
 
     public function test_the_seeder_creates_the_three_orders_awaiting_approval_of_the_orders_mockup_from_long_trade_signals(): void
