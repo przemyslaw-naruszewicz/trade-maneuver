@@ -86,6 +86,18 @@ final class OrdersScreenTest extends TestCase
         $this->assertSame(['DEMO_A', 'DEMO_B', 'DEMO_C'], $symbols);
     }
 
+    public function test_decimal_values_are_displayed_exactly(): void
+    {
+        // Through float, this reference price would be displayed as 0.1.
+        $this->addOrder('DEMO_A', '2026-11-10T16:00:00Z', referencePrice: '0.10000000000000001');
+
+        $fields = $this->fieldsOf($this->orderOf($this->ordersScreen(), 'DEMO_A'));
+
+        $this->assertSame('0.10000000000000001 EUR', $fields['Reference price'][0]);
+        $this->assertSame(['0.10 EUR'], $fields['Limit price']);
+        $this->assertSame(['10000'], $fields['Quantity']);
+    }
+
     public function test_an_unauthenticated_request_cannot_see_the_orders_screen(): void
     {
         $this->addOrder('DEMO_A', '2026-11-10T16:00:00Z');
