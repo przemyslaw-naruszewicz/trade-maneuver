@@ -7,6 +7,7 @@ namespace Tests\Feature\Trading\Order;
 use Dom\Element;
 use Dom\HTMLDocument;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Feature\Trading\Operator\Support\LivewireComponentRoots;
 use Tests\Feature\Trading\Operator\Support\OperatorAccounts;
 use Tests\Feature\Trading\Operator\Support\RenderedPanelPages;
 use Tests\Feature\Trading\Order\Support\OrdersAwaitingApproval;
@@ -17,6 +18,7 @@ use Tests\TestCase;
  */
 final class StartPageTest extends TestCase
 {
+    use LivewireComponentRoots;
     use OperatorAccounts;
     use OrdersAwaitingApproval;
     use RefreshDatabase;
@@ -66,6 +68,13 @@ final class StartPageTest extends TestCase
         $soonest = $this->tile($page, 'Soonest signal validity');
         $this->assertSame('No orders await approval.', $this->text($soonest, '.tile-note'));
         $this->assertNull($soonest->querySelector('.tile-value'));
+    }
+
+    public function test_the_rendered_start_page_polls_every_30_seconds(): void
+    {
+        $root = $this->componentRoot($this->startPage(), 'trading.start');
+
+        $this->assertTrue($root->hasAttribute('wire:poll.30s'), 'The start page was expected to poll every 30 seconds.');
     }
 
     private function startPage(): HTMLDocument
