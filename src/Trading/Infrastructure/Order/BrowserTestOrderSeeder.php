@@ -87,7 +87,9 @@ final class BrowserTestOrderSeeder extends Seeder
             'instrument' => ['symbol' => $tradeSignal['symbol'], 'mic' => 'DEMO'],
             'direction' => 'long',
             'confidence' => $tradeSignal['confidence'],
-            'horizon' => $this->horizon($tradeSignal['horizon'], $seededAt),
+            'horizon' => isset($tradeSignal['horizon']['dateIn'])
+                ? ['at' => $seededAt->modify((string) $tradeSignal['horizon']['dateIn'])->format('Y-m-d')]
+                : $tradeSignal['horizon'],
             'referencePrice' => ['amount' => $tradeSignal['referencePrice'], 'currency' => 'EUR', 'asOf' => $time],
             'validUntil' => $seededAt->modify($tradeSignal['validFor'])->format('Y-m-d\TH:i:s\Z'),
         ];
@@ -96,18 +98,5 @@ final class BrowserTestOrderSeeder extends Seeder
         }
 
         return json_encode($message, JSON_THROW_ON_ERROR);
-    }
-
-    /**
-     * @param  array<string, int|string>  $horizon
-     * @return array<string, int|string>
-     */
-    private function horizon(array $horizon, DateTimeImmutable $seededAt): array
-    {
-        if (isset($horizon['dateIn'])) {
-            return ['at' => $seededAt->modify((string) $horizon['dateIn'])->format('Y-m-d')];
-        }
-
-        return $horizon;
     }
 }
