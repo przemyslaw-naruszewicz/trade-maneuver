@@ -7,9 +7,9 @@
     </header>
 
     <section class="mt-14" aria-labelledby="awaiting-approval">
-        <h2 class="section-title" id="awaiting-approval">Awaiting approval<span class="section-count">{{ count($orders) }}, soonest validity first</span></h2>
+        <h2 class="section-title" id="awaiting-approval">Awaiting approval<span class="section-count">{{ count($orders) === 0 ? '0' : count($orders).', soonest validity first' }}</span></h2>
 
-        @foreach ($orders as $order)
+        @forelse ($orders as $order)
             <article class="order-band" wire:key="{{ $order->id }}" aria-labelledby="order-{{ $order->id }}">
                 <div>
                     <h3 class="order-symbol" id="order-{{ $order->id }}">{{ $order->instrumentSymbol }}</h3>
@@ -45,6 +45,9 @@
                     </dl>
                 </div>
             </article>
-        @endforeach
+        @empty
+            <p class="mt-8 font-display text-4xl tracking-tight">No orders await approval.</p>
+            <p class="mt-3 max-w-md text-sm text-ink-muted">An order appears here after a trade signal passes evaluation.</p>
+        @endforelse
     </section>
 </div>
