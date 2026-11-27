@@ -86,6 +86,22 @@ final class OrdersScreenTest extends TestCase
         $this->assertSame(['DEMO_A', 'DEMO_B', 'DEMO_C'], $symbols);
     }
 
+    public function test_an_unauthenticated_request_cannot_see_the_orders_screen(): void
+    {
+        $this->addOrder('DEMO_A', '2026-11-10T16:00:00Z');
+
+        $this->get(route('panel.orders'))->assertRedirect(route('login'))->assertDontSeeText('DEMO_A');
+    }
+
+    public function test_a_request_that_passed_only_the_password_step_cannot_see_the_orders_screen(): void
+    {
+        $this->addOrder('DEMO_A', '2026-11-10T16:00:00Z');
+        $this->submitPassword()->assertRedirect(route('login.totp'));
+
+        $this->get(route('panel.orders'))->assertRedirect(route('login'))->assertDontSeeText('DEMO_A');
+        $this->assertGuest();
+    }
+
     /**
      * Adds the order awaiting approval of a new long trade signal on the instrument, with the reference price
      * 10.00 EUR, under the settings of the order builder.
