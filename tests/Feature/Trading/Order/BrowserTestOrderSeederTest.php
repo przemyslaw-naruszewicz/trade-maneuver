@@ -59,12 +59,12 @@ final class BrowserTestOrderSeederTest extends TestCase
             $this->assertGreaterThan(CarbonImmutable::parse(self::SEEDED_AT)->addHours(6), CarbonImmutable::parse($order->valid_until));
         }
 
-        $demoA = $orders[0];
+        $demoA = $orders->firstOrFail('instrument_symbol', 'DEMO_A');
         $this->assertSame('0.72', $demoA->confidence);
         $this->assertSame(5, $demoA->horizon_sessions);
         $this->assertSame('2.00', $demoA->expected_move_min);
         $this->assertSame('4.00', $demoA->expected_move_max);
-        $demoC = $orders[2];
+        $demoC = $orders->firstOrFail('instrument_symbol', 'DEMO_C');
         $this->assertNull($demoC->expected_move_min);
         $this->assertNull($demoC->expected_move_max);
     }
