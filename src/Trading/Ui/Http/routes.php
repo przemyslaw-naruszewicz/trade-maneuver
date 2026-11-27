@@ -20,5 +20,6 @@ Route::middleware('web')->group(function (): void {
         Route::post('/logout', OperatorLogoutController::class)->name('logout');
 
         Route::livewire('/', 'trading.start')->name('panel.start');
+        Route::livewire('/orders', 'trading.orders')->name('panel.orders');
     });
 });
