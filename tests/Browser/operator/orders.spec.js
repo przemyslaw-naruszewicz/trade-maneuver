@@ -54,3 +54,19 @@ for (const theme of ['light', 'dark']) {
         await expectToMatchMockup(page, 'orders.html', { theme, selector: `${order('DEMO_B')} .decision-pair` });
     });
 }
+
+test('the time left of DEMO_A counts down in the browser between updates', async ({ page }) => {
+    await page.goto('/orders');
+    const validUntil = Date.parse(await page.locator(`${order('DEMO_A')} [data-time-left-until]`).getAttribute('data-time-left-until'));
+    const loadedAt = validUntil - 43 * minute - 10 * 1000;
+    await page.clock.install({ time: loadedAt });
+    await page.reload();
+    await page.clock.pauseAt(loadedAt + 5 * 1000);
+    const timeLeft = page.locator(`${order('DEMO_A')} .time-left`);
+    await expect(timeLeft).toHaveText('44 min left');
+
+    // 42 min 55 s left, before the first update after 30 seconds.
+    await page.clock.runFor(10 * 1000);
+
+    await expect(timeLeft).toHaveText('43 min left');
+});
