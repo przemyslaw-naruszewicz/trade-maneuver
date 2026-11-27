@@ -110,6 +110,7 @@ Browser tests check what PHP tests cannot: JavaScript behavior in a real browser
 - Content that depends on the time of the run, such as a time left or the time of the last update, stays out of mockup comparisons. Assertions check it, with Playwright's clock where the browser counts time.
 - Compare a page with the mockup through `expectToMatchMockup` in `tests/Browser/support/mockup.js`, as a whole page or as one element, in each theme the page has. At most 1% of the pixels may differ, so a small change, such as one wrong color in a small element, can pass. Behavior checks cover what the comparison misses.
 - The mockup sets the look, so a mockup change makes the comparison fail until the application follows it.
+- A comparison uses a mockup page that shows the element in the same page layout as the application page, such as the panel shell. Text renders differently at another width or position, so the pixels differ even when the look is the same. `foundations.html` describes the shared design and is not a comparison source. When no mockup page shows a state that a task compares, the task's planning PR adds one.
 
 ## Planned contract tests
 
