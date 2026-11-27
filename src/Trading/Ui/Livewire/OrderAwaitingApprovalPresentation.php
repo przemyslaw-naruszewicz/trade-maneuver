@@ -34,6 +34,7 @@ final readonly class OrderAwaitingApprovalPresentation
         public string $limitPrice,
         public string $quantity,
         public string $orderAmount,
+        // The browser marks the order when an update changes this value.
         public string $version,
     ) {}
 

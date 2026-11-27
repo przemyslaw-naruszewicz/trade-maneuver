@@ -16,7 +16,7 @@
         <h2 class="section-title" id="awaiting-approval">Awaiting approval<span class="section-count">{{ count($orders) === 0 ? '0' : count($orders).', soonest validity first' }}</span></h2>
 
         @forelse ($orders as $order)
-            <article class="order-band" wire:key="{{ $order->id }}" tabindex="0" aria-labelledby="order-{{ $order->id }}">
+            <article class="order-band" wire:key="{{ $order->id }}" data-change-key="{{ $order->id }}" data-change-version="{{ $order->version }}" tabindex="0" aria-labelledby="order-{{ $order->id }}">
                 <div>
                     <h3 class="order-symbol" id="order-{{ $order->id }}">{{ $order->instrumentSymbol }}</h3>
                     <p class="note mt-1">{{ $order->listing }}</p>
