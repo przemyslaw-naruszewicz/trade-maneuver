@@ -37,6 +37,25 @@ final class SimulatedBrokerTest extends BrokerGatewayContractTestCase
         $this->assertSame('USD', $listing->quoteCurrency()->getCurrencyCode());
     }
 
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function instrumentsOfTheBrowserTests(): iterable
+    {
+        yield 'DEMO_B' => ['DEMO_B'];
+        yield 'DEMO_C' => ['DEMO_C'];
+    }
+
+    #[DataProvider('instrumentsOfTheBrowserTests')]
+    public function test_the_shipped_catalogue_lists_the_instrument_on_the_exchange_demo_as_available_and_quoted_in_eur(string $symbol): void
+    {
+        $listing = $this->gateway()->lookUpInstrument(new Instrument($symbol, new Mic('DEMO')));
+
+        $this->assertNotNull($listing);
+        $this->assertTrue($listing->isAvailable());
+        $this->assertSame('EUR', $listing->quoteCurrency()->getCurrencyCode());
+    }
+
     public function test_outside_the_test_bindings_the_container_resolves_the_broker_gateway_to_the_simulated_broker(): void
     {
         // Larastan infers the type from the binding, which is what this test checks at runtime.
