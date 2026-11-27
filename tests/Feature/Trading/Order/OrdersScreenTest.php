@@ -115,7 +115,7 @@ final class OrdersScreenTest extends TestCase
         $screen = $this->ordersScreen();
 
         $this->assertNull($screen->querySelector('article.order-band'));
-        $this->assertSame('Awaiting approval 0', $this->text($screen, '#awaiting-approval'));
+        $this->assertSame('0', $this->text($screen, '#awaiting-approval .section-count'));
         $this->assertSame('No orders await approval.', $this->text($screen, '#awaiting-approval + p'));
     }
 
