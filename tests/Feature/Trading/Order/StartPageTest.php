@@ -43,6 +43,19 @@ final class StartPageTest extends TestCase
         $this->assertSame(route('panel.orders'), $link->getAttribute('href'));
     }
 
+    public function test_the_start_page_shows_the_soonest_signal_validity_with_its_instrument(): void
+    {
+        $this->addOrder('DEMO_B', '2026-11-11T09:00:00Z');
+        $this->addOrder('DEMO_A', '2026-11-10T16:00:00Z');
+
+        $tile = $this->tile($this->startPage(), 'Soonest signal validity');
+
+        $this->assertSame('DEMO_A, valid until 10 Nov 2026, 16:00 UTC', $this->text($tile, '.tile-note'));
+        $timeLeft = $tile->querySelector('.tile-value');
+        $this->assertNotNull($timeLeft);
+        $this->assertSame('2026-11-10T16:00:00+00:00', $timeLeft->getAttribute('data-time-left-until'));
+    }
+
     private function startPage(): HTMLDocument
     {
         return $this->panelPageAt('panel.start');
