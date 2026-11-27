@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Trading\Order;
 
+use Carbon\CarbonImmutable;
 use DateTimeImmutable;
 use Dom\Element;
 use Dom\HTMLDocument;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
+use Livewire\Livewire;
 use Tests\Feature\Trading\Operator\Support\OperatorAccounts;
 use Tests\TestCase;
 use Tests\Unit\Trading\InvestmentConfiguration\Support\InvestmentConfigurationBuilder;
@@ -32,6 +34,7 @@ use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ReferencePrice;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\TradeSignalContent;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\TradeSignalId;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\UtcTimestamp;
+use TradeManeuver\Trading\Ui\Livewire\Orders;
 
 /**
  * The orders screen of the panel, rendered for the logged-in operator against the test database.
@@ -96,6 +99,21 @@ final class OrdersScreenTest extends TestCase
         $this->assertSame('0.10000000000000001 EUR', $fields['Reference price'][0]);
         $this->assertSame(['0.10 EUR'], $fields['Limit price']);
         $this->assertSame(['10000'], $fields['Quantity']);
+    }
+
+    public function test_after_a_new_order_the_next_render_shows_it_and_a_new_last_update_time(): void
+    {
+        $this->addOrder('DEMO_A', '2026-11-10T16:00:00Z');
+        $this->travelTo(CarbonImmutable::parse('2026-11-09T10:00:00.400Z'));
+        $screen = Livewire::test(Orders::class)
+            ->assertSeeText('Live, updated 10:00:00 UTC')
+            ->assertDontSeeText('DEMO_B');
+
+        $this->travelTo(CarbonImmutable::parse('2026-11-09T10:00:31Z'));
+        $this->addOrder('DEMO_B', '2026-11-11T09:00:00Z');
+        $screen->call('$refresh');
+
+        $screen->assertSeeText('Live, updated 10:00:31 UTC')->assertSeeTextInOrder(['DEMO_A', 'DEMO_B']);
     }
 
     public function test_an_unauthenticated_request_cannot_see_the_orders_screen(): void
