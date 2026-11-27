@@ -56,6 +56,18 @@ final class StartPageTest extends TestCase
         $this->assertSame('2026-11-10T16:00:00+00:00', $timeLeft->getAttribute('data-time-left-until'));
     }
 
+    public function test_the_start_page_says_so_when_no_order_awaits_approval(): void
+    {
+        $page = $this->startPage();
+
+        $awaitingApproval = $this->tile($page, 'Awaiting approval');
+        $this->assertSame('No orders await your decision', $this->text($awaitingApproval, '.tile-note'));
+        $this->assertSame('0', $this->text($awaitingApproval, '.tile-value'));
+        $soonest = $this->tile($page, 'Soonest signal validity');
+        $this->assertSame('No orders await approval.', $this->text($soonest, '.tile-note'));
+        $this->assertNull($soonest->querySelector('.tile-value'));
+    }
+
     private function startPage(): HTMLDocument
     {
         return $this->panelPageAt('panel.start');
