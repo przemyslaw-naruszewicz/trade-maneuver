@@ -5,36 +5,19 @@ declare(strict_types=1);
 namespace Tests\Feature\Trading\Order;
 
 use Carbon\CarbonImmutable;
-use DateTimeImmutable;
 use Dom\Element;
 use Dom\HTMLDocument;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Str;
 use Livewire\Livewire;
 use Tests\Feature\Trading\Operator\Support\LivewireComponentRoots;
 use Tests\Feature\Trading\Operator\Support\OperatorAccounts;
+use Tests\Feature\Trading\Operator\Support\RenderedPanelPages;
+use Tests\Feature\Trading\Order\Support\OrdersAwaitingApproval;
 use Tests\TestCase;
-use Tests\Unit\Trading\InvestmentConfiguration\Support\InvestmentConfigurationBuilder;
 use Tests\Unit\Trading\Order\Support\OrderBuilder;
 use Tests\Unit\Trading\TradeSignal\Support\TradeSignalBuilder;
-use TradeManeuver\Trading\Domain\InvestmentConfiguration\Repository\InvestmentConfigurationRepositoryInterface;
-use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\AnalyticsApplicationId;
-use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\InvestmentConfigurationId;
-use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\InvestmentConfigurationRef;
-use TradeManeuver\Trading\Domain\Order\Order;
 use TradeManeuver\Trading\Domain\Order\Repository\OrderRepositoryInterface;
-use TradeManeuver\Trading\Domain\Order\ValueObject\OrderId;
-use TradeManeuver\Trading\Domain\TradeSignal\Enum\Direction;
 use TradeManeuver\Trading\Domain\TradeSignal\Repository\TradeSignalRepositoryInterface;
-use TradeManeuver\Trading\Domain\TradeSignal\TradeSignal;
-use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Confidence;
-use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Horizon;
-use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Instrument;
-use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\Mic;
-use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ReferencePrice;
-use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\TradeSignalContent;
-use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\TradeSignalId;
-use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\UtcTimestamp;
 use TradeManeuver\Trading\Ui\Livewire\Orders;
 
 /**
@@ -44,14 +27,16 @@ final class OrdersScreenTest extends TestCase
 {
     use LivewireComponentRoots;
     use OperatorAccounts;
+    use OrdersAwaitingApproval;
     use RefreshDatabase;
+    use RenderedPanelPages;
 
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->createEnrolledOperator();
-        $this->app->make(InvestmentConfigurationRepositoryInterface::class)->add(InvestmentConfigurationBuilder::anInvestmentConfiguration()->create());
+        $this->addTheInvestmentConfiguration();
     }
 
     public function test_the_operator_sees_an_order_awaiting_approval_with_the_fields_of_its_trade_signal_and_of_the_order(): void
@@ -141,46 +126,9 @@ final class OrdersScreenTest extends TestCase
         $this->assertGuest();
     }
 
-    /**
-     * Adds the order awaiting approval of a new long trade signal on the instrument, with the reference price
-     * 10.00 EUR, under the settings of the order builder.
-     */
-    private function addOrder(string $symbol, string $validUntil, string $referencePrice = '10.00'): void
-    {
-        $tradeSignals = $this->app->make(TradeSignalRepositoryInterface::class);
-        $tradeSignal = TradeSignal::receive(
-            new TradeSignalId(Str::uuid7()->toString()),
-            new AnalyticsApplicationId('demo-analytics'),
-            new TradeSignalContent(
-                UtcTimestamp::fromString('2026-11-07T09:00:00Z'),
-                new InvestmentConfigurationRef('demo-investment'),
-                new Instrument($symbol, new Mic('DEMO')),
-                Direction::Long,
-                Confidence::of('0.85'),
-                Horizon::of(5, null),
-                null,
-                ReferencePrice::of($referencePrice, 'EUR', '2026-11-07T08:59:00Z'),
-                UtcTimestamp::fromString($validUntil),
-            ),
-            new DateTimeImmutable(TradeSignalBuilder::RECEIVED_AT),
-        );
-        $tradeSignals->add($tradeSignal);
-        $order = $tradeSignal->createOrder(
-            new OrderId(Str::uuid7()->toString()),
-            new InvestmentConfigurationId(InvestmentConfigurationBuilder::ID),
-            OrderBuilder::settings(),
-            $tradeSignals->nextOutcomeIdentity(),
-            new DateTimeImmutable(OrderBuilder::CREATED_AT),
-        );
-        $this->assertInstanceOf(Order::class, $order);
-        $this->app->make(OrderRepositoryInterface::class)->add($order);
-    }
-
     private function ordersScreen(): HTMLDocument
     {
-        $html = (string) $this->actingAs($this->operatorModel())->get(route('panel.orders'))->assertOk()->getContent();
-
-        return HTMLDocument::createFromString($html, LIBXML_NOERROR);
+        return $this->panelPageAt('panel.orders');
     }
 
     private function orderOf(HTMLDocument $screen, string $symbol): Element
@@ -209,18 +157,5 @@ final class OrdersScreenTest extends TestCase
         }
 
         return $fields;
-    }
-
-    private function text(Element $element, string $selector): string
-    {
-        $found = $element->querySelector($selector);
-        $this->assertNotNull($found, sprintf('No element matches %s.', $selector));
-
-        return $this->collapsed((string) $found->textContent);
-    }
-
-    private function collapsed(string $text): string
-    {
-        return trim((string) preg_replace('/\s+/', ' ', $text));
     }
 }
