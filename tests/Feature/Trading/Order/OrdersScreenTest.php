@@ -11,6 +11,7 @@ use Dom\HTMLDocument;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
+use Tests\Feature\Trading\Operator\Support\LivewireComponentRoots;
 use Tests\Feature\Trading\Operator\Support\OperatorAccounts;
 use Tests\TestCase;
 use Tests\Unit\Trading\InvestmentConfiguration\Support\InvestmentConfigurationBuilder;
@@ -41,6 +42,7 @@ use TradeManeuver\Trading\Ui\Livewire\Orders;
  */
 final class OrdersScreenTest extends TestCase
 {
+    use LivewireComponentRoots;
     use OperatorAccounts;
     use RefreshDatabase;
 
@@ -114,6 +116,13 @@ final class OrdersScreenTest extends TestCase
         $screen->call('$refresh');
 
         $screen->assertSeeText('Live, updated 10:00:31 UTC')->assertSeeTextInOrder(['DEMO_A', 'DEMO_B']);
+    }
+
+    public function test_the_rendered_orders_screen_polls_every_30_seconds(): void
+    {
+        $root = $this->componentRoot($this->ordersScreen(), 'trading.orders');
+
+        $this->assertTrue($root->hasAttribute('wire:poll.30s'), 'The orders screen was expected to poll every 30 seconds.');
     }
 
     public function test_an_unauthenticated_request_cannot_see_the_orders_screen(): void
