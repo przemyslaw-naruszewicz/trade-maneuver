@@ -160,6 +160,8 @@ services:
       QUEUE_CONNECTION: sync
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_VHOST: trade-maneuver-testing
+      # The seeded trade signals come from the demo analytics application.
+      TRADING_ANALYTICS_APPLICATIONS: demo-analytics:demo-analytics
     depends_on:
       postgres:
         condition: service_healthy
