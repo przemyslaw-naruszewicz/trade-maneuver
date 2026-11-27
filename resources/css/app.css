@@ -171,8 +171,9 @@
     }
 
     /* Order awaiting approval */
+    /* Each order takes the focus, so that the keyboard moves from order to order. */
     .order-band {
-        @apply grid grid-cols-[repeat(auto-fit,minmax(min(16rem,100%),1fr))] gap-8 border-b border-line py-8;
+        @apply grid grid-cols-[repeat(auto-fit,minmax(min(16rem,100%),1fr))] gap-8 border-b border-line py-8 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-mark;
     }
 
     .order-symbol {
