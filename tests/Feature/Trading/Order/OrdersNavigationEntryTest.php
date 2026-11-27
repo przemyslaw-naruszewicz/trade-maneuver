@@ -8,6 +8,7 @@ use Dom\Element;
 use Dom\HTMLDocument;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Tests\Feature\Trading\Operator\Support\LivewireComponentRoots;
 use Tests\Feature\Trading\Operator\Support\OperatorAccounts;
 use Tests\Feature\Trading\Operator\Support\RenderedPanelPages;
 use Tests\Feature\Trading\Order\Support\OrdersAwaitingApproval;
@@ -19,6 +20,7 @@ use TradeManeuver\Trading\Ui\Livewire\OrdersAwaitingApprovalCount;
  */
 final class OrdersNavigationEntryTest extends TestCase
 {
+    use LivewireComponentRoots;
     use OperatorAccounts;
     use OrdersAwaitingApproval;
     use RefreshDatabase;
@@ -65,6 +67,13 @@ final class OrdersNavigationEntryTest extends TestCase
         $count->call('$refresh');
 
         $count->assertSeeText('2')->assertDontSeeText('1');
+    }
+
+    public function test_the_rendered_navigation_count_polls_every_30_seconds(): void
+    {
+        $root = $this->componentRoot($this->panelPageAt('panel.start'), 'trading.orders-awaiting-approval-count');
+
+        $this->assertTrue($root->hasAttribute('wire:poll.30s'), 'The navigation count was expected to poll every 30 seconds.');
     }
 
     /**
