@@ -16,7 +16,7 @@
         <span class="tile-rule col-start-6 row-span-full" aria-hidden="true"></span>
         <dl class="tile sm:col-start-3 sm:row-start-3">
             <dt class="tile-label">Awaiting approval</dt>
-            <dd class="tile-note">Orders await your decision</dd>
+            <dd class="tile-note">{{ $awaitingApproval === 0 ? 'No orders await your decision' : 'Orders await your decision' }}</dd>
             <dd class="tile-value tile-value-accent">{{ $awaitingApproval }}</dd>
         </dl>
         <dl class="tile sm:col-start-5 sm:row-start-3">
@@ -24,6 +24,8 @@
             @if ($soonest !== null)
                 <dd class="tile-note">{{ $soonest->instrumentSymbol }}, valid until <time datetime="{{ $soonest->validUntilIso }}">{{ $soonest->validUntil }}</time></dd>
                 <dd class="tile-value" data-time-left-until="{{ $soonest->validUntilIso }}" data-time-left-unit-class="tile-unit"></dd>
+            @else
+                <dd class="tile-note">No orders await approval.</dd>
             @endif
         </dl>
         <a class="tile tile-link sm:col-start-5 sm:row-start-5" href="{{ route('panel.orders') }}">
