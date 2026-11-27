@@ -95,3 +95,37 @@ test('after 30 seconds, an update runs without a page reload and keeps the scrol
     expect(await page.evaluate(() => window.scrollY)).toBe(300);
     await expect(demoC).toBeFocused();
 });
+
+for (const theme of ['light', 'dark']) {
+    test(`while updates fail, the orders screen says that the connection is lost, as foundations.html does in the ${theme} theme, and the retry clears it`, async ({ page }) => {
+        await storeTheme(page, theme);
+        await page.clock.install();
+        await page.goto('/orders');
+        let failedUpdates = 0;
+        await page.route(livewireUpdate, (route) => {
+            failedUpdates++;
+
+            return route.abort();
+        });
+
+        await page.clock.runFor(30 * 1000);
+
+        const connectionLost = page.locator('.notice:has(button)');
+        await expect(connectionLost).toBeVisible();
+        await expect(connectionLost.locator('p')).toHaveText('Connection lost. Statuses and the time left may be out of date. Trying again.');
+        await expect(page.locator('.live-status')).toHaveText(/^Connection lost, data from \d\d:\d\d:\d\d UTC$/);
+        // The sample spans the width of foundations.html, so its text and its button are compared.
+        await expectToMatchMockup(page, 'foundations.html', { theme, selector: '.notice:has(button) > p' });
+        await expectToMatchMockup(page, 'foundations.html', { theme, selector: '.notice:has(button) > button' });
+
+        await page.clock.runFor(30 * 1000);
+        await expect.poll(() => failedUpdates).toBeGreaterThanOrEqual(2);
+
+        await page.unroute(livewireUpdate);
+        const update = page.waitForResponse(livewireUpdate);
+        await connectionLost.getByRole('button', { name: 'Retry now' }).click();
+        expect((await update).ok()).toBe(true);
+        await expect(connectionLost).toBeHidden();
+        await expect(page.locator('.live-status')).toHaveText(/^Live, updated \d\d:\d\d:\d\d UTC$/);
+    });
+}
