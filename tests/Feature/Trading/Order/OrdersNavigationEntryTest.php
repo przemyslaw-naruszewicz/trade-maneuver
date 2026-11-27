@@ -42,6 +42,18 @@ final class OrdersNavigationEntryTest extends TestCase
         }
     }
 
+    public function test_the_orders_entry_shows_the_number_of_orders_awaiting_approval_on_every_panel_page(): void
+    {
+        $this->addOrder('DEMO_A', '2026-11-10T16:00:00Z');
+        $this->addOrder('DEMO_B', '2026-11-11T09:00:00Z');
+
+        foreach (['panel.start', 'panel.orders'] as $page) {
+            $entry = $this->navigationEntries($this->panelPageAt($page))[1];
+
+            $this->assertSame('2', $this->text($entry, '.nav-count'), sprintf('On %s.', $page));
+        }
+    }
+
     /**
      * @return list<Element>
      */
