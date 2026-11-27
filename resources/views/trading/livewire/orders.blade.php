@@ -1,6 +1,7 @@
 <div wire:poll.30s data-live-updates>
     <header class="page-header flex flex-wrap items-end justify-between gap-6">
-        <div>
+        {{-- As wide as the header text of the mockup, which also has a lede. --}}
+        <div class="w-full max-w-2xl">
             <h1 class="page-title">Orders</h1>
         </div>
         <p class="live-status" data-live-status data-updated-at="{{ $updatedAt }} UTC">Live, updated {{ $updatedAt }} UTC</p>

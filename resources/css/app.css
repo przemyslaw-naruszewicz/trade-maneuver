@@ -120,6 +120,10 @@
         content: '';
     }
 
+    .nav-count {
+        @apply ml-auto text-xs font-medium text-accent tabular-nums;
+    }
+
     /* Typography roles */
     .page-header {
         @apply border-b-4 border-double border-line-strong pb-8;
@@ -133,6 +137,128 @@
         @apply mt-4 max-w-2xl text-lg text-pretty text-ink-muted lg:text-xl;
     }
 
+    .section-title {
+        @apply flex items-baseline gap-3 border-b border-line-strong pb-3 font-display text-3xl tracking-tight;
+    }
+
+    .section-count {
+        @apply font-sans text-sm tracking-normal text-ink-muted tabular-nums;
+    }
+
+    .column-head {
+        @apply border-b border-line pb-2 font-display text-lg font-medium;
+    }
+
+    .caption {
+        @apply text-xs font-medium text-ink-muted;
+    }
+
+    .note {
+        @apply text-xs text-ink-muted tabular-nums;
+    }
+
+    /* Definition grid for order and trade signal fields */
+    .facts {
+        @apply grid grid-cols-[repeat(auto-fit,minmax(min(10rem,100%),1fr))] gap-x-6 gap-y-5;
+    }
+
+    .fact-value {
+        @apply mt-1 text-sm tabular-nums;
+    }
+
+    .fact-value-lg {
+        @apply mt-1 text-xl font-medium tabular-nums;
+    }
+
+    /* Order awaiting approval */
+    .order-band {
+        @apply grid grid-cols-[repeat(auto-fit,minmax(min(16rem,100%),1fr))] gap-8 border-b border-line py-8;
+    }
+
+    .order-symbol {
+        @apply font-display text-4xl tracking-tight;
+    }
+
+    /* Two equal panes: order status and time left */
+    .decision-pair {
+        @apply grid grid-cols-2 gap-px border border-line bg-line;
+    }
+
+    .decision-cell {
+        @apply flex flex-col gap-2 bg-surface p-3;
+    }
+
+    .decision-pair-soonest {
+        @apply border-accent border-t-[3px] bg-accent;
+    }
+
+    .decision-pair-soonest .time-left {
+        @apply text-accent;
+    }
+
+    /*
+     * Equal tiles on the start page. From two columns up, each frame line is a real element
+     * in its own 1 px grid track, and the outer 0.75rem tracks give every line end the same length.
+     */
+    .tiles {
+        @apply grid gap-px border border-line-strong bg-line-strong sm:-mx-3 sm:gap-0 sm:border-0 sm:bg-transparent;
+    }
+
+    @media (width >= 40rem) {
+        .tiles {
+            grid-template-columns: 0.75rem 1px minmax(0, 1fr) 1px minmax(0, 1fr) 1px 0.75rem;
+            grid-template-rows: 0.75rem 1px 1fr 1px 1fr 1px 0.75rem;
+        }
+    }
+
+    .tile-rule {
+        @apply hidden bg-line-strong sm:block;
+    }
+
+    .tile {
+        @apply flex min-h-64 flex-col bg-surface p-6 lg:p-8 xl:min-h-80;
+    }
+
+    .tile-label {
+        @apply font-display text-2xl leading-tight tracking-tight;
+    }
+
+    .tile-note {
+        @apply mt-1 text-sm text-pretty text-ink-muted;
+    }
+
+    .tile-value {
+        @apply mt-auto pt-8 font-display text-[clamp(6rem,11vw,11rem)] leading-[0.82] font-light tracking-tight;
+    }
+
+    .tile-unit {
+        @apply ml-3 text-3xl font-normal tracking-normal whitespace-nowrap;
+    }
+
+    .tile-value-accent {
+        @apply text-accent;
+    }
+
+    .tile-link {
+        @apply hover:bg-sunken focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-accent-mark;
+    }
+
+    .tile-action {
+        @apply mt-auto flex items-end justify-between gap-4 pt-8;
+    }
+
+    .tile-action-label {
+        @apply font-display text-5xl leading-none tracking-tight xl:text-6xl;
+    }
+
+    .tile-door {
+        @apply flex size-16 shrink-0 items-center justify-center bg-accent text-on-accent;
+    }
+
+    .tile-link:hover .tile-door {
+        @apply bg-ink text-paper;
+    }
+
     /* Buttons */
     .btn {
         @apply inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 border px-4 text-sm font-medium whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mark disabled:cursor-not-allowed;
@@ -140,6 +266,10 @@
 
     .btn-primary {
         @apply border-accent bg-accent text-on-accent hover:border-ink hover:bg-ink hover:text-paper disabled:border-line disabled:bg-sunken disabled:text-ink-faint;
+    }
+
+    .btn-secondary {
+        @apply border-line-strong bg-transparent text-ink hover:bg-ink hover:text-paper disabled:border-line disabled:bg-transparent disabled:text-ink-faint;
     }
 
     .btn-quiet {
@@ -170,5 +300,55 @@
 
     .input-invalid {
         @apply border-2 border-accent;
+    }
+
+    /* Live updates */
+    .live-status {
+        @apply inline-flex items-center gap-2 text-xs text-ink-muted tabular-nums;
+    }
+
+    .live-status::before {
+        @apply size-2 shrink-0 bg-current;
+        content: '';
+    }
+
+    .live-status-lost {
+        @apply bg-accent px-2 py-1 font-medium text-on-accent;
+    }
+
+    /* An order that an update added or changed, marked for about 10 seconds */
+    .order-band.recently-changed {
+        @apply bg-sunken;
+    }
+
+    /* Notices */
+    .notice {
+        @apply flex flex-wrap items-center justify-between gap-4 border border-line-strong p-4 text-sm;
+    }
+
+    .notice-attention {
+        @apply border-accent bg-accent-tint text-ink;
+    }
+
+    /* Glyph markers: the glyph and the label together carry the meaning, never color alone. */
+    .status,
+    .time-left {
+        @apply inline-flex items-start gap-2 text-sm font-medium tabular-nums;
+    }
+
+    .status::before,
+    .time-left::before {
+        @apply mt-[0.3125rem] size-3.5 shrink-0 bg-current;
+        content: '';
+        mask: var(--glyph) center / contain no-repeat;
+    }
+
+    .time-left {
+        --glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 1.5h10v2.2L9.2 8l3.8 4.3v2.2H3v-2.2L6.8 8 3 3.7z'/%3E%3C/svg%3E");
+    }
+
+    .status-awaiting-approval {
+        @apply text-accent;
+        --glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6.5'/%3E%3C/svg%3E");
     }
 }
