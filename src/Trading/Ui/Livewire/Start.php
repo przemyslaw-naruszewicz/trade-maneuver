@@ -16,8 +16,11 @@ final class Start extends Component
 {
     public function render(): View
     {
+        $soonest = OrderAwaitingApprovalReadModel::soonestValidUntilFirst()->first();
+
         return view('trading.livewire.start', [
             'awaitingApproval' => OrderAwaitingApprovalReadModel::query()->count(),
+            'soonest' => $soonest === null ? null : OrderAwaitingApprovalPresentation::of($soonest),
         ]);
     }
 }
