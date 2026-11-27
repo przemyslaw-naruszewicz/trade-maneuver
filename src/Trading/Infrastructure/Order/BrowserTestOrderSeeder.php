@@ -31,14 +31,15 @@ final class BrowserTestOrderSeeder extends Seeder
     private const string INVESTMENT_CONFIGURATION = 'demo-eur';
 
     /**
-     * The trade signals of the orders in orders.html, with the time from seeding until their validity ends.
+     * The trade signals of the orders in orders.html, with the time from seeding until their validity ends. A horizon
+     * date is given as the time from seeding, so that it never lies in the past.
      *
      * @var list<array{symbol: string, confidence: string, horizon: array<string, int|string>, expectedMove: array{min: string, max: string}|null, referencePrice: string, validFor: string}>
      */
     private const array TRADE_SIGNALS = [
         ['symbol' => 'DEMO_A', 'confidence' => '0.72', 'horizon' => ['sessions' => 5], 'expectedMove' => ['min' => '2.00', 'max' => '4.00'], 'referencePrice' => '10.40', 'validFor' => '+12 hours'],
         ['symbol' => 'DEMO_B', 'confidence' => '0.64', 'horizon' => ['sessions' => 10], 'expectedMove' => ['min' => '1.50', 'max' => '3.00'], 'referencePrice' => '6.20', 'validFor' => '+1 day'],
-        ['symbol' => 'DEMO_C', 'confidence' => '0.58', 'horizon' => ['at' => '2026-11-28'], 'expectedMove' => null, 'referencePrice' => '24.80', 'validFor' => '+3 days'],
+        ['symbol' => 'DEMO_C', 'confidence' => '0.58', 'horizon' => ['dateIn' => '+3 weeks'], 'expectedMove' => null, 'referencePrice' => '24.80', 'validFor' => '+3 days'],
     ];
 
     public function run(
@@ -86,7 +87,7 @@ final class BrowserTestOrderSeeder extends Seeder
             'instrument' => ['symbol' => $tradeSignal['symbol'], 'mic' => 'DEMO'],
             'direction' => 'long',
             'confidence' => $tradeSignal['confidence'],
-            'horizon' => $tradeSignal['horizon'],
+            'horizon' => $this->horizon($tradeSignal['horizon'], $seededAt),
             'referencePrice' => ['amount' => $tradeSignal['referencePrice'], 'currency' => 'EUR', 'asOf' => $time],
             'validUntil' => $seededAt->modify($tradeSignal['validFor'])->format('Y-m-d\TH:i:s\Z'),
         ];
@@ -95,5 +96,18 @@ final class BrowserTestOrderSeeder extends Seeder
         }
 
         return json_encode($message, JSON_THROW_ON_ERROR);
+    }
+
+    /**
+     * @param  array<string, int|string>  $horizon
+     * @return array<string, int|string>
+     */
+    private function horizon(array $horizon, DateTimeImmutable $seededAt): array
+    {
+        if (isset($horizon['dateIn'])) {
+            return ['at' => $seededAt->modify((string) $horizon['dateIn'])->format('Y-m-d')];
+        }
+
+        return $horizon;
     }
 }
