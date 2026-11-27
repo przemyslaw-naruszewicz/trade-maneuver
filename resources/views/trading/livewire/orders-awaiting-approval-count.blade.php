@@ -1,1 +1,1 @@
-<span class="nav-count">{{ $count }}</span>
+<span class="nav-count" wire:poll.30s data-live-updates>{{ $count }}</span>
