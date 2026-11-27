@@ -94,6 +94,6 @@ final class BrowserTestOrderSeeder extends Seeder
             $message['expectedMove'] = $tradeSignal['expectedMove'];
         }
 
-        return json_encode($message, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
+        return json_encode($message, JSON_THROW_ON_ERROR);
     }
 }
