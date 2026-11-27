@@ -23,6 +23,7 @@ document.querySelectorAll('[data-theme-toggle]').forEach((toggle) => {
 });
 
 showTimesLeft();
+setInterval(showTimesLeft, 1000);
 document.addEventListener('livewire:init', () => {
     // An update replaces the server-rendered time-left elements, which the browser then fills again.
     window.Livewire.hook('morphed', ({ el }) => showTimesLeft(el));
