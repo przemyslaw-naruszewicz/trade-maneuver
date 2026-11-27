@@ -3,6 +3,7 @@
         <div>
             <h1 class="page-title">Orders</h1>
         </div>
+        <p class="live-status" data-live-status data-updated-at="{{ $updatedAt }} UTC">Live, updated {{ $updatedAt }} UTC</p>
     </header>
 
     <section class="mt-14" aria-labelledby="awaiting-approval">
