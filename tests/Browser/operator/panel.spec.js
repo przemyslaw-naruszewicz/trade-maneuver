@@ -11,8 +11,16 @@ const sharedElements = {
     'page title': '.page-title',
 };
 
+// The seeded orders give a count of 3. The link's note names actions of later tasks, so the link is compared without it.
+const ordersElements = {
+    'Orders navigation entry with its count': '.nav-link:has-text("Orders")',
+    'number of orders awaiting approval': '.tile:has-text("Awaiting approval")',
+    'label of the link to the orders screen': '.tile-link .tile-label',
+    'action of the link to the orders screen': '.tile-link .tile-action',
+};
+
 for (const theme of ['light', 'dark']) {
-    for (const [element, selector] of Object.entries(sharedElements)) {
+    for (const [element, selector] of Object.entries({ ...sharedElements, ...ordersElements })) {
         test(`the start page's ${element} matches start.html in the ${theme} theme`, async ({ page }) => {
             await storeTheme(page, theme);
             await page.goto('/');
