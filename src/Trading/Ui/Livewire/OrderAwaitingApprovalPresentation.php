@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace TradeManeuver\Trading\Ui\Livewire;
 
+use Brick\Math\BigDecimal;
 use DateTimeImmutable;
 use DateTimeZone;
 use TradeManeuver\Trading\Infrastructure\Order\ReadModel\OrderAwaitingApprovalReadModel;
@@ -89,9 +90,7 @@ final readonly class OrderAwaitingApprovalPresentation
      */
     private static function signed(string $percentage): string
     {
-        $isPositive = ! str_starts_with($percentage, '-') && trim($percentage, '0.') !== '';
-
-        return $isPositive ? '+'.$percentage : $percentage;
+        return BigDecimal::of($percentage)->isPositive() ? '+'.$percentage : $percentage;
     }
 
     private static function utc(string $time): DateTimeImmutable
