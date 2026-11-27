@@ -7,6 +7,11 @@
         <p class="live-status" data-live-status data-updated-at="{{ $updatedAt }} UTC">Live, updated {{ $updatedAt }} UTC</p>
     </header>
 
+    <div class="notice notice-attention mt-8" role="status" data-connection-lost hidden>
+        <p>Connection lost. Statuses and the time left may be out of date. Trying again.</p>
+        <button class="btn btn-secondary" type="button" wire:click="$refresh">Retry now</button>
+    </div>
+
     <section class="mt-14" aria-labelledby="awaiting-approval">
         <h2 class="section-title" id="awaiting-approval">Awaiting approval<span class="section-count">{{ count($orders) === 0 ? '0' : count($orders).', soonest validity first' }}</span></h2>
 

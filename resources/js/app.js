@@ -1,3 +1,4 @@
+import { showLostConnections } from './live-updates.js';
 import { showTimesLeft } from './time-left.js';
 
 // The theme switch changes the theme and remembers the choice in this browser only. The document component
@@ -25,6 +26,7 @@ document.querySelectorAll('[data-theme-toggle]').forEach((toggle) => {
 showTimesLeft();
 setInterval(showTimesLeft, 1000);
 document.addEventListener('livewire:init', () => {
+    showLostConnections(window.Livewire);
     // An update replaces the server-rendered time-left elements, which the browser then fills again.
     window.Livewire.hook('morphed', ({ el }) => showTimesLeft(el));
 });
