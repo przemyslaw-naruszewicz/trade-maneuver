@@ -34,7 +34,7 @@ final class BrowserTestOrderSeeder extends Seeder
      * The trade signals of the orders in orders.html, with the time from seeding until their validity ends. A horizon
      * date is given as the time from seeding, so that it never lies in the past.
      *
-     * @var list<array{symbol: string, confidence: string, horizon: array<string, int|string>, expectedMove: array{min: string, max: string}|null, referencePrice: string, validFor: string}>
+     * @var list<array{symbol: string, confidence: string, horizon: array{sessions: int}|array{dateIn: string}, expectedMove: array{min: string, max: string}|null, referencePrice: string, validFor: string}>
      */
     private const array TRADE_SIGNALS = [
         ['symbol' => 'DEMO_A', 'confidence' => '0.72', 'horizon' => ['sessions' => 5], 'expectedMove' => ['min' => '2.00', 'max' => '4.00'], 'referencePrice' => '10.40', 'validFor' => '+12 hours'],
@@ -73,7 +73,7 @@ final class BrowserTestOrderSeeder extends Seeder
     }
 
     /**
-     * @param  array{symbol: string, confidence: string, horizon: array<string, int|string>, expectedMove: array{min: string, max: string}|null, referencePrice: string, validFor: string}  $tradeSignal
+     * @param  array{symbol: string, confidence: string, horizon: array{sessions: int}|array{dateIn: string}, expectedMove: array{min: string, max: string}|null, referencePrice: string, validFor: string}  $tradeSignal
      */
     private function messageBody(string $id, array $tradeSignal, DateTimeImmutable $seededAt): string
     {
@@ -88,7 +88,7 @@ final class BrowserTestOrderSeeder extends Seeder
             'direction' => 'long',
             'confidence' => $tradeSignal['confidence'],
             'horizon' => isset($tradeSignal['horizon']['dateIn'])
-                ? ['at' => $seededAt->modify((string) $tradeSignal['horizon']['dateIn'])->format('Y-m-d')]
+                ? ['at' => $seededAt->modify($tradeSignal['horizon']['dateIn'])->format('Y-m-d')]
                 : $tradeSignal['horizon'],
             'referencePrice' => ['amount' => $tradeSignal['referencePrice'], 'currency' => 'EUR', 'asOf' => $time],
             'validUntil' => $seededAt->modify($tradeSignal['validFor'])->format('Y-m-d\TH:i:s\Z'),
