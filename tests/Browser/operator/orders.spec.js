@@ -129,3 +129,29 @@ for (const theme of ['light', 'dark']) {
         await expect(page.locator('.live-status')).toHaveText(/^Live, updated \d\d:\d\d:\d\d UTC$/);
     });
 }
+
+test('an order that an update changes stays marked for about 10 seconds', async ({ page }) => {
+    await page.clock.install();
+    await page.goto('/orders');
+    // No order changes during a run, so the update's response gives DEMO_B a new version.
+    await page.route(livewireUpdate, async (route) => {
+        const response = await route.fetch();
+        const body = await response.json();
+        for (const component of body.components) {
+            component.effects.html = component.effects.html
+                .split('<article')
+                .map((article) => (article.includes('>DEMO_B<') ? article.replace(/data-change-version="([^"]*)"/, 'data-change-version="$1:changed"') : article))
+                .join('<article');
+        }
+        await route.fulfill({ response, json: body });
+    });
+
+    const update = page.waitForResponse(livewireUpdate);
+    await page.clock.runFor(30 * 1000);
+    await update;
+
+    await expect(page.locator(order('DEMO_B'))).toHaveClass(/\brecently-changed\b/);
+    await expect(page.locator(order('DEMO_A'))).not.toHaveClass(/\brecently-changed\b/);
+    await page.clock.runFor(10 * 1000);
+    await expect(page.locator(order('DEMO_B'))).not.toHaveClass(/\brecently-changed\b/);
+});
