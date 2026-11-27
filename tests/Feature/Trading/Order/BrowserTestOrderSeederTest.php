@@ -66,6 +66,7 @@ final class BrowserTestOrderSeederTest extends TestCase
         $this->assertSame('2.00', $demoA->expected_move_min);
         $this->assertSame('4.00', $demoA->expected_move_max);
         $demoC = $orders->firstOrFail('instrument_symbol', 'DEMO_C');
+        $this->assertSame('2026-11-30', $demoC->horizon_at);
         $this->assertNull($demoC->expected_move_min);
         $this->assertNull($demoC->expected_move_max);
     }
