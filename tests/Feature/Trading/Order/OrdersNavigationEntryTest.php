@@ -7,10 +7,12 @@ namespace Tests\Feature\Trading\Order;
 use Dom\Element;
 use Dom\HTMLDocument;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\Feature\Trading\Operator\Support\OperatorAccounts;
 use Tests\Feature\Trading\Operator\Support\RenderedPanelPages;
 use Tests\Feature\Trading\Order\Support\OrdersAwaitingApproval;
 use Tests\TestCase;
+use TradeManeuver\Trading\Ui\Livewire\OrdersAwaitingApprovalCount;
 
 /**
  * The Orders entry of the panel navigation, which every panel page shows.
@@ -52,6 +54,17 @@ final class OrdersNavigationEntryTest extends TestCase
 
             $this->assertSame('2', $this->text($entry, '.nav-count'), sprintf('On %s.', $page));
         }
+    }
+
+    public function test_after_a_new_order_the_next_render_of_the_count_shows_the_new_number(): void
+    {
+        $this->addOrder('DEMO_A', '2026-11-10T16:00:00Z');
+        $count = Livewire::test(OrdersAwaitingApprovalCount::class)->assertSeeText('1');
+
+        $this->addOrder('DEMO_B', '2026-11-11T09:00:00Z');
+        $count->call('$refresh');
+
+        $count->assertSeeText('2')->assertDontSeeText('1');
     }
 
     /**
