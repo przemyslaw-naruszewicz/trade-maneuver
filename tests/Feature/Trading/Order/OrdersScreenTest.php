@@ -110,6 +110,15 @@ final class OrdersScreenTest extends TestCase
         $this->assertTrue($root->hasAttribute('wire:poll.30s'), 'The orders screen was expected to poll every 30 seconds.');
     }
 
+    public function test_the_orders_screen_says_so_when_no_order_awaits_approval(): void
+    {
+        $screen = $this->ordersScreen();
+
+        $this->assertNull($screen->querySelector('article.order-band'));
+        $this->assertSame('Awaiting approval 0', $this->text($screen, '#awaiting-approval'));
+        $this->assertSame('No orders await approval.', $this->text($screen, '#awaiting-approval + p'));
+    }
+
     public function test_an_unauthenticated_request_cannot_see_the_orders_screen(): void
     {
         $this->addOrder('DEMO_A', '2026-11-10T16:00:00Z');
