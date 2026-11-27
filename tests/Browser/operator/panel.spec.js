@@ -40,3 +40,25 @@ test('the theme switch changes the theme, and the choice survives a reload', asy
     await page.reload();
     await expect(pageTheme(page)).toHaveAttribute('data-theme', 'dark');
 });
+
+test('after 30 seconds, the start page and the navigation count each run an update without a page reload', async ({ page }) => {
+    const updatedComponents = new Set();
+    page.on('response', (response) => {
+        if (!/\/livewire[^/]*\/update$/.test(response.url()) || !response.ok()) {
+            return;
+        }
+        for (const component of response.request().postDataJSON().components) {
+            updatedComponents.add(JSON.parse(component.snapshot).memo.name);
+        }
+    });
+    await page.clock.install();
+    await page.goto('/');
+    await page.evaluate(() => {
+        window.loadedOnce = true;
+    });
+
+    await page.clock.runFor(30 * 1000);
+
+    await expect.poll(() => [...updatedComponents].sort()).toEqual(['trading.orders-awaiting-approval-count', 'trading.start']);
+    expect(await page.evaluate(() => window.loadedOnce)).toBe(true);
+});
