@@ -26,6 +26,7 @@ const comparedElements = {
 };
 
 const minute = 60 * 1000;
+const livewireUpdate = /\/livewire[^/]*\/update$/;
 
 test('the orders screen lists the seeded orders awaiting approval with the soonest signal validity first', async ({ page }) => {
     await page.goto('/orders');
@@ -69,4 +70,28 @@ test('the time left of DEMO_A counts down in the browser between updates', async
     await page.clock.runFor(10 * 1000);
 
     await expect(timeLeft).toHaveText('43 min left');
+});
+
+test('after 30 seconds, an update runs without a page reload and keeps the scroll position and the focus', async ({ page }) => {
+    await page.clock.install();
+    await page.goto('/orders');
+    await page.evaluate(() => {
+        window.loadedOnce = true;
+    });
+    const lastUpdate = page.locator('.live-status');
+    const lastUpdateBefore = await lastUpdate.textContent();
+    const demoC = page.locator(order('DEMO_C'));
+    await demoC.focus();
+    await page.evaluate(() => window.scrollTo(0, 300));
+    // The server renders the last update time to the second, and Playwright's clock does not move the server's.
+    await page.waitForTimeout(1100);
+
+    const update = page.waitForResponse(livewireUpdate);
+    await page.clock.runFor(30 * 1000);
+    await update;
+
+    await expect(lastUpdate).not.toHaveText(lastUpdateBefore);
+    expect(await page.evaluate(() => window.loadedOnce)).toBe(true);
+    expect(await page.evaluate(() => window.scrollY)).toBe(300);
+    await expect(demoC).toBeFocused();
 });
