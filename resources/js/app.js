@@ -1,3 +1,7 @@
+import { showLostConnections } from './live-updates.js';
+import { markRecentChanges } from './recent-changes.js';
+import { showTimesLeft } from './time-left.js';
+
 // The theme switch changes the theme and remembers the choice in this browser only. The document component
 // applies a stored choice before the first paint.
 const themeStorageKey = 'trade-maneuver-theme';
@@ -18,4 +22,13 @@ document.querySelectorAll('[data-theme-toggle]').forEach((toggle) => {
         root.dataset.theme = theme;
         storeTheme(theme);
     });
+});
+
+showTimesLeft();
+setInterval(showTimesLeft, 1000);
+document.addEventListener('livewire:init', () => {
+    showLostConnections(window.Livewire);
+    markRecentChanges(window.Livewire);
+    // An update replaces the server-rendered time-left elements, which the browser then fills again.
+    window.Livewire.hook('morphed', ({ el }) => showTimesLeft(el));
 });

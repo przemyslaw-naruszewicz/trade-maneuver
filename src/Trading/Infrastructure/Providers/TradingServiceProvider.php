@@ -52,6 +52,8 @@ use TradeManeuver\Trading\Ui\ConsoleCommands\CreateOperatorCommand;
 use TradeManeuver\Trading\Ui\ConsoleCommands\EnrolOperatorTotpCommand;
 use TradeManeuver\Trading\Ui\ConsoleCommands\ResetOperatorPasswordCommand;
 use TradeManeuver\Trading\Ui\Http\Web\OperatorLoginThrottle;
+use TradeManeuver\Trading\Ui\Livewire\Orders;
+use TradeManeuver\Trading\Ui\Livewire\OrdersAwaitingApprovalCount;
 use TradeManeuver\Trading\Ui\Livewire\Start;
 use TradeManeuver\Trading\Ui\Messaging\ConsumeTradeSignalsCommand;
 
@@ -130,6 +132,8 @@ final class TradingServiceProvider extends ServiceProvider
         $this->loadRoutesFrom(dirname(__DIR__, 2).'/Ui/Http/routes.php');
         Blade::anonymousComponentPath(resource_path('views/trading/components'), 'trading');
         Livewire::component('trading.start', Start::class);
+        Livewire::component('trading.orders', Orders::class);
+        Livewire::component('trading.orders-awaiting-approval-count', OrdersAwaitingApprovalCount::class);
         $this->app->make(AuthManager::class)->provider(
             'trading-operators',
             fn ($app): EloquentUserProvider => new EloquentUserProvider($app->make(Hasher::class), OperatorModel::class),

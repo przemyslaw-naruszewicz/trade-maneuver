@@ -27,7 +27,7 @@ export default defineConfig({
     projects: [
         {
             name: 'chromium',
-            testIgnore: ['operator/login.setup.js', 'operator/panel.spec.js', 'operator/logout.spec.js'],
+            testIgnore: ['operator/login.setup.js', 'operator/panel.spec.js', 'operator/orders.spec.js', 'operator/logout.spec.js'],
             use: browser,
         },
         {
@@ -37,7 +37,7 @@ export default defineConfig({
         },
         {
             name: 'panel',
-            testMatch: 'operator/panel.spec.js',
+            testMatch: ['operator/panel.spec.js', 'operator/orders.spec.js'],
             dependencies: ['operator login'],
             use: { ...browser, storageState: operatorSessionFile },
         },

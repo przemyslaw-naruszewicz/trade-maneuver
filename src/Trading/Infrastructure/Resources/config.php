@@ -33,6 +33,8 @@ return [
     'simulated_broker' => [
         'instruments' => [
             ['symbol' => 'DEMO_A', 'exchange' => 'DEMO', 'quote_currency' => 'EUR', 'available' => true],
+            ['symbol' => 'DEMO_B', 'exchange' => 'DEMO', 'quote_currency' => 'EUR', 'available' => true],
+            ['symbol' => 'DEMO_C', 'exchange' => 'DEMO', 'quote_currency' => 'EUR', 'available' => true],
             ['symbol' => 'DEMO_G', 'exchange' => 'DEMO', 'quote_currency' => 'USD', 'available' => true],
             ['symbol' => 'DEMO_H', 'exchange' => 'DEMO', 'quote_currency' => 'EUR', 'available' => false],
         ],

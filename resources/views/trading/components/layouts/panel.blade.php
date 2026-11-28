@@ -8,6 +8,10 @@
             </a>
             <nav class="flex flex-col" aria-label="Panel">
                 <a class="nav-link" href="{{ route('panel.start') }}" @if (request()->routeIs('panel.start')) aria-current="page" @endif>Start</a>
+                <a class="nav-link" href="{{ route('panel.orders') }}" @if (request()->routeIs('panel.orders')) aria-current="page" @endif>
+                    Orders
+                    <livewire:trading.orders-awaiting-approval-count />
+                </a>
             </nav>
             <div class="mt-auto flex flex-col items-start gap-1">
                 <button class="btn btn-quiet" type="button" data-theme-toggle>Switch theme</button>
