@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace TradeManeuver\Trading\Domain\Order\ValueObject;
 
 use Brick\Math\BigDecimal;
+use Brick\Math\Exception\MathException;
 use Brick\Math\RoundingMode;
 use Brick\Money\Currency;
+use Brick\Money\Exception\MoneyException;
 use Brick\Money\Money;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\LimitPriceTolerance;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\OrderAmount;
@@ -44,11 +46,23 @@ final readonly class LimitPrice
     }
 
     /**
-     * Rebuilds a stored limit price, which already has the currency's scale.
+     * A limit price at most at the currency's minor unit, such as a stored one or one that the operator chose.
+     *
+     * @throws InvalidOrderValueException
      */
     public static function of(string $amount, string $currencyCode): self
     {
-        return new self(Money::of($amount, $currencyCode));
+        try {
+            $money = Money::of($amount, $currencyCode);
+        } catch (MathException|MoneyException) {
+            throw new InvalidOrderValueException(sprintf(
+                'The limit price must be an amount in a known currency with at most its minor unit, not %s %s.',
+                $amount,
+                $currencyCode,
+            ));
+        }
+
+        return new self($money);
     }
 
     /**

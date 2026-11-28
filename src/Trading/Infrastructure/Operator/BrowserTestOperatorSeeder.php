@@ -20,7 +20,7 @@ use TradeManeuver\Trading\Domain\Operator\ValueObject\TotpSecret;
  */
 final class BrowserTestOperatorSeeder extends Seeder
 {
-    private const string EMAIL = 'operator@example.test';
+    public const string EMAIL = 'operator@example.test';
 
     private const string PASSWORD = 'a-browser-test-operator-password';
 

@@ -22,6 +22,7 @@ use TradeManeuver\Trading\Application\Port\BrokerGatewayInterface;
 use TradeManeuver\Trading\Application\Port\InboxInterface;
 use TradeManeuver\Trading\Application\Port\IntegrationEventPublisherInterface;
 use TradeManeuver\Trading\Application\Port\PasswordHasherInterface;
+use TradeManeuver\Trading\Application\Port\SignalOutcomeRecordingQueueInterface;
 use TradeManeuver\Trading\Application\Port\TotpAuthenticatorInterface;
 use TradeManeuver\Trading\Application\Port\TradeSignalEvaluationQueueInterface;
 use TradeManeuver\Trading\Application\Port\TransactionManagerInterface;
@@ -35,6 +36,7 @@ use TradeManeuver\Trading\Infrastructure\Audit\PostgresAuditTrail;
 use TradeManeuver\Trading\Infrastructure\Broker\SimulatedBroker;
 use TradeManeuver\Trading\Infrastructure\InvestmentConfiguration\InvestmentConfigurationRepository;
 use TradeManeuver\Trading\Infrastructure\Messaging\Inbox\PostgresInbox;
+use TradeManeuver\Trading\Infrastructure\Messaging\Jobs\QueuedSignalOutcomeRecording;
 use TradeManeuver\Trading\Infrastructure\Messaging\Jobs\QueuedTradeSignalEvaluation;
 use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\OutboxIntegrationEventPublisher;
 use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\SignalOutcomePublisherInterface;
@@ -101,6 +103,7 @@ final class TradingServiceProvider extends ServiceProvider
             ),
         );
         $this->app->bind(TradeSignalEvaluationQueueInterface::class, QueuedTradeSignalEvaluation::class);
+        $this->app->bind(SignalOutcomeRecordingQueueInterface::class, QueuedSignalOutcomeRecording::class);
         $this->app->bind(
             TradeSignalEvaluationStoreInterface::class,
             fn ($app): TradeSignalEvaluationStore => new TradeSignalEvaluationStore($app->make(ConnectionInterface::class)),

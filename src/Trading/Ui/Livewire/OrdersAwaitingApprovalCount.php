@@ -6,7 +6,7 @@ namespace TradeManeuver\Trading\Ui\Livewire;
 
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
-use TradeManeuver\Trading\Infrastructure\Order\ReadModel\OrderAwaitingApprovalReadModel;
+use TradeManeuver\Trading\Infrastructure\Order\ReadModel\OrderOverviewReadModel;
 
 /**
  * The number of orders awaiting approval in the Orders entry of the panel navigation. It is a component of its own,
@@ -17,7 +17,7 @@ final class OrdersAwaitingApprovalCount extends Component
     public function render(): View
     {
         return view('trading.livewire.orders-awaiting-approval-count', [
-            'count' => OrderAwaitingApprovalReadModel::query()->count(),
+            'count' => OrderOverviewReadModel::awaitingApproval()->count(),
         ]);
     }
 }

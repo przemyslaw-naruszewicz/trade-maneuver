@@ -6,6 +6,7 @@ namespace TradeManeuver\Trading\Domain\Order\Repository;
 
 use TradeManeuver\Trading\Domain\Order\Exception\TradeSignalAlreadyHasAnOrderException;
 use TradeManeuver\Trading\Domain\Order\Order;
+use TradeManeuver\Trading\Domain\Order\Repository\Exception\OrderChangedConcurrentlyException;
 use TradeManeuver\Trading\Domain\Order\Repository\Exception\OrderDoesNotExistException;
 use TradeManeuver\Trading\Domain\Order\ValueObject\OrderId;
 
@@ -24,4 +25,12 @@ interface OrderRepositoryInterface
      * @throws OrderDoesNotExistException
      */
     public function get(OrderId $id): Order;
+
+    /**
+     * Saves a change of a loaded order, in the caller's transaction.
+     *
+     * @throws OrderChangedConcurrentlyException when another operation saved the order after it was loaded
+     * @throws OrderDoesNotExistException
+     */
+    public function save(Order $order): void;
 }

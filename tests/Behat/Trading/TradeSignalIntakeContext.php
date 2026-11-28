@@ -25,7 +25,7 @@ use TradeManeuver\Trading\Application\Port\BrokerGatewayInterface;
 use TradeManeuver\Trading\Application\TradeSignal\Command\ReceiveTradeSignal\ReceiveTradeSignalCommand;
 use TradeManeuver\Trading\Application\TradeSignal\Command\ReceiveTradeSignal\ReceiveTradeSignalCommandHandler;
 use TradeManeuver\Trading\Application\TradeSignal\Command\ReceiveTradeSignal\TradeSignalIntakeResult;
-use TradeManeuver\Trading\Infrastructure\Order\ReadModel\OrderAwaitingApprovalReadModel;
+use TradeManeuver\Trading\Infrastructure\Order\ReadModel\OrderOverviewReadModel;
 
 /**
  * Drives the Trading application boundary through its application commands, against the PostgreSQL test database.
@@ -62,6 +62,14 @@ final class TradeSignalIntakeContext implements Context
         $this->brokerGateway = new DeterministicBrokerGateway;
         $this->application->instance(BrokerGatewayInterface::class, $this->brokerGateway);
         DB::statement('TRUNCATE trading_inbox_entries, trading_trade_signals, trading_trade_signal_evaluation_steps, trading_orders, trading_outbox_messages, trading_audit_records, jobs, failed_jobs, trading_investment_configurations');
+    }
+
+    /**
+     * The application of the scenario, for the other contexts of the Trading suite.
+     */
+    public function application(): Application
+    {
+        return $this->application;
     }
 
     #[AfterScenario]
@@ -227,7 +235,7 @@ final class TradeSignalIntakeContext implements Context
     #[Then('the trade signal :alias leads to one order awaiting approval with the limit price :limitPrice EUR and the quantity :quantity')]
     public function theTradeSignalLeadsToOneOrderAwaitingApproval(string $alias, string $limitPrice, int $quantity): void
     {
-        $orders = OrderAwaitingApprovalReadModel::query()->where('trade_signal_id', TradeSignalMessageBuilder::idFor($alias))->get();
+        $orders = OrderOverviewReadModel::query()->where('trade_signal_id', TradeSignalMessageBuilder::idFor($alias))->get();
         Assert::assertCount(1, $orders, 'Expected exactly one order awaiting approval for the trade signal.');
         $order = $orders->firstOrFail();
         Assert::assertSame('awaiting_approval', $order->status);
@@ -269,7 +277,7 @@ final class TradeSignalIntakeContext implements Context
     {
         Assert::assertSame(
             [TradeSignalMessageBuilder::idFor($first), TradeSignalMessageBuilder::idFor($second)],
-            OrderAwaitingApprovalReadModel::soonestValidUntilFirst()->pluck('trade_signal_id')->all(),
+            OrderOverviewReadModel::awaitingApproval()->pluck('trade_signal_id')->all(),
         );
     }
 
@@ -277,7 +285,7 @@ final class TradeSignalIntakeContext implements Context
     public function noOrderIsCreated(string $alias): void
     {
         Assert::assertSame(0, DB::table('trading_orders')->where('trade_signal_id', TradeSignalMessageBuilder::idFor($alias))->count());
-        Assert::assertSame(0, OrderAwaitingApprovalReadModel::query()->count());
+        Assert::assertSame(0, OrderOverviewReadModel::query()->count());
     }
 
     #[Then('no signal outcome is recorded')]

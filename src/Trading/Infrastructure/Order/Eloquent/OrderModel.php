@@ -24,6 +24,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $currency
  * @property string $brokerage_account
  * @property string $created_at
+ * @property string|null $ended_at
+ * @property int $version
  */
 final class OrderModel extends Model
 {

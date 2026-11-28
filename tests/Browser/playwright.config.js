@@ -23,11 +23,19 @@ export default defineConfig({
         trace: 'retain-on-failure',
     },
     // A TOTP code is accepted once, so the operator logs in once per run and the panel tests share that session.
-    // Logging out ends the session, so the logout test runs after every other panel test.
+    // The tests that change the seeded orders run after the other panel tests, which expect the seeded data. Logging
+    // out ends the session, so the logout test runs after every other panel test.
     projects: [
         {
             name: 'chromium',
-            testIgnore: ['operator/login.setup.js', 'operator/panel.spec.js', 'operator/orders.spec.js', 'operator/logout.spec.js'],
+            testIgnore: [
+                'operator/login.setup.js',
+                'operator/panel.spec.js',
+                'operator/orders.spec.js',
+                'operator/order-decisions.spec.js',
+                'operator/order-decisions-changing.spec.js',
+                'operator/logout.spec.js',
+            ],
             use: browser,
         },
         {
@@ -37,14 +45,20 @@ export default defineConfig({
         },
         {
             name: 'panel',
-            testMatch: ['operator/panel.spec.js', 'operator/orders.spec.js'],
+            testMatch: ['operator/panel.spec.js', 'operator/orders.spec.js', 'operator/order-decisions.spec.js'],
             dependencies: ['operator login'],
+            use: { ...browser, storageState: operatorSessionFile },
+        },
+        {
+            name: 'panel changes',
+            testMatch: 'operator/order-decisions-changing.spec.js',
+            dependencies: ['panel'],
             use: { ...browser, storageState: operatorSessionFile },
         },
         {
             name: 'logout',
             testMatch: 'operator/logout.spec.js',
-            dependencies: ['panel'],
+            dependencies: ['panel changes'],
             use: { ...browser, storageState: operatorSessionFile },
         },
     ],
