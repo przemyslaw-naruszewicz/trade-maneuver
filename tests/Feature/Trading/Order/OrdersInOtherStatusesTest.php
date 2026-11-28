@@ -8,12 +8,14 @@ use Carbon\CarbonImmutable;
 use Dom\Element;
 use Dom\HTMLDocument;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\Feature\Trading\Operator\Support\LivewireComponentRoots;
 use Tests\Feature\Trading\Operator\Support\OperatorAccounts;
 use Tests\Feature\Trading\Operator\Support\RenderedPanelPages;
 use Tests\Feature\Trading\Order\Support\OrderDecisions;
 use Tests\Feature\Trading\Order\Support\OrdersAwaitingApproval;
 use Tests\TestCase;
+use TradeManeuver\Trading\Ui\Livewire\Orders;
 
 /**
  * The orders screen and the start page with orders that no longer await approval.
@@ -53,10 +55,39 @@ final class OrdersInOtherStatusesTest extends TestCase
         $status = $screen->querySelector('#non-terminal-orders + * tbody .status');
         $this->assertNotNull($status);
         $this->assertSame('status status-approved', $status->getAttribute('class'));
+        $this->assertSame('0', $this->text($screen, '#terminal-orders .section-count'));
 
         $start = $this->panelPageAt('panel.start');
         $this->assertSame('1', $this->text($this->tile($start, 'Other non-terminal orders'), '.tile-value'));
         $this->assertSame('1', $this->text($this->tile($start, 'Awaiting approval'), '.tile-value'));
+    }
+
+    public function test_refused_orders_are_listed_as_terminal_ten_to_a_page_with_the_most_recently_ended_first(): void
+    {
+        // DEMO_01 is refused first and DEMO_12 last, one minute apart.
+        for ($number = 1; $number <= 12; $number++) {
+            $symbol = sprintf('DEMO_%02d', $number);
+            $this->addOrder($symbol, '2026-11-12T09:00:00Z');
+            $this->travelTo(CarbonImmutable::parse('2026-11-09T11:00:00Z')->addMinutes($number));
+            $this->refuseOrderOf($symbol);
+        }
+
+        $screen = $this->panelPageAt('panel.orders');
+
+        $this->assertSame('Terminal orders 12, most recent first', $this->spacedText($screen, '#terminal-orders'));
+        $this->assertSame('0', $this->text($screen, '#non-terminal-orders .section-count'));
+        $rows = $this->rowsOf($screen, '#terminal-orders + * table');
+        $this->assertCount(10, $rows);
+        $this->assertSame(['DEMO_12 DEMO', 'Refused by the operator', 'None, 0 of 98', '10.20 EUR', '9 Nov, 11:12 UTC'], $rows[0]);
+        $this->assertSame('DEMO_03 DEMO', $rows[9][0]);
+        $this->assertSame('1 to 10 of 12', $this->text($screen, 'nav[aria-label="Terminal orders pages"] .note'));
+        $status = $screen->querySelector('#terminal-orders + * tbody .status');
+        $this->assertNotNull($status);
+        $this->assertSame('status status-refused', $status->getAttribute('class'));
+
+        $secondPage = Livewire::actingAs($this->operatorModel())->test(Orders::class)->call('nextPage', 'terminal');
+
+        $secondPage->assertSeeTextInOrder(['DEMO_02', 'DEMO_01', '11 to 12 of 12'])->assertDontSeeText('DEMO_03');
     }
 
     /**
