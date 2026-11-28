@@ -25,9 +25,9 @@ use TradeManeuver\Trading\Domain\TradeSignal\Repository\TradeSignalRepositoryInt
 use TradeManeuver\Trading\Domain\TradeSignal\TradeSignal;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\SignalOutcomeId;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\TradeSignalId;
-use TradeManeuver\Trading\Infrastructure\Order\ReadModel\OrderAwaitingApprovalReadModel;
+use TradeManeuver\Trading\Infrastructure\Order\ReadModel\OrderOverviewReadModel;
 
-final class OrderAwaitingApprovalReadModelTest extends TestCase
+final class OrderOverviewReadModelTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -50,7 +50,7 @@ final class OrderAwaitingApprovalReadModelTest extends TestCase
 
     public function test_it_shows_each_order_awaiting_approval_with_its_trade_signal(): void
     {
-        $order = OrderAwaitingApprovalReadModel::soonestValidUntilFirst()->sole();
+        $order = OrderOverviewReadModel::awaitingApproval()->sole();
 
         $this->assertSame(OrderBuilder::ID, $order->id);
         $this->assertSame('awaiting_approval', $order->status);
@@ -82,7 +82,7 @@ final class OrderAwaitingApprovalReadModelTest extends TestCase
 
         $this->assertSame(
             ['019a5a6e-0000-7000-8000-0000000000c3', OrderBuilder::ID, '019a5a6e-0000-7000-8000-0000000000c4'],
-            OrderAwaitingApprovalReadModel::soonestValidUntilFirst()->pluck('id')->all(),
+            OrderOverviewReadModel::awaitingApproval()->pluck('id')->all(),
         );
     }
 
@@ -138,16 +138,16 @@ final class OrderAwaitingApprovalReadModelTest extends TestCase
     public static function writes(): iterable
     {
         yield 'saving a changed instance' => [static function (): void {
-            $order = OrderAwaitingApprovalReadModel::query()->sole();
+            $order = OrderOverviewReadModel::query()->sole();
             $order->setAttribute('quantity', 1);
             $order->save();
         }];
-        yield 'deleting an instance' => [static fn (): ?bool => OrderAwaitingApprovalReadModel::query()->sole()->delete()];
-        yield 'creating an instance' => [static fn (): OrderAwaitingApprovalReadModel => OrderAwaitingApprovalReadModel::query()->forceCreate(self::anotherOrder())];
-        yield 'updating through the query builder' => [static fn (): int => OrderAwaitingApprovalReadModel::query()->update(['quantity' => 1])];
-        yield 'deleting through the query builder' => [static fn (): mixed => OrderAwaitingApprovalReadModel::query()->delete()];
-        yield 'inserting through the query builder' => [static fn (): bool => OrderAwaitingApprovalReadModel::query()->insert(self::anotherOrder())];
-        yield 'inserting only the columns of the read model' => [static fn (): bool => OrderAwaitingApprovalReadModel::query()->insert([
+        yield 'deleting an instance' => [static fn (): ?bool => OrderOverviewReadModel::query()->sole()->delete()];
+        yield 'creating an instance' => [static fn (): OrderOverviewReadModel => OrderOverviewReadModel::query()->forceCreate(self::anotherOrder())];
+        yield 'updating through the query builder' => [static fn (): int => OrderOverviewReadModel::query()->update(['quantity' => 1])];
+        yield 'deleting through the query builder' => [static fn (): mixed => OrderOverviewReadModel::query()->delete()];
+        yield 'inserting through the query builder' => [static fn (): bool => OrderOverviewReadModel::query()->insert(self::anotherOrder())];
+        yield 'inserting only the columns of the read model' => [static fn (): bool => OrderOverviewReadModel::query()->insert([
             'id' => '019a5a6e-0000-7000-8000-0000000000c2',
             'status' => 'awaiting_approval',
             'limit_price' => '10.20',
@@ -158,7 +158,7 @@ final class OrderAwaitingApprovalReadModelTest extends TestCase
             'trade_signal_id' => self::OTHER_TRADE_SIGNAL_ID,
         ])];
         yield 'truncating through the query builder' => [static function (): void {
-            OrderAwaitingApprovalReadModel::query()->truncate();
+            OrderOverviewReadModel::query()->truncate();
         }];
     }
 

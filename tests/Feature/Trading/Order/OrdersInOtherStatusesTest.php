@@ -46,7 +46,7 @@ final class OrdersInOtherStatusesTest extends TestCase
         $screen = $this->panelPageAt('panel.orders');
 
         $this->assertSame(['DEMO_B'], $this->awaitingApprovalSymbols($screen));
-        $this->assertSame('Non-terminal orders 1', $this->text($screen, '#non-terminal-orders'));
+        $this->assertSame('Non-terminal orders 1', $this->spacedText($screen, '#non-terminal-orders'));
         $this->assertSame([
             ['DEMO_A DEMO', 'Approved', 'None, 0 of 90', '11.05 EUR', '10 Nov, 17:00 UTC'],
         ], $this->rowsOf($screen, '#non-terminal-orders + * table'));
@@ -85,12 +85,33 @@ final class OrdersInOtherStatusesTest extends TestCase
         foreach ($table->querySelectorAll('tbody tr') as $row) {
             $cells = [];
             foreach ($row->querySelectorAll('td') as $cell) {
-                $cells[] = $this->collapsed((string) $cell->textContent);
+                $cells[] = $this->textOfChildren($cell);
             }
             $rows[] = $cells;
         }
 
         return $rows;
+    }
+
+    /**
+     * The text of an element, with a space between the texts of its children, such as a heading and its count.
+     */
+    private function spacedText(HTMLDocument $screen, string $selector): string
+    {
+        $element = $screen->querySelector($selector);
+        $this->assertNotNull($element, sprintf('No element matches %s.', $selector));
+
+        return $this->textOfChildren($element);
+    }
+
+    private function textOfChildren(Element $element): string
+    {
+        $texts = [];
+        foreach ($element->childNodes as $child) {
+            $texts[] = (string) $child->textContent;
+        }
+
+        return $this->collapsed(implode(' ', $texts));
     }
 
     private function tile(HTMLDocument $page, string $label): Element

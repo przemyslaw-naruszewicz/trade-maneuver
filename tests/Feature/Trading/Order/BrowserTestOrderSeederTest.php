@@ -9,7 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 use TradeManeuver\Trading\Infrastructure\Order\BrowserTestOrderSeeder;
-use TradeManeuver\Trading\Infrastructure\Order\ReadModel\OrderAwaitingApprovalReadModel;
+use TradeManeuver\Trading\Infrastructure\Order\ReadModel\OrderOverviewReadModel;
 
 final class BrowserTestOrderSeederTest extends TestCase
 {
@@ -45,7 +45,7 @@ final class BrowserTestOrderSeederTest extends TestCase
     {
         $this->seed(BrowserTestOrderSeeder::class);
 
-        $orders = OrderAwaitingApprovalReadModel::soonestValidUntilFirst()->get();
+        $orders = OrderOverviewReadModel::awaitingApproval()->get();
         $this->assertSame(['DEMO_A', 'DEMO_B', 'DEMO_C'], $orders->pluck('instrument_symbol')->all());
         $this->assertSame(['10.40', '6.20', '24.80'], $orders->pluck('reference_price_amount')->all());
         $this->assertSame(['10.45', '6.23', '24.92'], $orders->pluck('limit_price')->all());

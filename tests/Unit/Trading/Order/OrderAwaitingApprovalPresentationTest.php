@@ -6,7 +6,7 @@ namespace Tests\Unit\Trading\Order;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use TradeManeuver\Trading\Infrastructure\Order\ReadModel\OrderAwaitingApprovalReadModel;
+use TradeManeuver\Trading\Infrastructure\Order\ReadModel\OrderOverviewReadModel;
 use TradeManeuver\Trading\Ui\Livewire\OrderAwaitingApprovalPresentation;
 
 /**
@@ -54,9 +54,9 @@ final class OrderAwaitingApprovalPresentationTest extends TestCase
     /**
      * @param  array<string, int|string|null>  $attributes
      */
-    private function order(array $attributes): OrderAwaitingApprovalReadModel
+    private function order(array $attributes): OrderOverviewReadModel
     {
-        $order = new OrderAwaitingApprovalReadModel;
+        $order = new OrderOverviewReadModel;
         $order->forceFill([
             'id' => '01a21eb1-2641-7333-a02c-393c3438b162',
             'status' => 'awaiting_approval',
