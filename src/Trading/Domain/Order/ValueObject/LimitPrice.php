@@ -84,11 +84,6 @@ final readonly class LimitPrice
         return BigDecimal::of($orderAmount->amount())->quotient($this->money->getAmount())->toInt();
     }
 
-    public function hasCurrencyOf(self $other): bool
-    {
-        return $this->money->getCurrency()->isEqualTo($other->money->getCurrency());
-    }
-
     /**
      * The amount at the currency's scale, for persistence and serialization.
      */

@@ -15,6 +15,6 @@ final class OrderAlreadyDecidedException extends RuntimeException
 {
     public static function forOrder(OrderId $id, Throwable $previous): self
     {
-        return new self(sprintf('The order "%s" was already decided, so nothing changed.', $id->toString()), 0, $previous);
+        return new self(sprintf('The order "%s" was already decided, so nothing changed.', $id->toString()), previous: $previous);
     }
 }

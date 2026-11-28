@@ -12,7 +12,6 @@ use TradeManeuver\Trading\Application\TradeSignal\SignalOutcome\SignalOutcomeRec
 use TradeManeuver\Trading\Domain\Order\Repository\OrderRepositoryInterface;
 use TradeManeuver\Trading\Domain\Order\ValueObject\OrderId;
 use TradeManeuver\Trading\Domain\TradeSignal\Event\TradeSignalDeclined;
-use TradeManeuver\Trading\Domain\TradeSignal\Event\TradeSignalRejected;
 use TradeManeuver\Trading\Domain\TradeSignal\Repository\TradeSignalRepositoryInterface;
 use TradeManeuver\Trading\Domain\TradeSignal\TradeSignal;
 
@@ -61,8 +60,8 @@ final readonly class SignalOutcomeRecordingOrchestrator
     private function recordSignalOutcome(TradeSignal $tradeSignal): void
     {
         foreach ($tradeSignal->releaseEvents() as $event) {
-            if (! $event instanceof TradeSignalDeclined && ! $event instanceof TradeSignalRejected) {
-                throw new LogicException(sprintf('The end of an order records only a signal outcome, not %s.', $event::class));
+            if (! $event instanceof TradeSignalDeclined) {
+                throw new LogicException(sprintf('The end of an order declines its trade signal and records nothing else, not %s.', $event::class));
             }
             $this->signalOutcomeRecorder->record($event);
         }

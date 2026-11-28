@@ -238,19 +238,11 @@ final class Order
     }
 
     /**
-     * @throws InvalidOrderValueException when the limit price is in another currency
+     * @throws InvalidOrderValueException when the limit price is not in the currency of the order amount
      * @throws ApprovalLeavesZeroQuantityException
      */
     private function quantityAt(LimitPrice $limitPrice): OrderQuantity
     {
-        if (! $limitPrice->hasCurrencyOf($this->limitPrice)) {
-            throw new InvalidOrderValueException(sprintf(
-                'The new limit price must be in the order currency %s, not %s.',
-                $this->limitPrice->currencyCode(),
-                $limitPrice->currencyCode(),
-            ));
-        }
-
         $units = $limitPrice->unitsAffordableWith($this->settings->orderAmount);
         if ($units === 0) {
             throw new ApprovalLeavesZeroQuantityException(sprintf(

@@ -86,7 +86,7 @@ final class Orders extends Component
                 $orderId,
                 $this->operatorId(),
                 $newLimitPrice === '' ? null : $newLimitPrice,
-                $newLimitPrice === '' ? null : OrderOverviewReadModel::query()->find($orderId)?->currency,
+                $newLimitPrice === '' ? null : OrderOverviewReadModel::query()->whereKey($orderId)->value('currency'),
             ));
         } catch (ApprovalLeavesZeroQuantityException) {
             $this->addError('approvals.'.$orderId, self::ZERO_QUANTITY);
