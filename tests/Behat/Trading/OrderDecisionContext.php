@@ -12,8 +12,10 @@ use Behat\Step\When;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Assert;
 use Tests\Support\Trading\TradeSignalMessageBuilder;
+use Throwable;
 use TradeManeuver\Trading\Application\Order\Command\ApproveOrder\ApproveOrderCommand;
 use TradeManeuver\Trading\Application\Order\Command\ApproveOrder\ApproveOrderCommandHandler;
+use TradeManeuver\Trading\Domain\Order\Exception\ApprovalLeavesZeroQuantityException;
 
 /**
  * The operator's decisions on orders awaiting approval, through their application commands. The trade signals and
@@ -24,6 +26,8 @@ final class OrderDecisionContext implements Context
     private const string OPERATOR_ID = '019a5a6e-0000-7000-8000-0000000000d1';
 
     private TradeSignalIntakeContext $intake;
+
+    private ?Throwable $refusal = null;
 
     #[BeforeScenario]
     public function gatherContexts(BeforeScenarioScope $scope): void
@@ -45,6 +49,32 @@ final class OrderDecisionContext implements Context
     {
         $this->intake->application()->make(ApproveOrderCommandHandler::class)
             ->handle(new ApproveOrderCommand($this->orderIdOf($alias), self::OPERATOR_ID, $limitPrice, 'EUR'));
+    }
+
+    #[When('the operator tries to approve the order of the trade signal :alias with the new limit price :limitPrice EUR')]
+    public function theOperatorTriesToApproveWithANewLimitPrice(string $alias, string $limitPrice): void
+    {
+        try {
+            $this->theOperatorApprovesWithANewLimitPrice($alias, $limitPrice);
+        } catch (Throwable $refusal) {
+            $this->refusal = $refusal;
+        }
+    }
+
+    #[Then('the approval is refused because the new limit price leaves a quantity of zero')]
+    public function theApprovalIsRefusedForAQuantityOfZero(): void
+    {
+        Assert::assertInstanceOf(ApprovalLeavesZeroQuantityException::class, $this->refusal);
+    }
+
+    #[Then('the order of the trade signal :alias still awaits approval with the limit price :limitPrice EUR and the quantity :quantity')]
+    public function theOrderStillAwaitsApproval(string $alias, string $limitPrice, int $quantity): void
+    {
+        $order = DB::table('trading_orders')->where('trade_signal_id', TradeSignalMessageBuilder::idFor($alias))->sole();
+        Assert::assertSame('awaiting_approval', $order->status);
+        Assert::assertSame($limitPrice, $order->limit_price);
+        Assert::assertSame($quantity, $order->quantity);
+        Assert::assertSame(0, DB::table('trading_audit_records')->where('entity_id', $order->id)->where('action', 'approved')->count());
     }
 
     #[Then('the order of the trade signal :alias is approved with the limit price :limitPrice EUR and the quantity :quantity')]

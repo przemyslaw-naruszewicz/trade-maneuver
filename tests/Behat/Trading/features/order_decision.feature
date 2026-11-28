@@ -20,3 +20,8 @@ Feature: Operator decision on an order awaiting approval
     When the operator approves the order of the trade signal "purchase" with the new limit price "10.50" EUR
     Then the order of the trade signal "purchase" is approved with the limit price "10.50" EUR and the quantity 95
     And the approval of the order of the trade signal "purchase" is audited with the limit price changed from "10.20" to "10.50" EUR and the quantity from 98 to 95
+
+  Scenario: Approving at a limit price that leaves a quantity of zero is refused
+    When the operator tries to approve the order of the trade signal "purchase" with the new limit price "1000.01" EUR
+    Then the approval is refused because the new limit price leaves a quantity of zero
+    And the order of the trade signal "purchase" still awaits approval with the limit price "10.20" EUR and the quantity 98
