@@ -23,7 +23,6 @@ final readonly class OrderApprovedAuditHandler
     public function handle(OrderApproved $event, DomainEventContext $context): void
     {
         $this->auditTrail->record(new AuditRecordDto($context->actor, $event->approvedAt, 'order', $event->id->toString(), 'approved', [
-            ...$context->auditValues,
             'previousLimitPrice' => $event->previousLimitPrice->amount(),
             'limitPrice' => $event->limitPrice->amount(),
             'currency' => $event->limitPrice->currencyCode(),

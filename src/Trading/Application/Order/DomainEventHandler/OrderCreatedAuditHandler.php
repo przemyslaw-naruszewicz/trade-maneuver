@@ -24,7 +24,6 @@ final readonly class OrderCreatedAuditHandler
     {
         $orderId = $event->id->toString();
         $this->auditTrail->record(new AuditRecordDto($context->actor, $event->createdAt, 'order', $orderId, 'created', [
-            ...$context->auditValues,
             'tradeSignalId' => $event->tradeSignalId->toString(),
             'investmentConfigurationId' => $event->investmentConfigurationId->toString(),
             'status' => $event->status->value,

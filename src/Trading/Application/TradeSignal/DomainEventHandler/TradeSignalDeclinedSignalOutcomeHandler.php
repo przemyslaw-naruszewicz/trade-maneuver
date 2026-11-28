@@ -30,7 +30,6 @@ final readonly class TradeSignalDeclinedSignalOutcomeHandler
         $outcomeId = $event->outcome->id->toString();
         $reason = $event->reason->value;
         $this->auditTrail->record(new AuditRecordDto($context->actor, $event->outcome->occurredAt, 'trade_signal', $signalId, 'declined', [
-            ...$context->auditValues,
             'outcomeId' => $outcomeId,
             'reason' => $reason,
         ]));

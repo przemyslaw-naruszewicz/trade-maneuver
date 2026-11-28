@@ -24,7 +24,6 @@ final readonly class InvestmentConfigurationCreatedAuditHandler
     public function handle(InvestmentConfigurationCreated $event, DomainEventContext $context): void
     {
         $this->auditTrail->record(new AuditRecordDto($context->actor, $this->clock->now(), 'investment_configuration', $event->id->toString(), 'created', [
-            ...$context->auditValues,
             'reference' => $event->reference->toString(),
             'currency' => $event->currency->code(),
             'brokerageAccount' => $event->brokerageAccount->identifier(),
