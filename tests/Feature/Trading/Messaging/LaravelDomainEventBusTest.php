@@ -39,4 +39,11 @@ final class LaravelDomainEventBusTest extends TestCase
 
         $this->assertSame([['B', $event, $context], ['A', $event, $context]], $this->handled->calls);
     }
+
+    public function test_an_event_without_a_handler_is_dispatched_without_effect(): void
+    {
+        $this->bus->dispatch(new DomainEventContext('test'), new TestDomainEvent('unhandled'));
+
+        $this->assertSame([], $this->handled->calls);
+    }
 }
