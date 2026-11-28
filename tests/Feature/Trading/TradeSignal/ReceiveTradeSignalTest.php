@@ -7,6 +7,7 @@ namespace Tests\Feature\Trading\TradeSignal;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Tests\Support\Trading\TradeSignalMessageBuilder;
 use Tests\TestCase;
 use TradeManeuver\Trading\Application\InvestmentConfiguration\Command\CreateInvestmentConfiguration\CreateInvestmentConfigurationCommand;
@@ -124,6 +125,21 @@ final class ReceiveTradeSignalTest extends TestCase
             'instrument.symbol: The field is required.',
             'confidence: The confidence must be a decimal string from 0 to 1, such as 0.85.',
         ], $values['violations']);
+    }
+
+    public function test_a_rejection_at_intake_is_logged_with_the_signal_outcome_and_the_violations(): void
+    {
+        $id = TradeSignalMessageBuilder::idFor('purchase');
+        $body = TradeSignalMessageBuilder::aTradeSignal($id)->with('confidence', '1.5')->body();
+        $log = Log::spy();
+
+        $this->receive($body, 'demo-analytics');
+
+        $log->shouldHaveReceived('info')->once()->with('A trade signal is rejected.', [
+            'signalId' => $id,
+            'outcomeId' => DB::table('trading_trade_signals')->sole()->outcome_id,
+            'violations' => ['confidence: The confidence must be a decimal string from 0 to 1, such as 0.85.'],
+        ]);
     }
 
     public function test_an_unauthorized_analytics_application_is_named_in_the_violation(): void
