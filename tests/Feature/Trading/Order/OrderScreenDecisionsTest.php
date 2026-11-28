@@ -30,6 +30,8 @@ final class OrderScreenDecisionsTest extends TestCase
 
     private const string INVALID_LIMIT_PRICE = 'Enter a limit price greater than zero in the order currency, with at most two decimal places.';
 
+    private const string UNKNOWN_ORDER = 'This order does not exist, so nothing changed.';
+
     private const string SIGNAL_VALIDITY_ENDED = 'The signal validity of this order has ended, so it can no longer be approved. Nothing changed.';
 
     protected function setUp(): void
@@ -168,6 +170,19 @@ final class OrderScreenDecisionsTest extends TestCase
         $this->screen()->call('approve', $demoA)->call('refuse', $demoA);
 
         $this->assertSame('awaiting_approval', $this->statusOf($demoA));
+    }
+
+    public function test_a_decision_on_an_order_that_does_not_exist_shows_that_nothing_changed(): void
+    {
+        $unknown = '019a6c8e-0000-7000-8000-000000000000';
+
+        foreach ([$unknown, 'not-an-order'] as $orderId) {
+            $this->screen()->call('openApproval', $orderId)->set('approvals.'.$orderId, '10.50')->call('approve', $orderId)
+                ->assertSeeText(self::UNKNOWN_ORDER)->assertDontSeeText(self::INVALID_LIMIT_PRICE)->assertSet('approvals', []);
+            $this->screen()->call('openRefusal', $orderId)->call('refuse', $orderId)
+                ->assertSeeText(self::UNKNOWN_ORDER)->assertSet('refusals', []);
+        }
+        $this->assertSame('awaiting_approval', $this->statusOf($this->orderIdOf('DEMO_A')));
     }
 
     /**
