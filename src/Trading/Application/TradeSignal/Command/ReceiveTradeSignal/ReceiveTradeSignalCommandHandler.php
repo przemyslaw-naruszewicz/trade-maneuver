@@ -7,20 +7,20 @@ namespace TradeManeuver\Trading\Application\TradeSignal\Command\ReceiveTradeSign
 use DateTimeImmutable;
 use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
+use TradeManeuver\Trading\Application\Audit\AuditContext;
 use TradeManeuver\Trading\Application\Audit\AuditRecordDto;
 use TradeManeuver\Trading\Application\Inbox\InboxDelivery;
 use TradeManeuver\Trading\Application\Inbox\InboxEntryDto;
 use TradeManeuver\Trading\Application\IntegrationEvent\SignalOutcomeIntegrationEvent;
 use TradeManeuver\Trading\Application\Port\AnalyticsApplicationRegistryInterface;
 use TradeManeuver\Trading\Application\Port\AuditTrailInterface;
+use TradeManeuver\Trading\Application\Port\DomainEventBusInterface;
 use TradeManeuver\Trading\Application\Port\InboxInterface;
 use TradeManeuver\Trading\Application\Port\IntegrationEventPublisherInterface;
 use TradeManeuver\Trading\Application\Port\TradeSignalEvaluationQueueInterface;
 use TradeManeuver\Trading\Application\Port\TransactionManagerInterface;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Repository\InvestmentConfigurationRepositoryInterface;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\AnalyticsApplicationId;
-use TradeManeuver\Trading\Domain\TradeSignal\Event\TradeSignalReceived;
-use TradeManeuver\Trading\Domain\TradeSignal\Event\TradeSignalRejected;
 use TradeManeuver\Trading\Domain\TradeSignal\Repository\TradeSignalRepositoryInterface;
 use TradeManeuver\Trading\Domain\TradeSignal\TradeSignal;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\ContractViolation;
@@ -29,9 +29,11 @@ use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\TradeSignalContent;
 use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\TradeSignalId;
 
 /**
- * The intake of trade signals at the application boundary. Each delivery commits its inbox entry, trade signal,
- * audit records and signal outcome in one transaction, so a redelivery never repeats processing. An accepted trade
- * signal's evaluation is queued in the same transaction.
+ * The intake of trade signals at the application boundary. Each delivery commits its inbox entry, trade signal, and
+ * the work of the trade signal's domain event handlers in one transaction, so a redelivery never repeats processing.
+ * An accepted trade signal's evaluation is queued in the same transaction. The intake itself audits the inbox facts
+ * that no domain event records: a duplicate delivery with the signal outcome it publishes again, a conflicting
+ * duplicate, and a message set aside.
  */
 final readonly class ReceiveTradeSignalCommandHandler
 {
@@ -45,6 +47,7 @@ final readonly class ReceiveTradeSignalCommandHandler
         private InboxInterface $inbox,
         private IntegrationEventPublisherInterface $integrationEventPublisher,
         private AuditTrailInterface $auditTrail,
+        private DomainEventBusInterface $domainEvents,
         private AnalyticsApplicationRegistryInterface $analyticsApplicationRegistry,
         private TradeSignalEvaluationQueueInterface $evaluationQueue,
         private ClockInterface $clock,
@@ -98,16 +101,9 @@ final readonly class ReceiveTradeSignalCommandHandler
     {
         $tradeSignal = $this->tradeSignalOf($id, $source, $message, $receivedAt);
         $this->tradeSignals->add($tradeSignal);
-
-        foreach ($tradeSignal->releaseEvents() as $event) {
-            if ($event instanceof TradeSignalReceived) {
-                $this->recordAudit($source, $receivedAt, $id->toString(), 'received', $message->metadata());
-                $this->evaluationQueue->enqueue($id);
-            } else {
-                // Intake records only receptions and rejections; recordRejection() refuses any other event.
-                /** @var TradeSignalRejected $event */
-                $this->recordRejection($event, $message, $receivedAt);
-            }
+        $this->domainEvents->dispatch(AuditContext::ofAnalyticsApplication($source, $message->metadata()), ...$tradeSignal->releaseEvents());
+        if ($tradeSignal->awaitsEvaluation()) {
+            $this->evaluationQueue->enqueue($id);
         }
     }
 
@@ -133,16 +129,6 @@ final readonly class ReceiveTradeSignalCommandHandler
         }
 
         return null;
-    }
-
-    private function recordRejection(TradeSignalRejected $event, TradeSignalMessage $message, DateTimeImmutable $receivedAt): void
-    {
-        $this->recordAudit($event->source, $receivedAt, $event->id->toString(), 'rejected', [
-            ...$message->metadata(),
-            'outcomeId' => $event->outcome->id->toString(),
-            'violations' => $event->violations->descriptions(),
-        ]);
-        $this->integrationEventPublisher->publish(SignalOutcomeIntegrationEvent::of($event->id, $event->outcome, $event->source));
     }
 
     private function redeliver(TradeSignalId $id, AnalyticsApplicationId $source, TradeSignalMessage $message, DateTimeImmutable $receivedAt): void

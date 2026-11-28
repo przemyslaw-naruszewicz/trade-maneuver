@@ -7,17 +7,14 @@ namespace TradeManeuver\Trading\Application\Workflow\TradeSignalEvaluation;
 use LogicException;
 use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
-use TradeManeuver\Trading\Application\Audit\AuditRecordDto;
-use TradeManeuver\Trading\Application\Port\AuditTrailInterface;
+use TradeManeuver\Trading\Application\Audit\AuditContext;
 use TradeManeuver\Trading\Application\Port\BrokerGatewayInterface;
+use TradeManeuver\Trading\Application\Port\DomainEventBusInterface;
 use TradeManeuver\Trading\Application\Port\Exception\BrokerUnavailableException;
 use TradeManeuver\Trading\Application\Port\TransactionManagerInterface;
-use TradeManeuver\Trading\Application\TradeSignal\SignalOutcome\SignalOutcomeRecorder;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\InvestmentConfiguration;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Repository\Exception\InvestmentConfigurationDoesNotExistException;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Repository\InvestmentConfigurationRepositoryInterface;
-use TradeManeuver\Trading\Domain\Order\Event\OrderCreated;
-use TradeManeuver\Trading\Domain\Order\Order;
 use TradeManeuver\Trading\Domain\Order\Repository\OrderRepositoryInterface;
 use TradeManeuver\Trading\Domain\TradeSignal\Event\TradeSignalDeclined;
 use TradeManeuver\Trading\Domain\TradeSignal\Event\TradeSignalRejected;
@@ -31,25 +28,19 @@ use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\TradeSignalId;
  * Evaluates an accepted trade signal after its intake commits, one step per transaction: first signal validity and
  * direction, then the instrument checks against the broker, then order creation. Each step that a trade signal passes
  * is recorded in the step's transaction, so a rerun continues with the first step not yet passed. A signal outcome
- * commits with its audit record and its outbox entry, and an order with its audit record. The trade signal stays
- * locked during a step, so a job that runs twice, even concurrently, reaches one signal outcome or one order; the
- * uniqueness constraint on the trade signal of an order backs this up. A trade signal that passes every step leads to
- * an order awaiting approval.
+ * or an order commits with the work of its domain event handlers. The trade signal stays locked during a step, so a
+ * job that runs twice, even concurrently, reaches one signal outcome or one order; the uniqueness constraint on the
+ * trade signal of an order backs this up. A trade signal that passes every step leads to an order awaiting approval.
  */
 final readonly class TradeSignalEvaluationOrchestrator
 {
-    private const string ACTOR = 'trade-maneuver';
-
-    private const string ORDER_ENTITY_TYPE = 'order';
-
     public function __construct(
         private TradeSignalRepositoryInterface $tradeSignals,
         private InvestmentConfigurationRepositoryInterface $investmentConfigurations,
         private OrderRepositoryInterface $orders,
         private TradeSignalEvaluationStoreInterface $evaluations,
         private BrokerGatewayInterface $brokerGateway,
-        private SignalOutcomeRecorder $signalOutcomeRecorder,
-        private AuditTrailInterface $auditTrail,
+        private DomainEventBusInterface $domainEvents,
         private ClockInterface $clock,
         private LoggerInterface $logger,
         private TransactionManagerInterface $transactionManager,
@@ -141,7 +132,7 @@ final readonly class TradeSignalEvaluationOrchestrator
         }
 
         $this->orders->add($order);
-        $this->recordOrderCreation($order);
+        $this->domainEvents->dispatch(AuditContext::ofTradeManeuver(), ...$order->releaseEvents());
         $progress->pass(EvaluationStep::OrderCreation, $this->clock->now());
         $this->evaluations->save($progress);
     }
@@ -154,47 +145,19 @@ final readonly class TradeSignalEvaluationOrchestrator
             ?? throw InvestmentConfigurationDoesNotExistException::withReference($reference);
     }
 
-    private function recordOrderCreation(Order $order): void
-    {
-        foreach ($order->releaseEvents() as $event) {
-            if ($event instanceof OrderCreated) {
-                $this->recordCreatedOrder($event);
-            }
-        }
-    }
-
-    private function recordCreatedOrder(OrderCreated $event): void
-    {
-        $orderId = $event->id->toString();
-        $this->auditTrail->record(new AuditRecordDto(self::ACTOR, $event->createdAt, self::ORDER_ENTITY_TYPE, $orderId, 'created', [
-            'tradeSignalId' => $event->tradeSignalId->toString(),
-            'investmentConfigurationId' => $event->investmentConfigurationId->toString(),
-            'status' => $event->status->value,
-            'direction' => $event->direction->value,
-            'instrumentSymbol' => $event->instrument->symbol(),
-            'instrumentMic' => $event->instrument->mic()->code(),
-            'limitPrice' => $event->limitPrice->amount(),
-            'quantity' => (string) $event->quantity->units(),
-            'orderAmount' => $event->settings->orderAmount->amount(),
-            'limitPriceTolerance' => $event->settings->limitPriceTolerance->toString(),
-            'currency' => $event->settings->currency->code(),
-            'brokerageAccount' => $event->settings->brokerageAccount->identifier(),
-        ]));
-        $this->logger->info('An order awaiting approval is created.', ['signalId' => $event->tradeSignalId->toString(), 'orderId' => $orderId]);
-    }
-
     /**
-     * Saves the trade signal after a step and records either its signal outcome or the passed step.
+     * Saves the trade signal after a step and dispatches its signal outcome, or records the passed step.
      */
     private function complete(TradeSignal $tradeSignal, TradeSignalEvaluationProgress $progress, EvaluationStep $step): void
     {
         $this->tradeSignals->save($tradeSignal);
-        foreach ($tradeSignal->releaseEvents() as $event) {
+        $events = $tradeSignal->releaseEvents();
+        foreach ($events as $event) {
             if (! $event instanceof TradeSignalDeclined && ! $event instanceof TradeSignalRejected) {
                 throw new LogicException(sprintf('An evaluation step records only signal outcomes, not %s.', $event::class));
             }
-            $this->signalOutcomeRecorder->record($event);
         }
+        $this->domainEvents->dispatch(AuditContext::ofTradeManeuver(), ...$events);
 
         if ($tradeSignal->awaitsEvaluation()) {
             $progress->pass($step, $this->clock->now());

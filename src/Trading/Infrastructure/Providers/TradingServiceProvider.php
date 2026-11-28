@@ -11,14 +11,20 @@ use Illuminate\Cache\RateLimiter;
 use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Database\ConnectionInterface;
+use Illuminate\Events\Dispatcher as EventDispatcher;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 use PhpAmqpLib\Connection\AMQPConnectionConfig;
 use Psr\Clock\ClockInterface;
+use TradeManeuver\Trading\Application\InvestmentConfiguration\DomainEventHandler\InvestmentConfigurationCreatedAuditHandler;
+use TradeManeuver\Trading\Application\Order\DomainEventHandler\OrderApprovedAuditHandler;
+use TradeManeuver\Trading\Application\Order\DomainEventHandler\OrderCreatedAuditHandler;
+use TradeManeuver\Trading\Application\Order\DomainEventHandler\OrderRefusedAuditHandler;
 use TradeManeuver\Trading\Application\Port\AnalyticsApplicationRegistryInterface;
 use TradeManeuver\Trading\Application\Port\AuditTrailInterface;
 use TradeManeuver\Trading\Application\Port\BrokerGatewayInterface;
+use TradeManeuver\Trading\Application\Port\DomainEventBusInterface;
 use TradeManeuver\Trading\Application\Port\InboxInterface;
 use TradeManeuver\Trading\Application\Port\IntegrationEventPublisherInterface;
 use TradeManeuver\Trading\Application\Port\PasswordHasherInterface;
@@ -26,10 +32,20 @@ use TradeManeuver\Trading\Application\Port\SignalOutcomeRecordingQueueInterface;
 use TradeManeuver\Trading\Application\Port\TotpAuthenticatorInterface;
 use TradeManeuver\Trading\Application\Port\TradeSignalEvaluationQueueInterface;
 use TradeManeuver\Trading\Application\Port\TransactionManagerInterface;
+use TradeManeuver\Trading\Application\TradeSignal\DomainEventHandler\TradeSignalDeclinedSignalOutcomeHandler;
+use TradeManeuver\Trading\Application\TradeSignal\DomainEventHandler\TradeSignalReceivedAuditHandler;
+use TradeManeuver\Trading\Application\TradeSignal\DomainEventHandler\TradeSignalRejectedSignalOutcomeHandler;
 use TradeManeuver\Trading\Application\Workflow\TradeSignalEvaluation\TradeSignalEvaluationStoreInterface;
+use TradeManeuver\Trading\Domain\InvestmentConfiguration\Event\InvestmentConfigurationCreated;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Repository\InvestmentConfigurationRepositoryInterface;
 use TradeManeuver\Trading\Domain\Operator\Repository\OperatorRepositoryInterface;
+use TradeManeuver\Trading\Domain\Order\Event\OrderApproved;
+use TradeManeuver\Trading\Domain\Order\Event\OrderCreated;
+use TradeManeuver\Trading\Domain\Order\Event\OrderRefused;
 use TradeManeuver\Trading\Domain\Order\Repository\OrderRepositoryInterface;
+use TradeManeuver\Trading\Domain\TradeSignal\Event\TradeSignalDeclined;
+use TradeManeuver\Trading\Domain\TradeSignal\Event\TradeSignalReceived;
+use TradeManeuver\Trading\Domain\TradeSignal\Event\TradeSignalRejected;
 use TradeManeuver\Trading\Domain\TradeSignal\Repository\TradeSignalRepositoryInterface;
 use TradeManeuver\Trading\Infrastructure\AnalyticsApplication\ConfiguredAnalyticsApplicationRegistry;
 use TradeManeuver\Trading\Infrastructure\Audit\PostgresAuditTrail;
@@ -38,6 +54,7 @@ use TradeManeuver\Trading\Infrastructure\InvestmentConfiguration\InvestmentConfi
 use TradeManeuver\Trading\Infrastructure\Messaging\Inbox\PostgresInbox;
 use TradeManeuver\Trading\Infrastructure\Messaging\Jobs\QueuedSignalOutcomeRecording;
 use TradeManeuver\Trading\Infrastructure\Messaging\Jobs\QueuedTradeSignalEvaluation;
+use TradeManeuver\Trading\Infrastructure\Messaging\LaravelDomainEventBus;
 use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\OutboxIntegrationEventPublisher;
 use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\SignalOutcomePublisherInterface;
 use TradeManeuver\Trading\Infrastructure\Messaging\RabbitMq\RabbitMqSignalOutcomePublisher;
@@ -61,6 +78,21 @@ use TradeManeuver\Trading\Ui\Messaging\ConsumeTradeSignalsCommand;
 
 final class TradingServiceProvider extends ServiceProvider
 {
+    /**
+     * The local reactions to domain events: each event's handlers, in the order the bus calls them.
+     *
+     * @var array<class-string, list<class-string>>
+     */
+    private const array DOMAIN_EVENT_HANDLERS = [
+        TradeSignalReceived::class => [TradeSignalReceivedAuditHandler::class],
+        TradeSignalRejected::class => [TradeSignalRejectedSignalOutcomeHandler::class],
+        TradeSignalDeclined::class => [TradeSignalDeclinedSignalOutcomeHandler::class],
+        OrderCreated::class => [OrderCreatedAuditHandler::class],
+        OrderApproved::class => [OrderApprovedAuditHandler::class],
+        OrderRefused::class => [OrderRefusedAuditHandler::class],
+        InvestmentConfigurationCreated::class => [InvestmentConfigurationCreatedAuditHandler::class],
+    ];
+
     public function register(): void
     {
         $this->mergeConfigFrom(dirname(__DIR__).'/Resources/config.php', 'trading');
@@ -102,6 +134,11 @@ final class TradingServiceProvider extends ServiceProvider
                 $app->make(Dispatcher::class),
             ),
         );
+        $this->app->singleton(
+            LaravelDomainEventBus::class,
+            fn ($app): LaravelDomainEventBus => new LaravelDomainEventBus(new EventDispatcher($app)),
+        );
+        $this->app->alias(LaravelDomainEventBus::class, DomainEventBusInterface::class);
         $this->app->bind(TradeSignalEvaluationQueueInterface::class, QueuedTradeSignalEvaluation::class);
         $this->app->bind(SignalOutcomeRecordingQueueInterface::class, QueuedSignalOutcomeRecording::class);
         $this->app->bind(
@@ -137,6 +174,12 @@ final class TradingServiceProvider extends ServiceProvider
         Livewire::component('trading.start', Start::class);
         Livewire::component('trading.orders', Orders::class);
         Livewire::component('trading.orders-awaiting-approval-count', OrdersAwaitingApprovalCount::class);
+        $domainEventBus = $this->app->make(LaravelDomainEventBus::class);
+        foreach (self::DOMAIN_EVENT_HANDLERS as $event => $handlers) {
+            foreach ($handlers as $handler) {
+                $domainEventBus->listen($event, $handler);
+            }
+        }
         $this->app->make(AuthManager::class)->provider(
             'trading-operators',
             fn ($app): EloquentUserProvider => new EloquentUserProvider($app->make(Hasher::class), OperatorModel::class),
