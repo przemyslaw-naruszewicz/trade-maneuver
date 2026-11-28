@@ -7,13 +7,13 @@ namespace TradeManeuver\Trading\Application\Workflow\SignalOutcomeRecording;
 use LogicException;
 use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
+use TradeManeuver\Trading\Application\DomainEvent\DomainEventContext;
+use TradeManeuver\Trading\Application\Port\DomainEventBusInterface;
 use TradeManeuver\Trading\Application\Port\TransactionManagerInterface;
-use TradeManeuver\Trading\Application\TradeSignal\SignalOutcome\SignalOutcomeRecorder;
 use TradeManeuver\Trading\Domain\Order\Repository\OrderRepositoryInterface;
 use TradeManeuver\Trading\Domain\Order\ValueObject\OrderId;
 use TradeManeuver\Trading\Domain\TradeSignal\Event\TradeSignalDeclined;
 use TradeManeuver\Trading\Domain\TradeSignal\Repository\TradeSignalRepositoryInterface;
-use TradeManeuver\Trading\Domain\TradeSignal\TradeSignal;
 
 /**
  * Records the signal outcome of an order's trade signal after the order reached a terminal status. The order's
@@ -26,7 +26,7 @@ final readonly class SignalOutcomeRecordingOrchestrator
     public function __construct(
         private OrderRepositoryInterface $orders,
         private TradeSignalRepositoryInterface $tradeSignals,
-        private SignalOutcomeRecorder $signalOutcomeRecorder,
+        private DomainEventBusInterface $domainEvents,
         private ClockInterface $clock,
         private LoggerInterface $logger,
         private TransactionManagerInterface $transactionManager,
@@ -51,16 +51,12 @@ final readonly class SignalOutcomeRecordingOrchestrator
         // The trade signal refuses an order status that is not terminal.
         $tradeSignal->endAfterOrder($order->status(), $this->tradeSignals->nextOutcomeIdentity(), $this->clock->now());
         $this->tradeSignals->save($tradeSignal);
-        $this->recordSignalOutcome($tradeSignal);
-    }
-
-    private function recordSignalOutcome(TradeSignal $tradeSignal): void
-    {
-        foreach ($tradeSignal->releaseEvents() as $event) {
+        $events = $tradeSignal->releaseEvents();
+        foreach ($events as $event) {
             if (! $event instanceof TradeSignalDeclined) {
                 throw new LogicException(sprintf('The end of an order declines its trade signal and records nothing else, not %s.', $event::class));
             }
-            $this->signalOutcomeRecorder->record($event);
         }
+        $this->domainEvents->dispatch(DomainEventContext::ofTradeManeuver(), ...$events);
     }
 }

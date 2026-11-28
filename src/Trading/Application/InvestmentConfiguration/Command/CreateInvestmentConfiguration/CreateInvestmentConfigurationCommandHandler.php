@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace TradeManeuver\Trading\Application\InvestmentConfiguration\Command\CreateInvestmentConfiguration;
 
-use Psr\Clock\ClockInterface;
-use TradeManeuver\Trading\Application\Audit\AuditRecordDto;
+use TradeManeuver\Trading\Application\DomainEvent\DomainEventContext;
 use TradeManeuver\Trading\Application\InvestmentConfiguration\Exception\UnknownAnalyticsApplicationException;
 use TradeManeuver\Trading\Application\Port\AnalyticsApplicationRegistryInterface;
-use TradeManeuver\Trading\Application\Port\AuditTrailInterface;
+use TradeManeuver\Trading\Application\Port\DomainEventBusInterface;
 use TradeManeuver\Trading\Application\Port\TransactionManagerInterface;
-use TradeManeuver\Trading\Domain\InvestmentConfiguration\Event\InvestmentConfigurationCreated;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Exception\InvestmentConfigurationRefAlreadyUsedException;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\InvestmentConfiguration;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Repository\InvestmentConfigurationRepositoryInterface;
@@ -24,12 +22,9 @@ use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\OrderAmount
 
 final readonly class CreateInvestmentConfigurationCommandHandler
 {
-    private const string ENTITY_TYPE = 'investment_configuration';
-
     public function __construct(
         private InvestmentConfigurationRepositoryInterface $investmentConfigurations,
-        private AuditTrailInterface $auditTrail,
-        private ClockInterface $clock,
+        private DomainEventBusInterface $domainEvents,
         private AnalyticsApplicationRegistryInterface $analyticsApplicationRegistry,
         private TransactionManagerInterface $transactionManager,
     ) {}
@@ -53,9 +48,7 @@ final readonly class CreateInvestmentConfigurationCommandHandler
             }
 
             $this->investmentConfigurations->add($investmentConfiguration);
-            foreach ($investmentConfiguration->releaseEvents() as $event) {
-                $this->auditTrail->record($this->auditRecordOf($event, $command->actor));
-            }
+            $this->domainEvents->dispatch(new DomainEventContext($command->actor), ...$investmentConfiguration->releaseEvents());
         });
     }
 
@@ -74,24 +67,5 @@ final readonly class CreateInvestmentConfigurationCommandHandler
         }
 
         return AuthorizedAnalyticsApplications::of(...$analyticsApplications);
-    }
-
-    private function auditRecordOf(InvestmentConfigurationCreated $event, string $actor): AuditRecordDto
-    {
-        return new AuditRecordDto(
-            $actor,
-            $this->clock->now(),
-            self::ENTITY_TYPE,
-            $event->id->toString(),
-            'created',
-            [
-                'reference' => $event->reference->toString(),
-                'currency' => $event->currency->code(),
-                'brokerageAccount' => $event->brokerageAccount->identifier(),
-                'orderAmount' => $event->orderAmount->amount(),
-                'limitPriceTolerance' => $event->limitPriceTolerance->toString(),
-                'authorizedAnalyticsApplications' => $event->authorizedAnalyticsApplications->identifiers(),
-            ],
-        );
     }
 }

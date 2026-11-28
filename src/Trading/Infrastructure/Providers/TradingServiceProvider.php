@@ -17,6 +17,9 @@ use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 use PhpAmqpLib\Connection\AMQPConnectionConfig;
 use Psr\Clock\ClockInterface;
+use TradeManeuver\Trading\Application\InvestmentConfiguration\DomainEventHandler\InvestmentConfigurationCreatedAuditHandler;
+use TradeManeuver\Trading\Application\Order\DomainEventHandler\OrderApprovedAuditHandler;
+use TradeManeuver\Trading\Application\Order\DomainEventHandler\OrderCreatedAuditHandler;
 use TradeManeuver\Trading\Application\Order\DomainEventHandler\OrderRefusedAuditHandler;
 use TradeManeuver\Trading\Application\Port\AnalyticsApplicationRegistryInterface;
 use TradeManeuver\Trading\Application\Port\AuditTrailInterface;
@@ -29,11 +32,20 @@ use TradeManeuver\Trading\Application\Port\SignalOutcomeRecordingQueueInterface;
 use TradeManeuver\Trading\Application\Port\TotpAuthenticatorInterface;
 use TradeManeuver\Trading\Application\Port\TradeSignalEvaluationQueueInterface;
 use TradeManeuver\Trading\Application\Port\TransactionManagerInterface;
+use TradeManeuver\Trading\Application\TradeSignal\DomainEventHandler\TradeSignalDeclinedSignalOutcomeHandler;
+use TradeManeuver\Trading\Application\TradeSignal\DomainEventHandler\TradeSignalReceivedAuditHandler;
+use TradeManeuver\Trading\Application\TradeSignal\DomainEventHandler\TradeSignalRejectedSignalOutcomeHandler;
 use TradeManeuver\Trading\Application\Workflow\TradeSignalEvaluation\TradeSignalEvaluationStoreInterface;
+use TradeManeuver\Trading\Domain\InvestmentConfiguration\Event\InvestmentConfigurationCreated;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Repository\InvestmentConfigurationRepositoryInterface;
 use TradeManeuver\Trading\Domain\Operator\Repository\OperatorRepositoryInterface;
+use TradeManeuver\Trading\Domain\Order\Event\OrderApproved;
+use TradeManeuver\Trading\Domain\Order\Event\OrderCreated;
 use TradeManeuver\Trading\Domain\Order\Event\OrderRefused;
 use TradeManeuver\Trading\Domain\Order\Repository\OrderRepositoryInterface;
+use TradeManeuver\Trading\Domain\TradeSignal\Event\TradeSignalDeclined;
+use TradeManeuver\Trading\Domain\TradeSignal\Event\TradeSignalReceived;
+use TradeManeuver\Trading\Domain\TradeSignal\Event\TradeSignalRejected;
 use TradeManeuver\Trading\Domain\TradeSignal\Repository\TradeSignalRepositoryInterface;
 use TradeManeuver\Trading\Infrastructure\AnalyticsApplication\ConfiguredAnalyticsApplicationRegistry;
 use TradeManeuver\Trading\Infrastructure\Audit\PostgresAuditTrail;
@@ -72,7 +84,13 @@ final class TradingServiceProvider extends ServiceProvider
      * @var array<class-string, list<class-string>>
      */
     private const array DOMAIN_EVENT_HANDLERS = [
+        TradeSignalReceived::class => [TradeSignalReceivedAuditHandler::class],
+        TradeSignalRejected::class => [TradeSignalRejectedSignalOutcomeHandler::class],
+        TradeSignalDeclined::class => [TradeSignalDeclinedSignalOutcomeHandler::class],
+        OrderCreated::class => [OrderCreatedAuditHandler::class],
+        OrderApproved::class => [OrderApprovedAuditHandler::class],
         OrderRefused::class => [OrderRefusedAuditHandler::class],
+        InvestmentConfigurationCreated::class => [InvestmentConfigurationCreatedAuditHandler::class],
     ];
 
     public function register(): void

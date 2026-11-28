@@ -24,12 +24,12 @@ final readonly class OrderRefusedAuditHandler
     public function handle(OrderRefused $event, DomainEventContext $context): void
     {
         $this->auditTrail->record(new AuditRecordDto($context->actor, $event->refusedAt, 'order', $event->id->toString(), 'refused', [
+            ...$context->auditValues,
             'previousLimitPrice' => $event->limitPrice->amount(),
             'limitPrice' => $event->limitPrice->amount(),
             'currency' => $event->limitPrice->currencyCode(),
             'previousQuantity' => (string) $event->quantity->units(),
             'quantity' => (string) $event->quantity->units(),
-            ...$context->auditValues,
         ]));
         $this->logger->info('The operator refused an order.', ['orderId' => $event->id->toString(), 'signalId' => $event->tradeSignalId->toString()]);
     }
