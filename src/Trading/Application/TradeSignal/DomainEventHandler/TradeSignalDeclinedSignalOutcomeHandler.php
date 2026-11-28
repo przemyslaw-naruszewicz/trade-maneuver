@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace TradeManeuver\Trading\Application\TradeSignal\DomainEventHandler;
 
 use Psr\Log\LoggerInterface;
+use TradeManeuver\Trading\Application\Audit\AuditContext;
 use TradeManeuver\Trading\Application\Audit\AuditRecordDto;
-use TradeManeuver\Trading\Application\DomainEvent\DomainEventContext;
 use TradeManeuver\Trading\Application\IntegrationEvent\SignalOutcomeIntegrationEvent;
 use TradeManeuver\Trading\Application\Port\AuditTrailInterface;
 use TradeManeuver\Trading\Application\Port\IntegrationEventPublisherInterface;
@@ -24,7 +24,7 @@ final readonly class TradeSignalDeclinedSignalOutcomeHandler
         private LoggerInterface $logger,
     ) {}
 
-    public function handle(TradeSignalDeclined $event, DomainEventContext $context): void
+    public function handle(TradeSignalDeclined $event, AuditContext $context): void
     {
         $signalId = $event->id->toString();
         $outcomeId = $event->outcome->id->toString();

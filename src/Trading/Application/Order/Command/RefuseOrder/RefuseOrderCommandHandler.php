@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace TradeManeuver\Trading\Application\Order\Command\RefuseOrder;
 
 use Psr\Clock\ClockInterface;
-use TradeManeuver\Trading\Application\DomainEvent\DomainEventContext;
+use TradeManeuver\Trading\Application\Audit\AuditContext;
 use TradeManeuver\Trading\Application\Order\Exception\OrderAlreadyDecidedException;
 use TradeManeuver\Trading\Application\Order\Exception\UnknownOrderException;
 use TradeManeuver\Trading\Application\Port\DomainEventBusInterface;
@@ -41,7 +41,7 @@ final readonly class RefuseOrderCommandHandler
     public function handle(RefuseOrderCommand $command): void
     {
         $orderId = self::orderIdOf($command->orderId);
-        $context = DomainEventContext::ofOperator(
+        $context = AuditContext::ofOperator(
             new OperatorId($command->operatorId),
             $command->note === null ? [] : ['note' => $command->note],
         );

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Trading\Messaging\Support;
 
-use TradeManeuver\Trading\Application\DomainEvent\DomainEventContext;
+use TradeManeuver\Trading\Application\Audit\AuditContext;
 
 /**
  * Collects, in the order of the calls, which test handler received which event with which context.
@@ -12,7 +12,7 @@ use TradeManeuver\Trading\Application\DomainEvent\DomainEventContext;
 final class HandledTestDomainEvents
 {
     /**
-     * @var list<array{string, TestDomainEvent, DomainEventContext}>
+     * @var list<array{string, TestDomainEvent, AuditContext}>
      */
     public array $calls = [];
 }

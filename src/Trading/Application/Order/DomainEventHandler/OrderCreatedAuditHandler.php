@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace TradeManeuver\Trading\Application\Order\DomainEventHandler;
 
 use Psr\Log\LoggerInterface;
+use TradeManeuver\Trading\Application\Audit\AuditContext;
 use TradeManeuver\Trading\Application\Audit\AuditRecordDto;
-use TradeManeuver\Trading\Application\DomainEvent\DomainEventContext;
 use TradeManeuver\Trading\Application\Port\AuditTrailInterface;
 use TradeManeuver\Trading\Domain\Order\Event\OrderCreated;
 
@@ -20,7 +20,7 @@ final readonly class OrderCreatedAuditHandler
         private LoggerInterface $logger,
     ) {}
 
-    public function handle(OrderCreated $event, DomainEventContext $context): void
+    public function handle(OrderCreated $event, AuditContext $context): void
     {
         $orderId = $event->id->toString();
         $this->auditTrail->record(new AuditRecordDto($context->actor, $event->createdAt, 'order', $orderId, 'created', [

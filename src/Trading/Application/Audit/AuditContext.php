@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace TradeManeuver\Trading\Application\DomainEvent;
+namespace TradeManeuver\Trading\Application\Audit;
 
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\AnalyticsApplicationId;
 use TradeManeuver\Trading\Domain\Operator\ValueObject\OperatorId;
@@ -11,7 +11,7 @@ use TradeManeuver\Trading\Domain\Operator\ValueObject\OperatorId;
  * What a use case adds to the domain events it dispatches: the actor of their audit records, and audit values that
  * the use case holds but the events do not. Domain facts stay in the events.
  */
-final readonly class DomainEventContext
+final readonly class AuditContext
 {
     /**
      * @param  array<string, string>  $auditValues

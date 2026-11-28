@@ -10,7 +10,7 @@ use Tests\Feature\Trading\Messaging\Support\TestDomainEvent;
 use Tests\Feature\Trading\Messaging\Support\TestDomainEventHandlerA;
 use Tests\Feature\Trading\Messaging\Support\TestDomainEventHandlerB;
 use Tests\TestCase;
-use TradeManeuver\Trading\Application\DomainEvent\DomainEventContext;
+use TradeManeuver\Trading\Application\Audit\AuditContext;
 use TradeManeuver\Trading\Infrastructure\Messaging\LaravelDomainEventBus;
 
 final class LaravelDomainEventBusTest extends TestCase
@@ -33,7 +33,7 @@ final class LaravelDomainEventBusTest extends TestCase
         $this->bus->listen(TestDomainEvent::class, TestDomainEventHandlerB::class);
         $this->bus->listen(TestDomainEvent::class, TestDomainEventHandlerA::class);
         $event = new TestDomainEvent('first');
-        $context = new DomainEventContext('test', ['note' => 'A note.']);
+        $context = new AuditContext('test', ['note' => 'A note.']);
 
         $this->bus->dispatch($context, $event);
 
@@ -42,7 +42,7 @@ final class LaravelDomainEventBusTest extends TestCase
 
     public function test_an_event_without_a_handler_is_dispatched_without_effect(): void
     {
-        $this->bus->dispatch(new DomainEventContext('test'), new TestDomainEvent('unhandled'));
+        $this->bus->dispatch(new AuditContext('test'), new TestDomainEvent('unhandled'));
 
         $this->assertSame([], $this->handled->calls);
     }

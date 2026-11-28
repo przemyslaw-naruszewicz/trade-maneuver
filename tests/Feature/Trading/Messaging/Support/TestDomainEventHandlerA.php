@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Trading\Messaging\Support;
 
-use TradeManeuver\Trading\Application\DomainEvent\DomainEventContext;
+use TradeManeuver\Trading\Application\Audit\AuditContext;
 
 final readonly class TestDomainEventHandlerA
 {
@@ -12,7 +12,7 @@ final readonly class TestDomainEventHandlerA
         private HandledTestDomainEvents $handled,
     ) {}
 
-    public function handle(TestDomainEvent $event, DomainEventContext $context): void
+    public function handle(TestDomainEvent $event, AuditContext $context): void
     {
         $this->handled->calls[] = ['A', $event, $context];
     }

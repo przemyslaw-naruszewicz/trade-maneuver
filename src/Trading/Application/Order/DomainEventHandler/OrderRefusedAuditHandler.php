@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace TradeManeuver\Trading\Application\Order\DomainEventHandler;
 
 use Psr\Log\LoggerInterface;
+use TradeManeuver\Trading\Application\Audit\AuditContext;
 use TradeManeuver\Trading\Application\Audit\AuditRecordDto;
-use TradeManeuver\Trading\Application\DomainEvent\DomainEventContext;
 use TradeManeuver\Trading\Application\Port\AuditTrailInterface;
 use TradeManeuver\Trading\Domain\Order\Event\OrderRefused;
 
@@ -21,7 +21,7 @@ final readonly class OrderRefusedAuditHandler
         private LoggerInterface $logger,
     ) {}
 
-    public function handle(OrderRefused $event, DomainEventContext $context): void
+    public function handle(OrderRefused $event, AuditContext $context): void
     {
         $this->auditTrail->record(new AuditRecordDto($context->actor, $event->refusedAt, 'order', $event->id->toString(), 'refused', [
             ...$context->auditValues,

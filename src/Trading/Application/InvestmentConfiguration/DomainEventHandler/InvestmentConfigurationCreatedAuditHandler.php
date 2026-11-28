@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace TradeManeuver\Trading\Application\InvestmentConfiguration\DomainEventHandler;
 
 use Psr\Clock\ClockInterface;
+use TradeManeuver\Trading\Application\Audit\AuditContext;
 use TradeManeuver\Trading\Application\Audit\AuditRecordDto;
-use TradeManeuver\Trading\Application\DomainEvent\DomainEventContext;
 use TradeManeuver\Trading\Application\Port\AuditTrailInterface;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Event\InvestmentConfigurationCreated;
 
@@ -21,7 +21,7 @@ final readonly class InvestmentConfigurationCreatedAuditHandler
         private ClockInterface $clock,
     ) {}
 
-    public function handle(InvestmentConfigurationCreated $event, DomainEventContext $context): void
+    public function handle(InvestmentConfigurationCreated $event, AuditContext $context): void
     {
         $this->auditTrail->record(new AuditRecordDto($context->actor, $this->clock->now(), 'investment_configuration', $event->id->toString(), 'created', [
             'reference' => $event->reference->toString(),

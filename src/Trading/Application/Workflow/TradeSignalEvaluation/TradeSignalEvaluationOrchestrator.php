@@ -7,7 +7,7 @@ namespace TradeManeuver\Trading\Application\Workflow\TradeSignalEvaluation;
 use LogicException;
 use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
-use TradeManeuver\Trading\Application\DomainEvent\DomainEventContext;
+use TradeManeuver\Trading\Application\Audit\AuditContext;
 use TradeManeuver\Trading\Application\Port\BrokerGatewayInterface;
 use TradeManeuver\Trading\Application\Port\DomainEventBusInterface;
 use TradeManeuver\Trading\Application\Port\Exception\BrokerUnavailableException;
@@ -132,7 +132,7 @@ final readonly class TradeSignalEvaluationOrchestrator
         }
 
         $this->orders->add($order);
-        $this->domainEvents->dispatch(DomainEventContext::ofTradeManeuver(), ...$order->releaseEvents());
+        $this->domainEvents->dispatch(AuditContext::ofTradeManeuver(), ...$order->releaseEvents());
         $progress->pass(EvaluationStep::OrderCreation, $this->clock->now());
         $this->evaluations->save($progress);
     }
@@ -157,7 +157,7 @@ final readonly class TradeSignalEvaluationOrchestrator
                 throw new LogicException(sprintf('An evaluation step records only signal outcomes, not %s.', $event::class));
             }
         }
-        $this->domainEvents->dispatch(DomainEventContext::ofTradeManeuver(), ...$events);
+        $this->domainEvents->dispatch(AuditContext::ofTradeManeuver(), ...$events);
 
         if ($tradeSignal->awaitsEvaluation()) {
             $progress->pass($step, $this->clock->now());

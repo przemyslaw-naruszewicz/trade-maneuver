@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace TradeManeuver\Trading\Application\Port;
 
-use TradeManeuver\Trading\Application\DomainEvent\DomainEventContext;
+use TradeManeuver\Trading\Application\Audit\AuditContext;
 
 /**
  * Hands the domain events that an aggregate released to their local handlers, synchronously, in the caller's
@@ -12,5 +12,5 @@ use TradeManeuver\Trading\Application\DomainEvent\DomainEventContext;
  */
 interface DomainEventBusInterface
 {
-    public function dispatch(DomainEventContext $context, object ...$events): void;
+    public function dispatch(AuditContext $context, object ...$events): void;
 }

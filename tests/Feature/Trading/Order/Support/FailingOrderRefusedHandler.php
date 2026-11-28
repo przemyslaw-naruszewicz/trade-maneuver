@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Trading\Order\Support;
 
 use RuntimeException;
-use TradeManeuver\Trading\Application\DomainEvent\DomainEventContext;
+use TradeManeuver\Trading\Application\Audit\AuditContext;
 use TradeManeuver\Trading\Domain\Order\Event\OrderRefused;
 
 /**
@@ -15,7 +15,7 @@ final readonly class FailingOrderRefusedHandler
 {
     public const string MESSAGE = 'A handler of the refusal failed for the test.';
 
-    public function handle(OrderRefused $event, DomainEventContext $context): void
+    public function handle(OrderRefused $event, AuditContext $context): void
     {
         throw new RuntimeException(self::MESSAGE);
     }

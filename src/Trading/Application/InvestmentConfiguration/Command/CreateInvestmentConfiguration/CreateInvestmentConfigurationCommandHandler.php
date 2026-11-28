@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace TradeManeuver\Trading\Application\InvestmentConfiguration\Command\CreateInvestmentConfiguration;
 
-use TradeManeuver\Trading\Application\DomainEvent\DomainEventContext;
+use TradeManeuver\Trading\Application\Audit\AuditContext;
 use TradeManeuver\Trading\Application\InvestmentConfiguration\Exception\UnknownAnalyticsApplicationException;
 use TradeManeuver\Trading\Application\Port\AnalyticsApplicationRegistryInterface;
 use TradeManeuver\Trading\Application\Port\DomainEventBusInterface;
@@ -48,7 +48,7 @@ final readonly class CreateInvestmentConfigurationCommandHandler
             }
 
             $this->investmentConfigurations->add($investmentConfiguration);
-            $this->domainEvents->dispatch(new DomainEventContext($command->actor), ...$investmentConfiguration->releaseEvents());
+            $this->domainEvents->dispatch(new AuditContext($command->actor), ...$investmentConfiguration->releaseEvents());
         });
     }
 

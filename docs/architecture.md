@@ -81,8 +81,9 @@ src/{BoundedContext}/
 │   │       ├── {Aggregate}QueryInterface.php
 │   │       └── Dto/
 │   │           └── {Aggregate}Dto.php
-│   ├── DomainEvent/
-│   │   └── DomainEventContext.php
+│   ├── Audit/
+│   │   ├── AuditContext.php
+│   │   └── AuditRecordDto.php
 │   ├── IntegrationEvent/
 │   │   └── {Aggregate}{PastTenseVerb}IntegrationEvent.php
 │   ├── IntegrationEventSubscriber/
@@ -296,7 +297,7 @@ Separate internal business facts from public integration contracts, so the domai
 
 - Define immutable, typed events in `Domain/{Aggregate}/Event`, with names describing completed business facts and payloads that may contain domain value objects. Keep them independent of Laravel and transport mechanisms.
 - Record events during aggregate behavior. Where local reactions are needed, dispatch them synchronously within the command's transaction through `DomainEventBusInterface`, implemented by an infrastructure adapter. A use case saves the aggregate and then dispatches the events the aggregate released.
-- Local handlers live in `Application/{Aggregate}/DomainEventHandler/{Event}{Reaction}Handler.php`, one event per handler, and the context's service provider registers them in the order the bus calls them. Each dispatch carries a context with the audit actor and the audit values that the use case holds but the events do not, such as message metadata or an operator's note. The events keep only domain facts.
+- Local handlers live in `Application/{Aggregate}/DomainEventHandler/{Event}{Reaction}Handler.php`, one event per handler, and the bounded context's service provider registers them in the order the bus calls them. Each dispatch carries an `AuditContext` with the audit actor and the audit values that the use case holds but the events do not, such as message metadata or an operator's note. The events keep only domain facts.
 - Local application handlers may translate events into integration contracts, write transactional audit records, and log. They must not load or modify aggregates, queue jobs, perform remote calls, or use queued listeners. Workflow steps, such as queuing the next step of a process, stay explicit calls in the use case. A handler failure before commit rolls back the local transaction.
 - Domain events are internal, in-process contracts. Dispatching them does not itself provide durable delivery or prove that the enclosing transaction committed.
 

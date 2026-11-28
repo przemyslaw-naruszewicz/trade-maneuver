@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace TradeManeuver\Trading\Infrastructure\Messaging;
 
 use Illuminate\Contracts\Events\Dispatcher;
-use TradeManeuver\Trading\Application\DomainEvent\DomainEventContext;
+use TradeManeuver\Trading\Application\Audit\AuditContext;
 use TradeManeuver\Trading\Application\Port\DomainEventBusInterface;
 
 /**
@@ -28,7 +28,7 @@ final readonly class LaravelDomainEventBus implements DomainEventBusInterface
         $this->dispatcher->listen($event, $handler);
     }
 
-    public function dispatch(DomainEventContext $context, object ...$events): void
+    public function dispatch(AuditContext $context, object ...$events): void
     {
         foreach ($events as $event) {
             // Dispatched by name, because Laravel passes an event object alone and drops the rest of the payload.

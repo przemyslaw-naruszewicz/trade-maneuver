@@ -7,8 +7,8 @@ namespace TradeManeuver\Trading\Application\TradeSignal\Command\ReceiveTradeSign
 use DateTimeImmutable;
 use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
+use TradeManeuver\Trading\Application\Audit\AuditContext;
 use TradeManeuver\Trading\Application\Audit\AuditRecordDto;
-use TradeManeuver\Trading\Application\DomainEvent\DomainEventContext;
 use TradeManeuver\Trading\Application\Inbox\InboxDelivery;
 use TradeManeuver\Trading\Application\Inbox\InboxEntryDto;
 use TradeManeuver\Trading\Application\IntegrationEvent\SignalOutcomeIntegrationEvent;
@@ -101,7 +101,7 @@ final readonly class ReceiveTradeSignalCommandHandler
     {
         $tradeSignal = $this->tradeSignalOf($id, $source, $message, $receivedAt);
         $this->tradeSignals->add($tradeSignal);
-        $this->domainEvents->dispatch(DomainEventContext::ofAnalyticsApplication($source, $message->metadata()), ...$tradeSignal->releaseEvents());
+        $this->domainEvents->dispatch(AuditContext::ofAnalyticsApplication($source, $message->metadata()), ...$tradeSignal->releaseEvents());
         if ($tradeSignal->awaitsEvaluation()) {
             $this->evaluationQueue->enqueue($id);
         }

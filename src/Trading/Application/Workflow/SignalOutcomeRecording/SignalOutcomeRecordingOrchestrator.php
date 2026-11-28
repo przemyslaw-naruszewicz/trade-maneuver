@@ -7,7 +7,7 @@ namespace TradeManeuver\Trading\Application\Workflow\SignalOutcomeRecording;
 use LogicException;
 use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
-use TradeManeuver\Trading\Application\DomainEvent\DomainEventContext;
+use TradeManeuver\Trading\Application\Audit\AuditContext;
 use TradeManeuver\Trading\Application\Port\DomainEventBusInterface;
 use TradeManeuver\Trading\Application\Port\TransactionManagerInterface;
 use TradeManeuver\Trading\Domain\Order\Repository\OrderRepositoryInterface;
@@ -57,6 +57,6 @@ final readonly class SignalOutcomeRecordingOrchestrator
                 throw new LogicException(sprintf('The end of an order declines its trade signal and records nothing else, not %s.', $event::class));
             }
         }
-        $this->domainEvents->dispatch(DomainEventContext::ofTradeManeuver(), ...$events);
+        $this->domainEvents->dispatch(AuditContext::ofTradeManeuver(), ...$events);
     }
 }

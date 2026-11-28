@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace TradeManeuver\Trading\Application\Order\Command\ApproveOrder;
 
 use Psr\Clock\ClockInterface;
-use TradeManeuver\Trading\Application\DomainEvent\DomainEventContext;
+use TradeManeuver\Trading\Application\Audit\AuditContext;
 use TradeManeuver\Trading\Application\Order\Exception\OrderAlreadyDecidedException;
 use TradeManeuver\Trading\Application\Order\Exception\UnknownOrderException;
 use TradeManeuver\Trading\Application\Port\DomainEventBusInterface;
@@ -46,7 +46,7 @@ final readonly class ApproveOrderCommandHandler
     public function handle(ApproveOrderCommand $command): void
     {
         $orderId = self::orderIdOf($command->orderId);
-        $context = DomainEventContext::ofOperator(new OperatorId($command->operatorId));
+        $context = AuditContext::ofOperator(new OperatorId($command->operatorId));
         $newLimitPriceAmount = $command->newLimitPriceAmount;
 
         try {
