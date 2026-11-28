@@ -23,8 +23,8 @@ use TradeManeuver\Trading\Domain\Order\ValueObject\OrderId;
 use TradeManeuver\Trading\Domain\TradeSignal\Repository\TradeSignalRepositoryInterface;
 
 /**
- * Approves an order in one transaction with the handlers of its domain events. The end of signal validity is a fact of the order's
- * trade signal, which the approval reads but does not change.
+ * Approves an order in one transaction with the handlers of its domain events. The end of signal validity is a fact
+ * of the order's trade signal, which the approval reads but does not change.
  */
 final readonly class ApproveOrderCommandHandler
 {

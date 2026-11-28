@@ -81,6 +81,8 @@ src/{BoundedContext}/
 │   │       ├── {Aggregate}QueryInterface.php
 │   │       └── Dto/
 │   │           └── {Aggregate}Dto.php
+│   ├── DomainEvent/
+│   │   └── DomainEventContext.php
 │   ├── IntegrationEvent/
 │   │   └── {Aggregate}{PastTenseVerb}IntegrationEvent.php
 │   ├── IntegrationEventSubscriber/

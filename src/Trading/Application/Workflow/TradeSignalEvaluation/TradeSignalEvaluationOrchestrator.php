@@ -28,10 +28,9 @@ use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\TradeSignalId;
  * Evaluates an accepted trade signal after its intake commits, one step per transaction: first signal validity and
  * direction, then the instrument checks against the broker, then order creation. Each step that a trade signal passes
  * is recorded in the step's transaction, so a rerun continues with the first step not yet passed. A signal outcome
- * or an order commits with the work of its domain event handlers. The trade signal stays
- * locked during a step, so a job that runs twice, even concurrently, reaches one signal outcome or one order; the
- * uniqueness constraint on the trade signal of an order backs this up. A trade signal that passes every step leads to
- * an order awaiting approval.
+ * or an order commits with the work of its domain event handlers. The trade signal stays locked during a step, so a
+ * job that runs twice, even concurrently, reaches one signal outcome or one order; the uniqueness constraint on the
+ * trade signal of an order backs this up. A trade signal that passes every step leads to an order awaiting approval.
  */
 final readonly class TradeSignalEvaluationOrchestrator
 {
