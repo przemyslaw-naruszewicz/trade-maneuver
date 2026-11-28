@@ -40,6 +40,13 @@ final class OrderDecisionContext implements Context
             ->handle(new ApproveOrderCommand($this->orderIdOf($alias), self::OPERATOR_ID));
     }
 
+    #[When('the operator approves the order of the trade signal :alias with the new limit price :limitPrice EUR')]
+    public function theOperatorApprovesWithANewLimitPrice(string $alias, string $limitPrice): void
+    {
+        $this->intake->application()->make(ApproveOrderCommandHandler::class)
+            ->handle(new ApproveOrderCommand($this->orderIdOf($alias), self::OPERATOR_ID, $limitPrice, 'EUR'));
+    }
+
     #[Then('the order of the trade signal :alias is approved with the limit price :limitPrice EUR and the quantity :quantity')]
     public function theOrderIsApproved(string $alias, string $limitPrice, int $quantity): void
     {
@@ -50,6 +57,22 @@ final class OrderDecisionContext implements Context
         Assert::assertSame($quantity, $order->quantity);
         Assert::assertSame('1000.00', $order->order_amount);
         Assert::assertSame('DEMO_A', $order->instrument_symbol);
+    }
+
+    #[Then('the approval of the order of the trade signal :alias is audited with the limit price changed from :previousLimitPrice to :limitPrice EUR and the quantity from :previousQuantity to :quantity')]
+    public function theApprovalIsAudited(string $alias, string $previousLimitPrice, string $limitPrice, string $previousQuantity, string $quantity): void
+    {
+        $audit = DB::table('trading_audit_records')->where('entity_type', 'order')->where('entity_id', $this->orderIdOf($alias))->where('action', 'approved')->sole();
+        Assert::assertSame('operator:'.self::OPERATOR_ID, $audit->actor);
+        Assert::assertSame('2026-11-09 11:00:00+00', $audit->occurred_at);
+        // PostgreSQL stores the values as jsonb, which orders their keys its own way.
+        Assert::assertEquals([
+            'previousLimitPrice' => $previousLimitPrice,
+            'limitPrice' => $limitPrice,
+            'currency' => 'EUR',
+            'previousQuantity' => $previousQuantity,
+            'quantity' => $quantity,
+        ], json_decode((string) $audit->values, true, 512, JSON_THROW_ON_ERROR));
     }
 
     private function orderIdOf(string $alias): string
