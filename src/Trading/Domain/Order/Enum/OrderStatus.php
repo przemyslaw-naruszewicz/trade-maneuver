@@ -11,4 +11,5 @@ enum OrderStatus: string
 {
     case AwaitingApproval = 'awaiting_approval';
     case Approved = 'approved';
+    case RefusedByOperator = 'refused_by_operator';
 }

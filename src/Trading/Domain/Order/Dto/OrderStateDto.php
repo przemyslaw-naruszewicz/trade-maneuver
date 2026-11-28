@@ -28,5 +28,7 @@ final readonly class OrderStateDto
         public OrderQuantity $quantity,
         public OrderSettings $settings,
         public DateTimeImmutable $createdAt,
+        // When the order reached a terminal status; null while it has not.
+        public ?DateTimeImmutable $endedAt,
     ) {}
 }

@@ -100,6 +100,7 @@ final class OrderRepository implements OrderRepositoryInterface
                     new BrokerageAccount($model->brokerage_account),
                 ),
                 new DateTimeImmutable($model->created_at),
+                null,
             ),
         );
     }

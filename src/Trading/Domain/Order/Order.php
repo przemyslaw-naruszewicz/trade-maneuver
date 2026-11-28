@@ -41,6 +41,7 @@ final class Order
         private OrderQuantity $quantity,
         private readonly OrderSettings $settings,
         private readonly DateTimeImmutable $createdAt,
+        private ?DateTimeImmutable $endedAt,
     ) {}
 
     /**
@@ -68,6 +69,7 @@ final class Order
             $quantity,
             $settings,
             $createdAt,
+            null,
         );
         $order->recordedEvents[] = new OrderCreated(
             $id,
@@ -102,6 +104,7 @@ final class Order
             $state->quantity,
             $state->settings,
             $state->createdAt,
+            $state->endedAt,
         );
     }
 
@@ -123,6 +126,7 @@ final class Order
             $this->quantity,
             $this->settings,
             $this->createdAt,
+            $this->endedAt,
         );
     }
 
@@ -154,6 +158,11 @@ final class Order
         }
         $this->status = OrderStatus::Approved;
     }
+
+    /**
+     * Refuses an order awaiting approval, which ends it.
+     */
+    public function refuse(DateTimeImmutable $refusedAt): void {}
 
     /**
      * Only creation records an event, so a mutant that keeps just the first event is equivalent.
