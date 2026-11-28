@@ -75,6 +75,8 @@ src/{BoundedContext}/
 │   │   │   └── {Action}/
 │   │   │       ├── {Action}Command.php
 │   │   │       └── {Action}CommandHandler.php
+│   │   ├── DomainEventHandler/
+│   │   │   └── {Event}{Reaction}Handler.php
 │   │   └── Query/
 │   │       ├── {Aggregate}QueryInterface.php
 │   │       └── Dto/
@@ -193,6 +195,11 @@ The demo analytics application has the same rows in its own layers; its `Applica
 
 PHPat also checks class shape in `src`: concrete classes are `final`, interfaces end with `Interface` ([coding standards](coding-standards.md#types-and-naming)), and integration events are `readonly`.
 
+Two PHPat rules keep the reactions to [domain events](#domain-events) in their handlers:
+
+- In Trading's `Application`, only domain event handlers and `ReceiveTradeSignalCommandHandler` depend on `AuditTrailInterface` and `IntegrationEventPublisherInterface`. The intake audits the inbox facts that no aggregate records as a domain event: a duplicate delivery, a conflicting duplicate, and a message set aside.
+- Domain event handlers depend on no repository interface, no queue port (`Application/Port/*QueueInterface`), and no `BrokerGatewayInterface`.
+
 PHPStan, through the `spaze/phpstan-disallowed-calls` extension, enforces two rules that Deptrac and PHPat cannot:
 
 - `Domain` and `Application` call no function from an installed package.
@@ -286,8 +293,9 @@ Separate internal business facts from public integration contracts, so the domai
 ### Domain events
 
 - Define immutable, typed events in `Domain/{Aggregate}/Event`, with names describing completed business facts and payloads that may contain domain value objects. Keep them independent of Laravel and transport mechanisms.
-- Record events during aggregate behavior. Where local reactions are needed, dispatch them synchronously within the command's transaction through `DomainEventBusInterface`, implemented by an infrastructure adapter.
-- Local application handlers may translate events into integration contracts or write transactional audit records. They must not modify other aggregates, perform remote calls, or use queued listeners. A handler failure before commit rolls back the local transaction.
+- Record events during aggregate behavior. Where local reactions are needed, dispatch them synchronously within the command's transaction through `DomainEventBusInterface`, implemented by an infrastructure adapter. A use case saves the aggregate and then dispatches the events the aggregate released.
+- Local handlers live in `Application/{Aggregate}/DomainEventHandler/{Event}{Reaction}Handler.php`, one event per handler, and the context's service provider registers them in the order the bus calls them. Each dispatch carries a context with the audit actor and the audit values that the use case holds but the events do not, such as message metadata or an operator's note. The events keep only domain facts.
+- Local application handlers may translate events into integration contracts, write transactional audit records, and log. They must not load or modify aggregates, queue jobs, perform remote calls, or use queued listeners. Workflow steps, such as queuing the next step of a process, stay explicit calls in the use case. A handler failure before commit rolls back the local transaction.
 - Domain events are internal, in-process contracts. Dispatching them does not itself provide durable delivery or prove that the enclosing transaction committed.
 
 ### Integration events
