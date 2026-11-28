@@ -25,3 +25,11 @@ Feature: Operator decision on an order awaiting approval
     When the operator tries to approve the order of the trade signal "purchase" with the new limit price "1000.01" EUR
     Then the approval is refused because the new limit price leaves a quantity of zero
     And the order of the trade signal "purchase" still awaits approval with the limit price "10.20" EUR and the quantity 98
+
+  Scenario: An operator refusal declines the trade signal with RefusedByOperator and keeps the note in the audit trail
+    When the operator refuses the order of the trade signal "purchase" with the note "The spread looks too wide today."
+    And Trade Maneuver records the signal outcome of the trade signal "purchase"
+    Then the order of the trade signal "purchase" is refused by the operator
+    And the trade signal "purchase" ends with one SignalDeclined outcome with the reason "RefusedByOperator"
+    And the refusal of the order of the trade signal "purchase" is audited with the note "The spread looks too wide today."
+    And the signal outcome of the trade signal "purchase" does not contain the note "The spread looks too wide today."
