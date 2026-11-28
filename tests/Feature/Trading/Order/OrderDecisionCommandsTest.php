@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Log;
 use LogicException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Feature\Trading\Operator\Support\OperatorAccounts;
+use Tests\Feature\Trading\Order\Support\OrderChangedOnSave;
 use Tests\Feature\Trading\Order\Support\OrderDecisions;
 use Tests\Feature\Trading\Order\Support\OrdersAwaitingApproval;
 use Tests\TestCase;
@@ -20,10 +21,8 @@ use TradeManeuver\Trading\Application\Order\Command\RefuseOrder\RefuseOrderComma
 use TradeManeuver\Trading\Application\Order\Exception\OrderAlreadyDecidedException;
 use TradeManeuver\Trading\Application\Workflow\SignalOutcomeRecording\SignalOutcomeRecordingOrchestrator;
 use TradeManeuver\Trading\Domain\Order\Exception\OrderNotAwaitingApprovalException;
-use TradeManeuver\Trading\Domain\Order\Order;
 use TradeManeuver\Trading\Domain\Order\Repository\Exception\OrderChangedConcurrentlyException;
 use TradeManeuver\Trading\Domain\Order\Repository\OrderRepositoryInterface;
-use TradeManeuver\Trading\Domain\Order\ValueObject\OrderId;
 use TradeManeuver\Trading\Infrastructure\Messaging\Jobs\RecordSignalOutcomeJob;
 
 /**
@@ -116,30 +115,7 @@ final class OrderDecisionCommandsTest extends TestCase
     #[DataProvider('decisions')]
     public function test_a_decision_on_an_order_that_changed_after_it_was_loaded_is_refused_as_already_decided(string $decision): void
     {
-        $this->app->extend(OrderRepositoryInterface::class, fn (OrderRepositoryInterface $orders): OrderRepositoryInterface => new class($orders) implements OrderRepositoryInterface
-        {
-            public function __construct(private readonly OrderRepositoryInterface $orders) {}
-
-            public function nextIdentity(): OrderId
-            {
-                return $this->orders->nextIdentity();
-            }
-
-            public function add(Order $order): void
-            {
-                $this->orders->add($order);
-            }
-
-            public function get(OrderId $id): Order
-            {
-                return $this->orders->get($id);
-            }
-
-            public function save(Order $order): void
-            {
-                throw OrderChangedConcurrentlyException::withId($order->id(), 1);
-            }
-        });
+        $this->app->extend(OrderRepositoryInterface::class, fn (OrderRepositoryInterface $orders): OrderRepositoryInterface => new OrderChangedOnSave($orders));
 
         $refusal = $this->refusalOf(fn () => $decision === 'approve' ? $this->approveOrderOf('DEMO_A') : $this->refuseOrderOf('DEMO_A'));
 
