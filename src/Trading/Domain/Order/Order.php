@@ -125,6 +125,19 @@ final class Order
         return $this->tradeSignalId;
     }
 
+    public function status(): OrderStatus
+    {
+        return $this->status;
+    }
+
+    /**
+     * Whether the order reached a terminal status.
+     */
+    public function hasEnded(): bool
+    {
+        return $this->endedAt !== null;
+    }
+
     public function state(): OrderStateDto
     {
         return new OrderStateDto(

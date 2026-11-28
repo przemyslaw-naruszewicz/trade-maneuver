@@ -4,17 +4,15 @@ declare(strict_types=1);
 
 namespace TradeManeuver\Trading\Application\Workflow\TradeSignalEvaluation;
 
-use DateTimeImmutable;
 use LogicException;
 use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use TradeManeuver\Trading\Application\Audit\AuditRecordDto;
-use TradeManeuver\Trading\Application\IntegrationEvent\SignalOutcomeIntegrationEvent;
 use TradeManeuver\Trading\Application\Port\AuditTrailInterface;
 use TradeManeuver\Trading\Application\Port\BrokerGatewayInterface;
 use TradeManeuver\Trading\Application\Port\Exception\BrokerUnavailableException;
-use TradeManeuver\Trading\Application\Port\IntegrationEventPublisherInterface;
 use TradeManeuver\Trading\Application\Port\TransactionManagerInterface;
+use TradeManeuver\Trading\Application\TradeSignal\SignalOutcome\SignalOutcomeRecorder;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\InvestmentConfiguration;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Repository\Exception\InvestmentConfigurationDoesNotExistException;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Repository\InvestmentConfigurationRepositoryInterface;
@@ -42,8 +40,6 @@ final readonly class TradeSignalEvaluationOrchestrator
 {
     private const string ACTOR = 'trade-maneuver';
 
-    private const string ENTITY_TYPE = 'trade_signal';
-
     private const string ORDER_ENTITY_TYPE = 'order';
 
     public function __construct(
@@ -52,7 +48,7 @@ final readonly class TradeSignalEvaluationOrchestrator
         private OrderRepositoryInterface $orders,
         private TradeSignalEvaluationStoreInterface $evaluations,
         private BrokerGatewayInterface $brokerGateway,
-        private IntegrationEventPublisherInterface $integrationEventPublisher,
+        private SignalOutcomeRecorder $signalOutcomeRecorder,
         private AuditTrailInterface $auditTrail,
         private ClockInterface $clock,
         private LoggerInterface $logger,
@@ -161,7 +157,9 @@ final readonly class TradeSignalEvaluationOrchestrator
     private function recordOrderCreation(Order $order): void
     {
         foreach ($order->releaseEvents() as $event) {
-            $this->recordCreatedOrder($event);
+            if ($event instanceof OrderCreated) {
+                $this->recordCreatedOrder($event);
+            }
         }
     }
 
@@ -192,44 +190,15 @@ final readonly class TradeSignalEvaluationOrchestrator
     {
         $this->tradeSignals->save($tradeSignal);
         foreach ($tradeSignal->releaseEvents() as $event) {
-            if ($event instanceof TradeSignalDeclined) {
-                $this->recordDecline($event);
-            } elseif ($event instanceof TradeSignalRejected) {
-                $this->recordRejection($event);
-            } else {
+            if (! $event instanceof TradeSignalDeclined && ! $event instanceof TradeSignalRejected) {
                 throw new LogicException(sprintf('An evaluation step records only signal outcomes, not %s.', $event::class));
             }
+            $this->signalOutcomeRecorder->record($event);
         }
 
         if ($tradeSignal->awaitsEvaluation()) {
             $progress->pass($step, $this->clock->now());
             $this->evaluations->save($progress);
         }
-    }
-
-    private function recordDecline(TradeSignalDeclined $event): void
-    {
-        $outcomeId = $event->outcome->id->toString();
-        $reason = $event->reason->value;
-        $this->recordAudit($event->outcome->occurredAt, $event->id, 'declined', ['outcomeId' => $outcomeId, 'reason' => $reason]);
-        $this->integrationEventPublisher->publish(SignalOutcomeIntegrationEvent::of($event->id, $event->outcome, $event->source));
-        $this->logger->info('A trade signal is declined.', ['signalId' => $event->id->toString(), 'outcomeId' => $outcomeId, 'reason' => $reason]);
-    }
-
-    private function recordRejection(TradeSignalRejected $event): void
-    {
-        $outcomeId = $event->outcome->id->toString();
-        $violations = $event->violations->descriptions();
-        $this->recordAudit($event->outcome->occurredAt, $event->id, 'rejected', ['outcomeId' => $outcomeId, 'violations' => $violations]);
-        $this->integrationEventPublisher->publish(SignalOutcomeIntegrationEvent::of($event->id, $event->outcome, $event->source));
-        $this->logger->info('A trade signal is rejected.', ['signalId' => $event->id->toString(), 'outcomeId' => $outcomeId, 'violations' => $violations]);
-    }
-
-    /**
-     * @param  array<string, string|list<string>>  $values
-     */
-    private function recordAudit(DateTimeImmutable $occurredAt, TradeSignalId $id, string $action, array $values): void
-    {
-        $this->auditTrail->record(new AuditRecordDto(self::ACTOR, $occurredAt, self::ENTITY_TYPE, $id->toString(), $action, $values));
     }
 }

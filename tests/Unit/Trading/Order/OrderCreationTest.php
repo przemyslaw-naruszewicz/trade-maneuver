@@ -10,6 +10,7 @@ use Tests\Unit\Trading\InvestmentConfiguration\Support\InvestmentConfigurationBu
 use Tests\Unit\Trading\Order\Support\OrderBuilder;
 use Tests\Unit\Trading\TradeSignal\Support\TradeSignalBuilder;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\InvestmentConfigurationId;
+use TradeManeuver\Trading\Domain\Order\Event\OrderCreated;
 use TradeManeuver\Trading\Domain\Order\ValueObject\OrderId;
 use TradeManeuver\Trading\Domain\TradeSignal\Enum\DeclineReason;
 use TradeManeuver\Trading\Domain\TradeSignal\Enum\SignalOutcomeType;
@@ -67,6 +68,7 @@ final class OrderCreationTest extends TestCase
         $events = $order->releaseEvents();
         $this->assertCount(1, $events);
         $event = $events[0];
+        $this->assertInstanceOf(OrderCreated::class, $event);
         $this->assertSame(OrderBuilder::ID, $event->id->toString());
         $this->assertSame($state->tradeSignalId, $event->tradeSignalId);
         $this->assertSame($state->investmentConfigurationId, $event->investmentConfigurationId);

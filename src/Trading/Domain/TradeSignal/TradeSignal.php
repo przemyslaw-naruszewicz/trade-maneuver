@@ -10,6 +10,7 @@ use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\InvestmentC
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\InvestmentConfigurationId;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\InvestmentConfigurationRef;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\OrderSettings;
+use TradeManeuver\Trading\Domain\Order\Enum\OrderStatus;
 use TradeManeuver\Trading\Domain\Order\Order;
 use TradeManeuver\Trading\Domain\Order\ValueObject\LimitPrice;
 use TradeManeuver\Trading\Domain\Order\ValueObject\OrderId;
@@ -185,6 +186,23 @@ final class TradeSignal
             $settings,
             $createdAt,
         );
+    }
+
+    /**
+     * Ends the trade signal with the signal outcome of its order's terminal status: an order refused by the operator
+     * declines it with the reason `RefusedByOperator`.
+     *
+     * @throws InvalidTradeSignalStateException when the trade signal already has a signal outcome, or when the status
+     *                                          is not a terminal status with a signal outcome
+     */
+    public function endAfterOrder(OrderStatus $orderStatus, SignalOutcomeId $outcomeId, DateTimeImmutable $endedAt): void
+    {
+        $this->contentAwaitingEvaluation();
+
+        match ($orderStatus) {
+            OrderStatus::RefusedByOperator => $this->decline(DeclineReason::RefusedByOperator, $outcomeId, $endedAt),
+            default => throw new InvalidTradeSignalStateException(sprintf('An order that is %s gives its trade signal no signal outcome.', $orderStatus->value)),
+        };
     }
 
     /**
