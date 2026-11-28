@@ -12,6 +12,7 @@ use TradeManeuver\Trading\Domain\Order\Enum\ExecutionProgress;
 use TradeManeuver\Trading\Domain\Order\Enum\OrderDirection;
 use TradeManeuver\Trading\Domain\Order\Enum\OrderStatus;
 use TradeManeuver\Trading\Domain\Order\Event\OrderCreated;
+use TradeManeuver\Trading\Domain\Order\Exception\InvalidOrderValueException;
 use TradeManeuver\Trading\Domain\Order\ValueObject\LimitPrice;
 use TradeManeuver\Trading\Domain\Order\ValueObject\OrderId;
 use TradeManeuver\Trading\Domain\Order\ValueObject\OrderQuantity;
@@ -31,12 +32,12 @@ final class Order
         private readonly OrderId $id,
         private readonly TradeSignalId $tradeSignalId,
         private readonly InvestmentConfigurationId $investmentConfigurationId,
-        private readonly OrderStatus $status,
+        private OrderStatus $status,
         private readonly ExecutionProgress $executionProgress,
         private readonly OrderDirection $direction,
         private readonly Instrument $instrument,
-        private readonly LimitPrice $limitPrice,
-        private readonly OrderQuantity $quantity,
+        private LimitPrice $limitPrice,
+        private OrderQuantity $quantity,
         private readonly OrderSettings $settings,
         private readonly DateTimeImmutable $createdAt,
     ) {}
@@ -127,7 +128,21 @@ final class Order
     /**
      * Approves an order awaiting approval, optionally at a new limit price chosen by the operator.
      */
-    public function approve(?LimitPrice $newLimitPrice, DateTimeImmutable $validUntil, DateTimeImmutable $approvedAt): void {}
+    public function approve(?LimitPrice $newLimitPrice, DateTimeImmutable $validUntil, DateTimeImmutable $approvedAt): void
+    {
+        if ($newLimitPrice !== null) {
+            if (! $newLimitPrice->hasCurrencyOf($this->limitPrice)) {
+                throw new InvalidOrderValueException(sprintf(
+                    'The new limit price must be in the order currency %s, not %s.',
+                    $this->limitPrice->currencyCode(),
+                    $newLimitPrice->currencyCode(),
+                ));
+            }
+            $this->quantity = OrderQuantity::of($newLimitPrice->unitsAffordableWith($this->settings->orderAmount));
+            $this->limitPrice = $newLimitPrice;
+        }
+        $this->status = OrderStatus::Approved;
+    }
 
     /**
      * Only creation records an event, so a mutant that keeps just the first event is equivalent.
