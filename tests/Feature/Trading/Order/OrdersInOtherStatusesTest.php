@@ -50,7 +50,7 @@ final class OrdersInOtherStatusesTest extends TestCase
         $this->assertSame(['DEMO_B'], $this->awaitingApprovalSymbols($screen));
         $this->assertSame('Non-terminal orders 1', $this->spacedText($screen, '#non-terminal-orders'));
         $this->assertSame([
-            ['DEMO_A DEMO', 'Approved', 'None, 0 of 90', '11.05 EUR', '10 Nov, 17:00 UTC'],
+            ['DEMO_A DEMO', 'Approved', 'None, 0 of 90', '11.05 EUR', '10 Nov, 17:00 UTC', ''],
         ], $this->rowsOf($screen, '#non-terminal-orders + * table'));
         $status = $screen->querySelector('#non-terminal-orders + * tbody .status');
         $this->assertNotNull($status);

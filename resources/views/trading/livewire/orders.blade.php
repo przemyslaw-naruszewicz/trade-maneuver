@@ -120,7 +120,7 @@
             <div class="overflow-x-auto">
                 <table class="data-table">
                     <thead>
-                        <tr><th scope="col">Instrument</th><th scope="col">Status</th><th scope="col">Execution progress</th><th scope="col">Limit price</th><th scope="col">Valid until</th></tr>
+                        <tr><th scope="col">Instrument</th><th scope="col">Status</th><th scope="col">Execution progress</th><th scope="col">Limit price</th><th scope="col">Valid until</th><th scope="col"><span class="sr-only">Action</span></th></tr>
                     </thead>
                     <tbody>
                         @foreach ($otherNonTerminal as $order)
@@ -130,6 +130,8 @@
                                 <td>{{ $order->executionProgress }}<span class="meter" aria-hidden="true"></span></td>
                                 <td>{{ $order->limitPrice }}</td>
                                 <td>{{ $order->validUntil }}</td>
+                                {{-- The column of the mockup's cancel action, which order cancellation adds. --}}
+                                <td></td>
                             </tr>
                         @endforeach
                     </tbody>
