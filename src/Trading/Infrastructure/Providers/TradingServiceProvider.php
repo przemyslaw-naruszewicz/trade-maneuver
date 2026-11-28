@@ -11,6 +11,7 @@ use Illuminate\Cache\RateLimiter;
 use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Database\ConnectionInterface;
+use Illuminate\Events\Dispatcher as EventDispatcher;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
@@ -19,6 +20,7 @@ use Psr\Clock\ClockInterface;
 use TradeManeuver\Trading\Application\Port\AnalyticsApplicationRegistryInterface;
 use TradeManeuver\Trading\Application\Port\AuditTrailInterface;
 use TradeManeuver\Trading\Application\Port\BrokerGatewayInterface;
+use TradeManeuver\Trading\Application\Port\DomainEventBusInterface;
 use TradeManeuver\Trading\Application\Port\InboxInterface;
 use TradeManeuver\Trading\Application\Port\IntegrationEventPublisherInterface;
 use TradeManeuver\Trading\Application\Port\PasswordHasherInterface;
@@ -38,6 +40,7 @@ use TradeManeuver\Trading\Infrastructure\InvestmentConfiguration\InvestmentConfi
 use TradeManeuver\Trading\Infrastructure\Messaging\Inbox\PostgresInbox;
 use TradeManeuver\Trading\Infrastructure\Messaging\Jobs\QueuedSignalOutcomeRecording;
 use TradeManeuver\Trading\Infrastructure\Messaging\Jobs\QueuedTradeSignalEvaluation;
+use TradeManeuver\Trading\Infrastructure\Messaging\LaravelDomainEventBus;
 use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\OutboxIntegrationEventPublisher;
 use TradeManeuver\Trading\Infrastructure\Messaging\Outbox\SignalOutcomePublisherInterface;
 use TradeManeuver\Trading\Infrastructure\Messaging\RabbitMq\RabbitMqSignalOutcomePublisher;
@@ -61,6 +64,13 @@ use TradeManeuver\Trading\Ui\Messaging\ConsumeTradeSignalsCommand;
 
 final class TradingServiceProvider extends ServiceProvider
 {
+    /**
+     * The local reactions to domain events: each event's handlers, in the order the bus calls them.
+     *
+     * @var array<class-string, list<class-string>>
+     */
+    private const array DOMAIN_EVENT_HANDLERS = [];
+
     public function register(): void
     {
         $this->mergeConfigFrom(dirname(__DIR__).'/Resources/config.php', 'trading');
@@ -102,6 +112,11 @@ final class TradingServiceProvider extends ServiceProvider
                 $app->make(Dispatcher::class),
             ),
         );
+        $this->app->singleton(
+            LaravelDomainEventBus::class,
+            fn ($app): LaravelDomainEventBus => new LaravelDomainEventBus(new EventDispatcher($app)),
+        );
+        $this->app->alias(LaravelDomainEventBus::class, DomainEventBusInterface::class);
         $this->app->bind(TradeSignalEvaluationQueueInterface::class, QueuedTradeSignalEvaluation::class);
         $this->app->bind(SignalOutcomeRecordingQueueInterface::class, QueuedSignalOutcomeRecording::class);
         $this->app->bind(
@@ -137,6 +152,12 @@ final class TradingServiceProvider extends ServiceProvider
         Livewire::component('trading.start', Start::class);
         Livewire::component('trading.orders', Orders::class);
         Livewire::component('trading.orders-awaiting-approval-count', OrdersAwaitingApprovalCount::class);
+        $domainEventBus = $this->app->make(LaravelDomainEventBus::class);
+        foreach (self::DOMAIN_EVENT_HANDLERS as $event => $handlers) {
+            foreach ($handlers as $handler) {
+                $domainEventBus->listen($event, $handler);
+            }
+        }
         $this->app->make(AuthManager::class)->provider(
             'trading-operators',
             fn ($app): EloquentUserProvider => new EloquentUserProvider($app->make(Hasher::class), OperatorModel::class),
