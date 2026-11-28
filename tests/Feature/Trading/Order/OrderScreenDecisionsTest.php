@@ -28,6 +28,8 @@ final class OrderScreenDecisionsTest extends TestCase
 
     private const string ALREADY_DECIDED = 'This order was already decided in another tab, so nothing changed. The list below shows its current status.';
 
+    private const string INVALID_LIMIT_PRICE = 'Enter a limit price greater than zero in the order currency, with at most two decimal places.';
+
     private const string SIGNAL_VALIDITY_ENDED = 'The signal validity of this order has ended, so it can no longer be approved. Nothing changed.';
 
     protected function setUp(): void
@@ -112,6 +114,59 @@ final class OrderScreenDecisionsTest extends TestCase
         $screen->assertHasErrors(['approvals.'.$demoA])
             ->assertSeeText('This limit price leaves a quantity of zero, so the order stays awaiting approval. Enter a lower limit price.')
             ->assertSet('approvals.'.$demoA, '1000.01');
+        $this->assertSame('awaiting_approval', $this->statusOf($demoA));
+    }
+
+    public function test_a_new_limit_price_that_is_not_an_amount_shows_its_message_in_place_of_an_earlier_one(): void
+    {
+        $demoA = $this->orderIdOf('DEMO_A');
+        $screen = $this->screen()->call('openApproval', $demoA)->set('approvals.'.$demoA, '1000.01')->call('approve', $demoA);
+
+        $screen->set('approvals.'.$demoA, '10,50')->call('approve', $demoA);
+
+        $this->assertSame([self::INVALID_LIMIT_PRICE], $screen->errors()->get('approvals.'.$demoA));
+        $this->assertSame('awaiting_approval', $this->statusOf($demoA));
+    }
+
+    public function test_closing_a_form_discards_the_entered_value_and_its_message(): void
+    {
+        $demoA = $this->orderIdOf('DEMO_A');
+        $demoB = $this->orderIdOf('DEMO_B');
+        $screen = $this->screen()
+            ->call('openApproval', $demoA)->set('approvals.'.$demoA, '1000.01')->call('approve', $demoA)
+            ->call('openRefusal', $demoB)->set('refusals.'.$demoB, 'The spread looks too wide today.');
+
+        $screen->call('close', $demoA)->call('close', $demoB);
+
+        $screen->assertSet('approvals', [])->assertSet('refusals', [])->assertHasNoErrors()
+            ->assertDontSeeHtml('aria-label="Approve the order for DEMO_A"')
+            ->assertDontSeeHtml('aria-label="Refuse the order for DEMO_B"');
+        $screen->call('openApproval', $demoA)->assertHasNoErrors()->assertSet('approvals.'.$demoA, '');
+    }
+
+    public function test_a_decision_trims_the_entered_values_and_closes_its_form(): void
+    {
+        $demoA = $this->orderIdOf('DEMO_A');
+        $demoB = $this->orderIdOf('DEMO_B');
+        $screen = $this->screen()
+            ->call('openApproval', $demoA)->set('approvals.'.$demoA, ' 10.50 ')
+            ->call('openRefusal', $demoB)->set('refusals.'.$demoB, '  ');
+
+        $screen->call('approve', $demoA)->call('refuse', $demoB);
+
+        $screen->assertSet('approvals', [])->assertSet('refusals', [])->assertHasNoErrors();
+        $this->assertSame('10.50', $this->app->make('db')->table('trading_orders')->where('id', $demoA)->value('limit_price'));
+        $this->assertSame('refused_by_operator', $this->statusOf($demoB));
+        $audit = $this->app->make('db')->table('trading_audit_records')->where('entity_id', $demoB)->where('action', 'refused')->value('values');
+        $this->assertArrayNotHasKey('note', json_decode((string) $audit, true, 512, JSON_THROW_ON_ERROR));
+    }
+
+    public function test_a_decision_on_an_order_without_an_open_form_changes_nothing(): void
+    {
+        $demoA = $this->orderIdOf('DEMO_A');
+
+        $this->screen()->call('approve', $demoA)->call('refuse', $demoA);
+
         $this->assertSame('awaiting_approval', $this->statusOf($demoA));
     }
 

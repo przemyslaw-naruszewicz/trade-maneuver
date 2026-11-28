@@ -34,6 +34,8 @@ final class OrderApprovalTest extends TestCase
         yield 'negative, -1.00 EUR' => ['-1.00', 'EUR'];
         yield 'in another currency, 10.60 USD' => ['10.60', 'USD'];
         yield 'with three decimal places, 10.505 EUR' => ['10.505', 'EUR'];
+        yield 'in an unknown currency, 10.60 DEMOX' => ['10.60', 'DEMOX'];
+        yield 'not an amount, 10,60 EUR' => ['10,60', 'EUR'];
     }
 
     #[DataProvider('invalidNewLimitPrices')]
