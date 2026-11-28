@@ -62,6 +62,7 @@ status: draft        # draft | approved | done
 A task contains a stable ID, goal, scope and exclusions, requirements, constraints, significant decisions, AC, and dependencies. The `spec` field is optional.
 
 - The ID is a prefix and a number, for example `AUTH-002`. When no existing task sets the prefix or the next number, the agent asks the owner.
+- A blocking task has a lower ID than the tasks it blocks. A task added later that blocks existing tasks takes the ID of the task before it with a letter, for example `TM-012A`, so that IDs already in use stay stable.
 - AC are a checkbox list (`- [ ]`), and each AC states its own verification method. A Verification section appears only for checks that no AC covers.
 - An AC on CI appears only when it asks for more than the merge gate in section 5, for example "no unexplained surviving mutants in pricing and sizing".
 - Dependencies list only "Blocked by", with the blocking task IDs.
