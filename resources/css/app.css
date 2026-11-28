@@ -355,10 +355,6 @@
         @apply mt-2 block h-1 w-32 bg-line;
     }
 
-    .meter-fill {
-        @apply block h-full bg-ink;
-    }
-
     /* Notices */
     .notice {
         @apply flex flex-wrap items-center justify-between gap-4 border border-line-strong p-4 text-sm;

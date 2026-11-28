@@ -34,14 +34,14 @@ final readonly class OrderRowPresentation
 
     public static function of(OrderOverviewReadModel $order): self
     {
-        $status = OrderStatus::from($order->status);
+        [$statusLabel, $statusClass] = self::statusOf(OrderStatus::from($order->status));
 
         return new self(
             $order->id,
             $order->instrument_symbol,
             $order->instrument_mic,
-            self::statusLabelOf($status),
-            self::statusClassOf($status),
+            $statusLabel,
+            $statusClass,
             self::executionProgressOf(ExecutionProgress::from($order->execution_progress), $order->quantity),
             sprintf('%s %s', $order->limit_price, $order->currency),
             self::utc($order->valid_until),
@@ -50,21 +50,15 @@ final readonly class OrderRowPresentation
         );
     }
 
-    private static function statusLabelOf(OrderStatus $status): string
+    /**
+     * @return array{string, string} the status label and the CSS class of its glyph marker
+     */
+    private static function statusOf(OrderStatus $status): array
     {
         return match ($status) {
-            OrderStatus::AwaitingApproval => 'Awaiting approval',
-            OrderStatus::Approved => 'Approved',
-            OrderStatus::RefusedByOperator => 'Refused by the operator',
-        };
-    }
-
-    private static function statusClassOf(OrderStatus $status): string
-    {
-        return match ($status) {
-            OrderStatus::AwaitingApproval => 'status-awaiting-approval',
-            OrderStatus::Approved => 'status-approved',
-            OrderStatus::RefusedByOperator => 'status-refused',
+            OrderStatus::AwaitingApproval => ['Awaiting approval', 'status-awaiting-approval'],
+            OrderStatus::Approved => ['Approved', 'status-approved'],
+            OrderStatus::RefusedByOperator => ['Refused by the operator', 'status-refused'],
         };
     }
 
