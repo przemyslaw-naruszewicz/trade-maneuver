@@ -9,6 +9,10 @@ use PHPat\Selector\SelectorInterface;
 use PHPat\Test\Attributes\TestRule;
 use PHPat\Test\Builder\Rule;
 use PHPat\Test\PHPat;
+use TradeManeuver\Trading\Application\Port\AuditTrailInterface;
+use TradeManeuver\Trading\Application\Port\BrokerGatewayInterface;
+use TradeManeuver\Trading\Application\Port\IntegrationEventPublisherInterface;
+use TradeManeuver\Trading\Application\TradeSignal\Command\ReceiveTradeSignal\ReceiveTradeSignalCommandHandler;
 
 /**
  * Repeats the dependency matrix of deptrac.yaml for src and checks class shape.
@@ -137,6 +141,36 @@ final class ArchitectureRules
         }
     }
 
+    /**
+     * Domain event handlers write the audit records and integration events of domain events. The intake also writes
+     * those of the inbox facts that no domain event records.
+     */
+    #[TestRule]
+    public function tradingAuditAndIntegrationEventWriters(): Rule
+    {
+        return PHPat::rule()
+            ->classes($this->application(self::TRADING))
+            ->excluding($this->tradingDomainEventHandler(), Selector::classname(ReceiveTradeSignalCommandHandler::class))
+            ->shouldNotDependOn()
+            ->classes(Selector::classname(AuditTrailInterface::class), Selector::classname(IntegrationEventPublisherInterface::class));
+    }
+
+    /**
+     * A domain event handler loads and changes no aggregate, queues no job, and calls no external system.
+     */
+    #[TestRule]
+    public function tradingDomainEventHandlerLimits(): Rule
+    {
+        return PHPat::rule()
+            ->classes($this->tradingDomainEventHandler())
+            ->shouldNotDependOn()
+            ->classes(
+                Selector::classname('/^TradeManeuver\\\\Trading\\\\Domain\\\\[^\\\\]+\\\\Repository\\\\[^\\\\]+RepositoryInterface$/', true),
+                Selector::classname('/^TradeManeuver\\\\Trading\\\\Application\\\\Port\\\\[^\\\\]+QueueInterface$/', true),
+                Selector::classname(BrokerGatewayInterface::class),
+            );
+    }
+
     #[TestRule]
     public function integrationEventsAreReadonly(): Rule
     {
@@ -229,6 +263,14 @@ final class ArchitectureRules
     private function tradingQueryAdapter(): SelectorInterface
     {
         return Selector::classname('/^TradeManeuver\\\\Trading\\\\Infrastructure\\\\[^\\\\]+\\\\[^\\\\]+Query$/', true);
+    }
+
+    /**
+     * Domain event handlers, in Application/{Aggregate}/DomainEventHandler.
+     */
+    private function tradingDomainEventHandler(): SelectorInterface
+    {
+        return Selector::inNamespace('/^TradeManeuver\\\\Trading\\\\Application\\\\[^\\\\]+\\\\DomainEventHandler(\\\\|$)/', true);
     }
 
     private function tradingLivewire(): SelectorInterface
