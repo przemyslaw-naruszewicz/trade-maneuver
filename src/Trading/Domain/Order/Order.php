@@ -125,6 +125,11 @@ final class Order
     }
 
     /**
+     * Approves an order awaiting approval, optionally at a new limit price chosen by the operator.
+     */
+    public function approve(?LimitPrice $newLimitPrice, DateTimeImmutable $validUntil, DateTimeImmutable $approvedAt): void {}
+
+    /**
      * Only creation records an event, so a mutant that keeps just the first event is equivalent.
      *
      * @infection-ignore-all
