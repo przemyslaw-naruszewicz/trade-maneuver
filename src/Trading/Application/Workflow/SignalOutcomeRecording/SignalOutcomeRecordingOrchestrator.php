@@ -40,10 +40,6 @@ final readonly class SignalOutcomeRecordingOrchestrator
     private function recordInTransaction(OrderId $orderId): void
     {
         $order = $this->orders->get($orderId);
-        if (! $order->hasEnded()) {
-            throw new LogicException(sprintf('The order "%s" has not reached a terminal status, so its trade signal has no signal outcome yet.', $orderId->toString()));
-        }
-
         $tradeSignal = $this->tradeSignals->getLocked($order->tradeSignalId());
         if ($tradeSignal->outcome() !== null) {
             // An earlier run of the step recorded it.
@@ -52,6 +48,7 @@ final readonly class SignalOutcomeRecordingOrchestrator
             return;
         }
 
+        // The trade signal refuses an order status that is not terminal.
         $tradeSignal->endAfterOrder($order->status(), $this->tradeSignals->nextOutcomeIdentity(), $this->clock->now());
         $this->tradeSignals->save($tradeSignal);
         $this->recordSignalOutcome($tradeSignal);

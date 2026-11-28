@@ -8,7 +8,6 @@ use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use LogicException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Feature\Trading\Operator\Support\OperatorAccounts;
 use Tests\Feature\Trading\Order\Support\OrderChangedOnSave;
@@ -23,6 +22,7 @@ use TradeManeuver\Trading\Application\Workflow\SignalOutcomeRecording\SignalOutc
 use TradeManeuver\Trading\Domain\Order\Exception\OrderNotAwaitingApprovalException;
 use TradeManeuver\Trading\Domain\Order\Repository\Exception\OrderChangedConcurrentlyException;
 use TradeManeuver\Trading\Domain\Order\Repository\OrderRepositoryInterface;
+use TradeManeuver\Trading\Domain\TradeSignal\Exception\InvalidTradeSignalStateException;
 use TradeManeuver\Trading\Infrastructure\Messaging\Jobs\RecordSignalOutcomeJob;
 
 /**
@@ -154,7 +154,7 @@ final class OrderDecisionCommandsTest extends TestCase
 
         $refusal = $this->refusalOf(fn () => $this->recordSignalOutcomeOf($orderId));
 
-        $this->assertInstanceOf(LogicException::class, $refusal);
+        $this->assertInstanceOf(InvalidTradeSignalStateException::class, $refusal);
         $this->assertNull(DB::table('trading_trade_signals')->value('outcome'));
         $this->assertSame(0, DB::table('trading_outbox_messages')->count());
     }
