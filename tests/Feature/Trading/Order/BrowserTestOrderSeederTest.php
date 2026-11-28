@@ -8,6 +8,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
+use TradeManeuver\Trading\Infrastructure\Operator\BrowserTestOperatorSeeder;
 use TradeManeuver\Trading\Infrastructure\Order\BrowserTestOrderSeeder;
 use TradeManeuver\Trading\Infrastructure\Order\ReadModel\OrderOverviewReadModel;
 
@@ -23,6 +24,8 @@ final class BrowserTestOrderSeederTest extends TestCase
 
         config(['trading.analytics_applications' => [['id' => 'demo-analytics', 'rabbitmq_user' => 'demo-analytics']]]);
         $this->travelTo(CarbonImmutable::parse(self::SEEDED_AT));
+        // bin/e2e seeds the browser-test operator account first, and the operator decides on the seeded orders.
+        $this->seed(BrowserTestOperatorSeeder::class);
     }
 
     public function test_the_seeder_creates_the_investment_configuration_of_the_browser_tests(): void
@@ -69,5 +72,33 @@ final class BrowserTestOrderSeederTest extends TestCase
         $this->assertSame('2026-11-30', $demoC->horizon_at);
         $this->assertNull($demoC->expected_move_min);
         $this->assertNull($demoC->expected_move_max);
+    }
+
+    public function test_the_seeder_creates_the_approved_and_the_refused_order_of_the_orders_mockup_as_the_operator(): void
+    {
+        $this->seed(BrowserTestOrderSeeder::class);
+
+        $approved = OrderOverviewReadModel::otherNonTerminal()->sole();
+        $this->assertSame('DEMO_A', $approved->instrument_symbol);
+        $this->assertSame('approved', $approved->status);
+        $this->assertSame('11.05', $approved->limit_price);
+        $this->assertSame(18, $approved->quantity);
+        $this->assertSame('none', $approved->execution_progress);
+        $refused = OrderOverviewReadModel::terminal()->sole();
+        $this->assertSame('DEMO_C', $refused->instrument_symbol);
+        $this->assertSame('refused_by_operator', $refused->status);
+        $this->assertSame('23.99', $refused->reference_price_amount);
+        $this->assertSame('24.10', $refused->limit_price);
+        $this->assertSame(8, $refused->quantity);
+        $this->assertSame('2026-11-09 10:00:00+00', $refused->ended_at);
+        foreach ([$approved, $refused] as $order) {
+            $this->assertSame('demo-analytics', $order->analytics_application);
+            $this->assertSame('200.00', $order->order_amount);
+        }
+        $operator = 'operator:'.DB::table('trading_operators')->where('email', 'operator@example.test')->value('id');
+        $this->assertDatabaseHas('trading_audit_records', ['entity_id' => $approved->id, 'action' => 'approved', 'actor' => $operator]);
+        $this->assertDatabaseHas('trading_audit_records', ['entity_id' => $refused->id, 'action' => 'refused', 'actor' => $operator]);
+        $this->assertSame(['SignalDeclined', 'RefusedByOperator'], array_values((array) DB::table('trading_trade_signals')->where('id', $refused->trade_signal_id)->first(['outcome', 'outcome_reason'])));
+        $this->assertSame(['DEMO_A', 'DEMO_B', 'DEMO_C'], OrderOverviewReadModel::awaitingApproval()->pluck('instrument_symbol')->all());
     }
 }
