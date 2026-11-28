@@ -64,6 +64,14 @@ final class TradeSignalIntakeContext implements Context
         DB::statement('TRUNCATE trading_inbox_entries, trading_trade_signals, trading_trade_signal_evaluation_steps, trading_orders, trading_outbox_messages, trading_audit_records, jobs, failed_jobs, trading_investment_configurations');
     }
 
+    /**
+     * The application of the scenario, for the other contexts of the Trading suite.
+     */
+    public function application(): Application
+    {
+        return $this->application;
+    }
+
     #[AfterScenario]
     public function shutdownApplication(): void
     {
