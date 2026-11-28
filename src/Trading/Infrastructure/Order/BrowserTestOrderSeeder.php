@@ -105,7 +105,6 @@ final class BrowserTestOrderSeeder extends Seeder
             $this->orderOf(self::APPROVED_TRADE_SIGNAL, $seededAt),
             $operatorId,
             self::APPROVED_LIMIT_PRICE,
-            'EUR',
         ));
         $refusedOrderId = $this->orderOf(self::REFUSED_TRADE_SIGNAL, $seededAt);
         $refuseOrder->handle(new RefuseOrderCommand($refusedOrderId, $operatorId));

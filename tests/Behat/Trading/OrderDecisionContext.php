@@ -51,7 +51,7 @@ final class OrderDecisionContext implements Context
     public function theOperatorApprovesWithANewLimitPrice(string $alias, string $limitPrice): void
     {
         $this->intake->application()->make(ApproveOrderCommandHandler::class)
-            ->handle(new ApproveOrderCommand($this->orderIdOf($alias), self::OPERATOR_ID, $limitPrice, 'EUR'));
+            ->handle(new ApproveOrderCommand($this->orderIdOf($alias), self::OPERATOR_ID, $limitPrice));
     }
 
     #[When('the operator tries to approve the order of the trade signal :alias with the new limit price :limitPrice EUR')]

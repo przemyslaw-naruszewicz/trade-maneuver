@@ -8,6 +8,7 @@ use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use TradeManeuver\Trading\Application\Audit\AuditRecordDto;
 use TradeManeuver\Trading\Application\Order\Exception\OrderAlreadyDecidedException;
+use TradeManeuver\Trading\Application\Order\Exception\UnknownOrderException;
 use TradeManeuver\Trading\Application\Port\AuditTrailInterface;
 use TradeManeuver\Trading\Application\Port\TransactionManagerInterface;
 use TradeManeuver\Trading\Domain\Operator\ValueObject\OperatorId;
@@ -17,6 +18,7 @@ use TradeManeuver\Trading\Domain\Order\Exception\InvalidOrderValueException;
 use TradeManeuver\Trading\Domain\Order\Exception\OrderNotAwaitingApprovalException;
 use TradeManeuver\Trading\Domain\Order\Exception\SignalValidityEndedException;
 use TradeManeuver\Trading\Domain\Order\Repository\Exception\OrderChangedConcurrentlyException;
+use TradeManeuver\Trading\Domain\Order\Repository\Exception\OrderDoesNotExistException;
 use TradeManeuver\Trading\Domain\Order\Repository\OrderRepositoryInterface;
 use TradeManeuver\Trading\Domain\Order\ValueObject\LimitPrice;
 use TradeManeuver\Trading\Domain\Order\ValueObject\OrderId;
@@ -42,18 +44,18 @@ final readonly class ApproveOrderCommandHandler
      * @throws ApprovalLeavesZeroQuantityException
      * @throws SignalValidityEndedException
      * @throws OrderAlreadyDecidedException when another decision on the order came first
+     * @throws UnknownOrderException
      */
     public function handle(ApproveOrderCommand $command): void
     {
-        $orderId = new OrderId($command->orderId);
+        $orderId = self::orderIdOf($command->orderId);
         $operatorId = new OperatorId($command->operatorId);
-        $newLimitPrice = $command->newLimitPriceAmount === null
-            ? null
-            : LimitPrice::of($command->newLimitPriceAmount, (string) $command->newLimitPriceCurrency);
+        $newLimitPriceAmount = $command->newLimitPriceAmount;
 
         try {
-            $this->transactionManager->transactional(function () use ($orderId, $operatorId, $newLimitPrice): void {
+            $this->transactionManager->transactional(function () use ($orderId, $operatorId, $newLimitPriceAmount): void {
                 $order = $this->orders->get($orderId);
+                $newLimitPrice = $newLimitPriceAmount === null ? null : LimitPrice::of($newLimitPriceAmount, $order->limitPrice()->currencyCode());
                 $validUntil = $this->tradeSignals->get($order->tradeSignalId())->validUntil();
                 $order->approve($newLimitPrice, $validUntil, $this->clock->now());
                 $this->orders->save($order);
@@ -65,6 +67,8 @@ final readonly class ApproveOrderCommandHandler
             });
         } catch (OrderNotAwaitingApprovalException|OrderChangedConcurrentlyException $decidedFirst) {
             throw OrderAlreadyDecidedException::forOrder($orderId, $decidedFirst);
+        } catch (OrderDoesNotExistException $missing) {
+            throw UnknownOrderException::withId($command->orderId, $missing);
         }
     }
 
@@ -78,5 +82,17 @@ final readonly class ApproveOrderCommandHandler
             'quantity' => (string) $event->quantity->units(),
         ]));
         $this->logger->info('The operator approved an order.', ['orderId' => $event->id->toString(), 'signalId' => $event->tradeSignalId->toString()]);
+    }
+
+    /**
+     * @throws UnknownOrderException when the identity is not an order identity
+     */
+    private static function orderIdOf(string $id): OrderId
+    {
+        try {
+            return new OrderId($id);
+        } catch (InvalidOrderValueException $invalid) {
+            throw UnknownOrderException::withId($id, $invalid);
+        }
     }
 }

@@ -16,6 +16,7 @@ use TradeManeuver\Trading\Application\Order\Command\ApproveOrder\ApproveOrderCom
 use TradeManeuver\Trading\Application\Order\Command\RefuseOrder\RefuseOrderCommand;
 use TradeManeuver\Trading\Application\Order\Command\RefuseOrder\RefuseOrderCommandHandler;
 use TradeManeuver\Trading\Application\Order\Exception\OrderAlreadyDecidedException;
+use TradeManeuver\Trading\Application\Order\Exception\UnknownOrderException;
 use TradeManeuver\Trading\Domain\Order\Exception\ApprovalLeavesZeroQuantityException;
 use TradeManeuver\Trading\Domain\Order\Exception\InvalidOrderValueException;
 use TradeManeuver\Trading\Domain\Order\Exception\SignalValidityEndedException;
@@ -37,6 +38,8 @@ final class Orders extends Component
     private const string TERMINAL_ORDERS_PAGE = 'terminal';
 
     public const string ALREADY_DECIDED = 'This order was already decided in another tab, so nothing changed. The list below shows its current status.';
+
+    public const string UNKNOWN_ORDER = 'This order does not exist, so nothing changed.';
 
     public const string SIGNAL_VALIDITY_ENDED = 'The signal validity of this order has ended, so it can no longer be approved. Nothing changed.';
 
@@ -86,7 +89,6 @@ final class Orders extends Component
                 $orderId,
                 $this->operatorId(),
                 $newLimitPrice === '' ? null : $newLimitPrice,
-                $newLimitPrice === '' ? null : OrderOverviewReadModel::query()->whereKey($orderId)->value('currency'),
             ));
         } catch (ApprovalLeavesZeroQuantityException) {
             $this->addError('approvals.'.$orderId, self::ZERO_QUANTITY);
@@ -100,6 +102,8 @@ final class Orders extends Component
             $this->notice = self::SIGNAL_VALIDITY_ENDED;
         } catch (OrderAlreadyDecidedException) {
             $this->notice = self::ALREADY_DECIDED;
+        } catch (UnknownOrderException) {
+            $this->notice = self::UNKNOWN_ORDER;
         }
         $this->close($orderId);
     }
@@ -115,6 +119,8 @@ final class Orders extends Component
             $refuseOrder->handle(new RefuseOrderCommand($orderId, $this->operatorId(), $note === '' ? null : $note));
         } catch (OrderAlreadyDecidedException) {
             $this->notice = self::ALREADY_DECIDED;
+        } catch (UnknownOrderException) {
+            $this->notice = self::UNKNOWN_ORDER;
         }
         $this->close($orderId);
     }

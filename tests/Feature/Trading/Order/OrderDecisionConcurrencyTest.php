@@ -55,7 +55,7 @@ final class OrderDecisionConcurrencyTest extends TestCase
     public function test_a_decision_that_saves_a_stale_version_fails_without_changes(): void
     {
         DB::beginTransaction();
-        $this->app->make(ApproveOrderCommandHandler::class)->handle(new ApproveOrderCommand(OrderBuilder::ID, self::OPERATOR_ID, '10.50', 'EUR'));
+        $this->app->make(ApproveOrderCommandHandler::class)->handle(new ApproveOrderCommand(OrderBuilder::ID, self::OPERATOR_ID, '10.50'));
 
         $second = $this->startRefusingTheOrder();
         $secondWaited = $this->waitUntilWaitingOrFinished($second);

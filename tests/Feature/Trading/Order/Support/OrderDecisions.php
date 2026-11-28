@@ -30,7 +30,6 @@ trait OrderDecisions
             $this->orderIdOf($symbol),
             $this->operatorModel()->id,
             $newLimitPrice,
-            $newLimitPrice === null ? null : 'EUR',
         ));
     }
 

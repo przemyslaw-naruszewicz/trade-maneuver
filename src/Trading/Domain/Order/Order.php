@@ -130,6 +130,11 @@ final class Order
         return $this->status;
     }
 
+    public function limitPrice(): LimitPrice
+    {
+        return $this->limitPrice;
+    }
+
     public function state(): OrderStateDto
     {
         return new OrderStateDto(
