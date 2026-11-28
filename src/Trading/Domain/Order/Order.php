@@ -11,9 +11,12 @@ use TradeManeuver\Trading\Domain\Order\Dto\OrderStateDto;
 use TradeManeuver\Trading\Domain\Order\Enum\ExecutionProgress;
 use TradeManeuver\Trading\Domain\Order\Enum\OrderDirection;
 use TradeManeuver\Trading\Domain\Order\Enum\OrderStatus;
+use TradeManeuver\Trading\Domain\Order\Event\OrderApproved;
 use TradeManeuver\Trading\Domain\Order\Event\OrderCreated;
+use TradeManeuver\Trading\Domain\Order\Event\OrderRefused;
 use TradeManeuver\Trading\Domain\Order\Exception\ApprovalLeavesZeroQuantityException;
 use TradeManeuver\Trading\Domain\Order\Exception\InvalidOrderValueException;
+use TradeManeuver\Trading\Domain\Order\Exception\OrderNotAwaitingApprovalException;
 use TradeManeuver\Trading\Domain\Order\ValueObject\LimitPrice;
 use TradeManeuver\Trading\Domain\Order\ValueObject\OrderId;
 use TradeManeuver\Trading\Domain\Order\ValueObject\OrderQuantity;
@@ -26,7 +29,7 @@ use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\TradeSignalId;
  */
 final class Order
 {
-    /** @var list<OrderCreated> */
+    /** @var list<OrderCreated|OrderApproved|OrderRefused> */
     private array $recordedEvents = [];
 
     private function __construct(
@@ -131,45 +134,54 @@ final class Order
     }
 
     /**
-     * Approves an order awaiting approval, optionally at a new limit price chosen by the operator.
+     * Approves an order awaiting approval, optionally at a new limit price chosen by the operator. A new limit price
+     * recalculates the quantity from the order amount of the snapshot; one at which the order amount buys no unit is
+     * refused, and the order stays awaiting approval.
+     *
+     * @throws OrderNotAwaitingApprovalException
+     * @throws InvalidOrderValueException when the new limit price is in another currency
+     * @throws ApprovalLeavesZeroQuantityException
      */
     public function approve(?LimitPrice $newLimitPrice, DateTimeImmutable $validUntil, DateTimeImmutable $approvedAt): void
     {
+        $this->ensureAwaitingApproval();
+        $previousLimitPrice = $this->limitPrice;
+        $previousQuantity = $this->quantity;
         if ($newLimitPrice !== null) {
-            if (! $newLimitPrice->hasCurrencyOf($this->limitPrice)) {
-                throw new InvalidOrderValueException(sprintf(
-                    'The new limit price must be in the order currency %s, not %s.',
-                    $this->limitPrice->currencyCode(),
-                    $newLimitPrice->currencyCode(),
-                ));
-            }
-            $units = $newLimitPrice->unitsAffordableWith($this->settings->orderAmount);
-            if ($units === 0) {
-                throw new ApprovalLeavesZeroQuantityException(sprintf(
-                    'The order amount %s %s buys no unit at the limit price %s %s.',
-                    $this->settings->orderAmount->amount(),
-                    $newLimitPrice->currencyCode(),
-                    $newLimitPrice->amount(),
-                    $newLimitPrice->currencyCode(),
-                ));
-            }
-            $this->quantity = OrderQuantity::of($units);
+            $this->quantity = $this->quantityAt($newLimitPrice);
             $this->limitPrice = $newLimitPrice;
         }
         $this->status = OrderStatus::Approved;
+        $this->recordedEvents[] = new OrderApproved(
+            $this->id,
+            $this->tradeSignalId,
+            $previousLimitPrice,
+            $this->limitPrice,
+            $previousQuantity,
+            $this->quantity,
+            $approvedAt,
+        );
     }
 
     /**
      * Refuses an order awaiting approval, which ends it.
+     *
+     * @throws OrderNotAwaitingApprovalException
      */
-    public function refuse(DateTimeImmutable $refusedAt): void {}
+    public function refuse(DateTimeImmutable $refusedAt): void
+    {
+        $this->ensureAwaitingApproval();
+        $this->status = OrderStatus::RefusedByOperator;
+        $this->endedAt = $refusedAt;
+        $this->recordedEvents[] = new OrderRefused($this->id, $this->tradeSignalId, $this->limitPrice, $this->quantity, $refusedAt);
+    }
 
     /**
-     * Only creation records an event, so a mutant that keeps just the first event is equivalent.
+     * Each transition records one event, so a mutant that keeps just the first event is equivalent.
      *
      * @infection-ignore-all
      *
-     * @return list<OrderCreated>
+     * @return list<OrderCreated|OrderApproved|OrderRefused>
      */
     public function releaseEvents(): array
     {
@@ -177,5 +189,47 @@ final class Order
         $this->recordedEvents = [];
 
         return $events;
+    }
+
+    /**
+     * @throws OrderNotAwaitingApprovalException
+     */
+    private function ensureAwaitingApproval(): void
+    {
+        if ($this->status !== OrderStatus::AwaitingApproval) {
+            throw new OrderNotAwaitingApprovalException(sprintf(
+                'Only an order awaiting approval can be approved or refused, and the order "%s" is %s.',
+                $this->id->toString(),
+                $this->status->value,
+            ));
+        }
+    }
+
+    /**
+     * @throws InvalidOrderValueException when the limit price is in another currency
+     * @throws ApprovalLeavesZeroQuantityException
+     */
+    private function quantityAt(LimitPrice $limitPrice): OrderQuantity
+    {
+        if (! $limitPrice->hasCurrencyOf($this->limitPrice)) {
+            throw new InvalidOrderValueException(sprintf(
+                'The new limit price must be in the order currency %s, not %s.',
+                $this->limitPrice->currencyCode(),
+                $limitPrice->currencyCode(),
+            ));
+        }
+
+        $units = $limitPrice->unitsAffordableWith($this->settings->orderAmount);
+        if ($units === 0) {
+            throw new ApprovalLeavesZeroQuantityException(sprintf(
+                'The order amount %s %s buys no unit at the limit price %s %s.',
+                $this->settings->orderAmount->amount(),
+                $limitPrice->currencyCode(),
+                $limitPrice->amount(),
+                $limitPrice->currencyCode(),
+            ));
+        }
+
+        return OrderQuantity::of($units);
     }
 }
