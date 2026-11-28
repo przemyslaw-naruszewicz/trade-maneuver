@@ -8,12 +8,14 @@ use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use LogicException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Feature\Trading\Operator\Support\OperatorAccounts;
 use Tests\Feature\Trading\Order\Support\OrderChangedOnSave;
 use Tests\Feature\Trading\Order\Support\OrderDecisions;
 use Tests\Feature\Trading\Order\Support\OrdersAwaitingApproval;
 use Tests\TestCase;
+use Tests\Unit\Trading\TradeSignal\Support\TradeSignalBuilder;
 use Throwable;
 use TradeManeuver\Trading\Application\Order\Command\RefuseOrder\RefuseOrderCommand;
 use TradeManeuver\Trading\Application\Order\Command\RefuseOrder\RefuseOrderCommandHandler;
@@ -23,6 +25,10 @@ use TradeManeuver\Trading\Domain\Order\Exception\OrderNotAwaitingApprovalExcepti
 use TradeManeuver\Trading\Domain\Order\Repository\Exception\OrderChangedConcurrentlyException;
 use TradeManeuver\Trading\Domain\Order\Repository\OrderRepositoryInterface;
 use TradeManeuver\Trading\Domain\TradeSignal\Exception\InvalidTradeSignalStateException;
+use TradeManeuver\Trading\Domain\TradeSignal\Repository\TradeSignalRepositoryInterface;
+use TradeManeuver\Trading\Domain\TradeSignal\TradeSignal;
+use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\SignalOutcomeId;
+use TradeManeuver\Trading\Domain\TradeSignal\ValueObject\TradeSignalId;
 use TradeManeuver\Trading\Infrastructure\Messaging\Jobs\RecordSignalOutcomeJob;
 
 /**
@@ -157,6 +163,41 @@ final class OrderDecisionCommandsTest extends TestCase
         $this->assertInstanceOf(InvalidTradeSignalStateException::class, $refusal);
         $this->assertNull(DB::table('trading_trade_signals')->value('outcome'));
         $this->assertSame(0, DB::table('trading_outbox_messages')->count());
+    }
+
+    public function test_the_recording_step_refuses_a_trade_signal_that_records_more_than_its_decline(): void
+    {
+        $orderId = $this->orderIdOf('DEMO_A');
+        $this->refuseOrderOf('DEMO_A');
+        // The repository hands out a trade signal that still holds its TradeSignalReceived event.
+        $this->app->instance(TradeSignalRepositoryInterface::class, new class implements TradeSignalRepositoryInterface
+        {
+            public function nextOutcomeIdentity(): SignalOutcomeId
+            {
+                return new SignalOutcomeId(TradeSignalBuilder::OUTCOME_ID);
+            }
+
+            public function add(TradeSignal $tradeSignal): void {}
+
+            public function get(TradeSignalId $id): TradeSignal
+            {
+                return TradeSignalBuilder::received();
+            }
+
+            public function getLocked(TradeSignalId $id): TradeSignal
+            {
+                return TradeSignalBuilder::received();
+            }
+
+            public function save(TradeSignal $tradeSignal): void {}
+        });
+
+        $refusal = $this->refusalOf(fn () => $this->recordSignalOutcomeOf($orderId));
+
+        $this->assertInstanceOf(LogicException::class, $refusal);
+        $this->assertStringContainsString('TradeSignalReceived', $refusal->getMessage());
+        $this->assertSame(0, DB::table('trading_outbox_messages')->count());
+        $this->assertSame(0, DB::table('trading_audit_records')->where('action', 'declined')->count());
     }
 
     private function recordSignalOutcomeOf(string $orderId): void
