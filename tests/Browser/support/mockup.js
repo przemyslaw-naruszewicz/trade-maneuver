@@ -25,10 +25,14 @@ export async function openMockup(page, mockupPage, theme) {
  * Compares the page under test, already open in the given theme, with a mockup page in the same theme: the whole
  * page, or the element that the selector finds on each page. At most 1% of the pixels may differ.
  *
+ * With `pinned`, the element is moved to the top left corner of the viewport on both pages for the screenshot. An
+ * element in a table cell sits at a fractional position that depends on the table's other rows and columns, and text
+ * at another fraction of a pixel is anti-aliased differently.
+ *
  * The mockup page's screenshot becomes the expected image of Playwright's toMatchSnapshot, which compares it with
  * the screenshot of the page under test and attaches the difference image to the report.
  */
-export async function expectToMatchMockup(page, mockupPage, { theme, selector }) {
+export async function expectToMatchMockup(page, mockupPage, { theme, selector, pinned = false }) {
     const testInfo = test.info();
     // These modes would replace the mockup's screenshot with the page under test's, so the comparison would pass.
     if (['all', 'changed'].includes(testInfo.config.updateSnapshots)) {
@@ -41,7 +45,7 @@ export async function expectToMatchMockup(page, mockupPage, { theme, selector })
         await openMockup(mockup, mockupPage, theme);
         const expectedPath = testInfo.snapshotPath(snapshotName);
         await mkdir(dirname(expectedPath), { recursive: true });
-        await writeFile(expectedPath, await screenshot(mockup, selector));
+        await writeFile(expectedPath, await screenshot(mockup, selector, pinned));
     } finally {
         await mockup.close();
     }
@@ -49,13 +53,16 @@ export async function expectToMatchMockup(page, mockupPage, { theme, selector })
     await page.setViewportSize(viewport);
     const compared = selector ? `element ${selector}` : 'whole page';
     expect(
-        await screenshot(page, selector),
+        await screenshot(page, selector, pinned),
         `${page.url()} differs from the mockup page ${mockupPage} (${compared}, ${theme} theme)`,
     ).toMatchSnapshot(snapshotName, { maxDiffPixelRatio });
 }
 
-function screenshot(page, selector) {
+function screenshot(page, selector, pinned) {
     const options = { animations: 'disabled' };
+    if (pinned) {
+        options.style = `${selector} { position: fixed !important; inset: 0 auto auto 0 !important; margin: 0 !important; z-index: 2147483647 !important; background: var(--paper) !important; }`;
+    }
 
     return selector ? page.locator(selector).screenshot(options) : page.screenshot({ ...options, fullPage: true });
 }
