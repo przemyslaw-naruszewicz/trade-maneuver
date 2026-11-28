@@ -13,6 +13,7 @@ use Throwable;
 use TradeManeuver\Trading\Domain\Order\Enum\OrderStatus;
 use TradeManeuver\Trading\Domain\Order\Exception\ApprovalLeavesZeroQuantityException;
 use TradeManeuver\Trading\Domain\Order\Exception\InvalidOrderValueException;
+use TradeManeuver\Trading\Domain\Order\Exception\SignalValidityEndedException;
 use TradeManeuver\Trading\Domain\Order\Order;
 use TradeManeuver\Trading\Domain\Order\ValueObject\LimitPrice;
 
@@ -112,6 +113,40 @@ final class OrderApprovalTest extends TestCase
 
         $this->assertInstanceOf(ApprovalLeavesZeroQuantityException::class, $refusal);
         $this->assertAwaitsApprovalUnchanged($order);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function approvalTimesAfterSignalValidity(): iterable
+    {
+        yield 'when signal validity ends' => ['2026-11-10T16:00:00Z'];
+        yield 'one microsecond after it ends' => ['2026-11-10T16:00:00.000001Z'];
+    }
+
+    #[DataProvider('approvalTimesAfterSignalValidity')]
+    public function test_an_approval_once_signal_validity_has_ended_is_refused_and_the_order_stays_awaiting_approval(string $approvedAt): void
+    {
+        $order = OrderBuilder::awaitingApproval();
+
+        $refusal = null;
+        try {
+            $order->approve(null, $this->validUntil(), new DateTimeImmutable($approvedAt));
+        } catch (Throwable $caught) {
+            $refusal = $caught;
+        }
+
+        $this->assertInstanceOf(SignalValidityEndedException::class, $refusal);
+        $this->assertAwaitsApprovalUnchanged($order);
+    }
+
+    public function test_an_approval_one_microsecond_before_signal_validity_ends_is_accepted(): void
+    {
+        $order = OrderBuilder::awaitingApproval();
+
+        $order->approve(null, $this->validUntil(), new DateTimeImmutable('2026-11-10T15:59:59.999999Z'));
+
+        $this->assertSame(OrderStatus::Approved, $order->state()->status);
     }
 
     private function validUntil(): DateTimeImmutable
