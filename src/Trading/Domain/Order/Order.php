@@ -17,6 +17,7 @@ use TradeManeuver\Trading\Domain\Order\Event\OrderRefused;
 use TradeManeuver\Trading\Domain\Order\Exception\ApprovalLeavesZeroQuantityException;
 use TradeManeuver\Trading\Domain\Order\Exception\InvalidOrderValueException;
 use TradeManeuver\Trading\Domain\Order\Exception\OrderNotAwaitingApprovalException;
+use TradeManeuver\Trading\Domain\Order\Exception\SignalValidityEndedException;
 use TradeManeuver\Trading\Domain\Order\ValueObject\LimitPrice;
 use TradeManeuver\Trading\Domain\Order\ValueObject\OrderId;
 use TradeManeuver\Trading\Domain\Order\ValueObject\OrderQuantity;
@@ -136,15 +137,24 @@ final class Order
     /**
      * Approves an order awaiting approval, optionally at a new limit price chosen by the operator. A new limit price
      * recalculates the quantity from the order amount of the snapshot; one at which the order amount buys no unit is
-     * refused, and the order stays awaiting approval.
+     * refused, and the order stays awaiting approval. Once signal validity has ended, the order can no longer be
+     * approved; its lapse is a separate transition.
      *
      * @throws OrderNotAwaitingApprovalException
+     * @throws SignalValidityEndedException
      * @throws InvalidOrderValueException when the new limit price is in another currency
      * @throws ApprovalLeavesZeroQuantityException
      */
     public function approve(?LimitPrice $newLimitPrice, DateTimeImmutable $validUntil, DateTimeImmutable $approvedAt): void
     {
         $this->ensureAwaitingApproval();
+        if ($approvedAt >= $validUntil) {
+            throw new SignalValidityEndedException(sprintf(
+                'The signal validity of the order "%s" ended at %s, so it can no longer be approved.',
+                $this->id->toString(),
+                $validUntil->format(DATE_ATOM),
+            ));
+        }
         $previousLimitPrice = $this->limitPrice;
         $previousQuantity = $this->quantity;
         if ($newLimitPrice !== null) {
