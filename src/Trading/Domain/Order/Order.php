@@ -12,6 +12,7 @@ use TradeManeuver\Trading\Domain\Order\Enum\ExecutionProgress;
 use TradeManeuver\Trading\Domain\Order\Enum\OrderDirection;
 use TradeManeuver\Trading\Domain\Order\Enum\OrderStatus;
 use TradeManeuver\Trading\Domain\Order\Event\OrderCreated;
+use TradeManeuver\Trading\Domain\Order\Exception\ApprovalLeavesZeroQuantityException;
 use TradeManeuver\Trading\Domain\Order\Exception\InvalidOrderValueException;
 use TradeManeuver\Trading\Domain\Order\ValueObject\LimitPrice;
 use TradeManeuver\Trading\Domain\Order\ValueObject\OrderId;
@@ -138,7 +139,17 @@ final class Order
                     $newLimitPrice->currencyCode(),
                 ));
             }
-            $this->quantity = OrderQuantity::of($newLimitPrice->unitsAffordableWith($this->settings->orderAmount));
+            $units = $newLimitPrice->unitsAffordableWith($this->settings->orderAmount);
+            if ($units === 0) {
+                throw new ApprovalLeavesZeroQuantityException(sprintf(
+                    'The order amount %s %s buys no unit at the limit price %s %s.',
+                    $this->settings->orderAmount->amount(),
+                    $newLimitPrice->currencyCode(),
+                    $newLimitPrice->amount(),
+                    $newLimitPrice->currencyCode(),
+                ));
+            }
+            $this->quantity = OrderQuantity::of($units);
             $this->limitPrice = $newLimitPrice;
         }
         $this->status = OrderStatus::Approved;
