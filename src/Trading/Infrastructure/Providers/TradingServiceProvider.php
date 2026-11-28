@@ -17,6 +17,7 @@ use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 use PhpAmqpLib\Connection\AMQPConnectionConfig;
 use Psr\Clock\ClockInterface;
+use TradeManeuver\Trading\Application\Order\DomainEventHandler\OrderRefusedAuditHandler;
 use TradeManeuver\Trading\Application\Port\AnalyticsApplicationRegistryInterface;
 use TradeManeuver\Trading\Application\Port\AuditTrailInterface;
 use TradeManeuver\Trading\Application\Port\BrokerGatewayInterface;
@@ -31,6 +32,7 @@ use TradeManeuver\Trading\Application\Port\TransactionManagerInterface;
 use TradeManeuver\Trading\Application\Workflow\TradeSignalEvaluation\TradeSignalEvaluationStoreInterface;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\Repository\InvestmentConfigurationRepositoryInterface;
 use TradeManeuver\Trading\Domain\Operator\Repository\OperatorRepositoryInterface;
+use TradeManeuver\Trading\Domain\Order\Event\OrderRefused;
 use TradeManeuver\Trading\Domain\Order\Repository\OrderRepositoryInterface;
 use TradeManeuver\Trading\Domain\TradeSignal\Repository\TradeSignalRepositoryInterface;
 use TradeManeuver\Trading\Infrastructure\AnalyticsApplication\ConfiguredAnalyticsApplicationRegistry;
@@ -69,7 +71,9 @@ final class TradingServiceProvider extends ServiceProvider
      *
      * @var array<class-string, list<class-string>>
      */
-    private const array DOMAIN_EVENT_HANDLERS = [];
+    private const array DOMAIN_EVENT_HANDLERS = [
+        OrderRefused::class => [OrderRefusedAuditHandler::class],
+    ];
 
     public function register(): void
     {
