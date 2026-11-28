@@ -46,6 +46,7 @@ final class Order
         private readonly OrderSettings $settings,
         private readonly DateTimeImmutable $createdAt,
         private ?DateTimeImmutable $endedAt,
+        private readonly int $version,
     ) {}
 
     /**
@@ -74,6 +75,7 @@ final class Order
             $settings,
             $createdAt,
             null,
+            1,
         );
         $order->recordedEvents[] = new OrderCreated(
             $id,
@@ -109,12 +111,18 @@ final class Order
             $state->settings,
             $state->createdAt,
             $state->endedAt,
+            $state->version,
         );
     }
 
     public function id(): OrderId
     {
         return $this->id;
+    }
+
+    public function tradeSignalId(): TradeSignalId
+    {
+        return $this->tradeSignalId;
     }
 
     public function state(): OrderStateDto
@@ -131,6 +139,7 @@ final class Order
             $this->settings,
             $this->createdAt,
             $this->endedAt,
+            $this->version,
         );
     }
 

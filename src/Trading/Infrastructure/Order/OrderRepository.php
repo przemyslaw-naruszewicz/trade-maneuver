@@ -19,6 +19,7 @@ use TradeManeuver\Trading\Domain\Order\Enum\OrderDirection;
 use TradeManeuver\Trading\Domain\Order\Enum\OrderStatus;
 use TradeManeuver\Trading\Domain\Order\Exception\TradeSignalAlreadyHasAnOrderException;
 use TradeManeuver\Trading\Domain\Order\Order;
+use TradeManeuver\Trading\Domain\Order\Repository\Exception\OrderChangedConcurrentlyException;
 use TradeManeuver\Trading\Domain\Order\Repository\Exception\OrderDoesNotExistException;
 use TradeManeuver\Trading\Domain\Order\Repository\OrderRepositoryInterface;
 use TradeManeuver\Trading\Domain\Order\ValueObject\LimitPrice;
@@ -31,6 +32,8 @@ use TradeManeuver\Trading\Infrastructure\Order\Eloquent\OrderModel;
 
 /**
  * The unique index on the trade signal refuses a second order for it, also when two connections insert at once.
+ * Saving is an optimistic version check: the update requires the version the order was loaded at, so of two
+ * concurrent decisions, the one that saves second changes nothing.
  */
 final class OrderRepository implements OrderRepositoryInterface
 {
@@ -63,6 +66,8 @@ final class OrderRepository implements OrderRepositoryInterface
         $model->currency = $state->settings->currency->code();
         $model->brokerage_account = $state->settings->brokerageAccount->identifier();
         $model->created_at = $state->createdAt->format(self::TIME_FORMAT);
+        $model->ended_at = $state->endedAt?->format(self::TIME_FORMAT);
+        $model->version = $state->version;
 
         try {
             $model->save();
@@ -100,8 +105,34 @@ final class OrderRepository implements OrderRepositoryInterface
                     new BrokerageAccount($model->brokerage_account),
                 ),
                 new DateTimeImmutable($model->created_at),
-                null,
+                $model->ended_at === null ? null : new DateTimeImmutable($model->ended_at),
+                $model->version,
             ),
         );
+    }
+
+    /**
+     * Writes what a decision changes, only while the stored version is still the loaded one, and increments it.
+     */
+    public function save(Order $order): void
+    {
+        $state = $order->state();
+        $id = $order->id()->toString();
+
+        $updated = OrderModel::query()->whereKey($id)->where('version', $state->version)->update([
+            'status' => $state->status->value,
+            'limit_price' => $state->limitPrice->amount(),
+            'quantity' => $state->quantity->units(),
+            'ended_at' => $state->endedAt?->format(self::TIME_FORMAT),
+            'version' => $state->version + 1,
+        ]);
+        if ($updated === 1) {
+            return;
+        }
+        if (OrderModel::query()->whereKey($id)->exists()) {
+            throw OrderChangedConcurrentlyException::withId($order->id(), $state->version);
+        }
+
+        throw OrderDoesNotExistException::withId($order->id());
     }
 }

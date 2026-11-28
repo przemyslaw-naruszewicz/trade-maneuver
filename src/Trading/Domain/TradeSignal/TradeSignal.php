@@ -198,6 +198,16 @@ final class TradeSignal
     }
 
     /**
+     * The time until which the trade signal may lead to trading.
+     *
+     * @throws InvalidTradeSignalStateException when the trade signal has no valid content
+     */
+    public function validUntil(): DateTimeImmutable
+    {
+        return $this->validContent()->validUntil->dateTime();
+    }
+
+    /**
      * The investment configuration that the trade signal addresses.
      *
      * @throws InvalidTradeSignalStateException when the trade signal has no valid content

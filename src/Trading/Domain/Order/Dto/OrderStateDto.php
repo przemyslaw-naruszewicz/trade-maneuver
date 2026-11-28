@@ -30,5 +30,7 @@ final readonly class OrderStateDto
         public DateTimeImmutable $createdAt,
         // When the order reached a terminal status; null while it has not.
         public ?DateTimeImmutable $endedAt,
+        // The version the order was created or loaded at; saving it requires that the stored version is still this one.
+        public int $version,
     ) {}
 }
