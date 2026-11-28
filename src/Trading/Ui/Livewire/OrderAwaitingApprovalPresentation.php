@@ -7,7 +7,7 @@ namespace TradeManeuver\Trading\Ui\Livewire;
 use Brick\Math\BigDecimal;
 use DateTimeImmutable;
 use DateTimeZone;
-use TradeManeuver\Trading\Infrastructure\Order\ReadModel\OrderAwaitingApprovalReadModel;
+use TradeManeuver\Trading\Infrastructure\Order\ReadModel\OrderOverviewReadModel;
 
 /**
  * The display texts of an order awaiting approval and its trade signal. Decimals are shown as PostgreSQL returns
@@ -33,13 +33,14 @@ final readonly class OrderAwaitingApprovalPresentation
         public string $validUntil,
         public string $validUntilIso,
         public string $limitPrice,
+        public string $currency,
         public string $quantity,
         public string $orderAmount,
         // The browser marks the order when an update changes this value.
         public string $version,
     ) {}
 
-    public static function of(OrderAwaitingApprovalReadModel $order): self
+    public static function of(OrderOverviewReadModel $order): self
     {
         $validUntil = self::utc($order->valid_until);
 
@@ -57,6 +58,7 @@ final readonly class OrderAwaitingApprovalPresentation
             sprintf('%s UTC', $validUntil->format(self::DATE_TIME)),
             $validUntil->format(DATE_ATOM),
             sprintf('%s %s', $order->limit_price, $order->currency),
+            $order->currency,
             (string) $order->quantity,
             sprintf('%s %s', $order->order_amount, $order->currency),
             sprintf('%s:%s', $order->status, $order->execution_progress),

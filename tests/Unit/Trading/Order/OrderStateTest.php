@@ -4,16 +4,21 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Trading\Order;
 
+use DateTimeImmutable;
 use Error;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionProperty;
 use Tests\Unit\Trading\Order\Support\OrderBuilder;
+use Tests\Unit\Trading\TradeSignal\Support\TradeSignalBuilder;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\OrderAmount;
 use TradeManeuver\Trading\Domain\InvestmentConfiguration\ValueObject\OrderSettings;
 use TradeManeuver\Trading\Domain\Order\Dto\OrderStateDto;
+use TradeManeuver\Trading\Domain\Order\Enum\OrderStatus;
+use TradeManeuver\Trading\Domain\Order\Event\OrderApproved;
 use TradeManeuver\Trading\Domain\Order\Event\OrderCreated;
+use TradeManeuver\Trading\Domain\Order\Event\OrderRefused;
 use TradeManeuver\Trading\Domain\Order\Order;
 use TradeManeuver\Trading\Domain\Order\ValueObject\LimitPrice;
 use TradeManeuver\Trading\Domain\Order\ValueObject\OrderId;
@@ -66,6 +71,8 @@ final class OrderStateTest extends TestCase
         yield 'state DTO' => [OrderStateDto::class];
         yield 'settings snapshot' => [OrderSettings::class];
         yield 'created event' => [OrderCreated::class];
+        yield 'approved event' => [OrderApproved::class];
+        yield 'refused event' => [OrderRefused::class];
         yield 'identity' => [OrderId::class];
         yield 'limit price' => [LimitPrice::class];
         yield 'quantity' => [OrderQuantity::class];
@@ -92,5 +99,31 @@ final class OrderStateTest extends TestCase
         $this->assertSame([], $reconstituted->releaseEvents());
         $this->assertSame(OrderBuilder::ID, $reconstituted->id()->toString());
         $this->assertEquals($created->state(), $reconstituted->state());
+    }
+
+    public function test_a_state_taken_before_an_approval_keeps_the_values_it_had(): void
+    {
+        $order = OrderBuilder::awaitingApproval();
+        $before = $order->state();
+
+        $order->approve(LimitPrice::of('10.50', 'EUR'), new DateTimeImmutable(TradeSignalBuilder::VALID_UNTIL), new DateTimeImmutable('2026-11-09T11:00:00Z'));
+
+        $this->assertSame(OrderStatus::AwaitingApproval, $before->status);
+        $this->assertSame('10.20', $before->limitPrice->amount());
+        $this->assertSame(98, $before->quantity->units());
+        $this->assertSame('10.50', $order->state()->limitPrice->amount());
+    }
+
+    public function test_reconstitution_keeps_the_status_and_the_end_time_of_a_refused_order(): void
+    {
+        $refused = OrderBuilder::awaitingApproval();
+        $refused->refuse(new DateTimeImmutable('2026-11-09T11:00:00.250000Z'));
+
+        $reconstituted = Order::reconstitute($refused->id(), $refused->state());
+
+        $this->assertSame([], $reconstituted->releaseEvents());
+        $this->assertSame(OrderStatus::RefusedByOperator, $reconstituted->state()->status);
+        $this->assertSame('2026-11-09T11:00:00.250000Z', $reconstituted->state()->endedAt?->format('Y-m-d\TH:i:s.u\Z'));
+        $this->assertEquals($refused->state(), $reconstituted->state());
     }
 }

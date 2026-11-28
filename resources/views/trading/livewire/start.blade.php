@@ -6,7 +6,7 @@
         </div>
     </header>
 
-    {{-- The frame lines of the tiles are elements of their own; the free cell is kept for the tiles of later screens. --}}
+    {{-- The frame lines of the tiles are elements of their own. --}}
     <div class="tiles mt-12">
         <span class="tile-rule col-span-full row-start-2" aria-hidden="true"></span>
         <span class="tile-rule col-span-full row-start-4" aria-hidden="true"></span>
@@ -27,6 +27,11 @@
             @else
                 <dd class="tile-note">No orders await approval.</dd>
             @endif
+        </dl>
+        <dl class="tile sm:col-start-3 sm:row-start-5">
+            <dt class="tile-label">Other non-terminal orders</dt>
+            <dd class="tile-note">Approved</dd>
+            <dd class="tile-value">{{ $otherNonTerminal }}</dd>
         </dl>
         <a class="tile tile-link sm:col-start-5 sm:row-start-5" href="{{ route('panel.orders') }}">
             <span class="tile-label">Orders</span>
